@@ -1,3 +1,5 @@
+import { readHubPrimaryEnvironment, hubEnvironmentBaseUrl } from "../../hub";
+import { environmentEndpointUrl } from "@t3tools/client-runtime/environment";
 import { PRIMARY_LOCAL_ENVIRONMENT_ID, type DesktopEnvironmentBootstrap } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 
@@ -225,8 +227,9 @@ function resolveConfiguredPrimaryTarget(): PrimaryEnvironmentTarget | null {
 }
 
 function resolveWindowOriginPrimaryTarget(): PrimaryEnvironmentTarget {
+  const primary = readHubPrimaryEnvironment();
   const url = parseTargetUrl({
-    rawValue: window.location.origin,
+    rawValue: primary ? hubEnvironmentBaseUrl(primary.environmentId) : window.location.origin,
     source: "window-origin",
     urlKind: "http-base-url",
   });
@@ -296,19 +299,18 @@ export function resolvePrimaryEnvironmentHttpUrl(
     source: primaryTarget.source,
     urlKind: "http-base-url",
   });
-  url.pathname = pathname;
+  const routed = new URL(environmentEndpointUrl(url.toString(), pathname));
+  url.pathname = routed.pathname;
   if (searchParams) {
     url.search = new URLSearchParams(searchParams).toString();
   }
   return url.toString();
 }
 
-// Null only when the desktop app runs with its local environment disabled;
-// every other host has a primary (falling back to the page origin).
+// A hub can supply a primary environment even when desktop bundled execution is off.
 export function readPrimaryEnvironmentTarget(): PrimaryEnvironmentTarget | null {
-  if (isLocalEnvironmentDisabled()) {
-    return null;
-  }
+  if (readHubPrimaryEnvironment()) return resolveWindowOriginPrimaryTarget();
+  if (isLocalEnvironmentDisabled()) return null;
   return (
     resolveDesktopPrimaryTarget() ??
     resolveConfiguredPrimaryTarget() ??

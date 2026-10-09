@@ -26,7 +26,7 @@ const status = {
   supported: true,
   installed: true,
   current: true,
-  unitPath: "/home/me/.config/systemd/user/pulse.service",
+  unitPath: "/home/me/.config/systemd/user/t3code.service",
   logPath: "/home/me/.t3/userdata/logs/boot-service.log",
 } as const;
 
@@ -36,7 +36,7 @@ it("reports the installed service version and host paths", () => {
     [
       "Pulse service",
       "  Status: installed · pulse@0.0.29",
-      "  Unit: /home/me/.config/systemd/user/pulse.service",
+      "  Unit: /home/me/.config/systemd/user/t3code.service",
       "  Logs: /home/me/.t3/userdata/logs/boot-service.log",
     ].join("\n"),
   );
@@ -122,6 +122,76 @@ function makeTestService(serviceStatus: BootService.BootServiceStatus) {
 }
 
 it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("service commands", (it) => {
+  it.effect.each([
+    ["serve", "--no-environment", "--port", "4780"],
+    ["serve", "--no-daemon", "--port", "4780"],
+    ["serve", "--public-url", "https://pulse.example.com"],
+    ["hub", "--host", "0.0.0.0"],
+    ["environment", "--hub", "https://hub.example.test", "--invitation", "test-code"],
+    ["daemon", "--hub", "https://hub.example.test", "--invitation", "test-code"],
+    ["client", "--hub", "https://hub.example.test"],
+  ])("installs an explicit runtime command even when the version is current: %j", (runtimeArgs) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "pulse-service-args-test-" });
+      const { service, installOptions } = makeTestService(status);
+      vi.spyOn(BootService, "layer").mockReturnValue(
+        Layer.succeed(BootService.BootService, service),
+      );
+      yield* Command.runWith(serviceCommand, { version: packageJson.version })([
+        "install",
+        "--base-dir",
+        baseDir,
+        "--",
+        ...runtimeArgs,
+      ]).pipe(
+        Effect.provideService(HostProcess.Environment, {}),
+        Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} }))),
+      );
+      expect(installOptions).toEqual([{ allowDowngrade: false, runtimeArgs }]);
+    }),
+  );
+
+  it.effect.each([
+    ["environment", "--no-environment"],
+    [
+      "environment",
+      "--hub",
+      "https://hub.example.test",
+      "--public-url",
+      "https://pulse.example.test",
+    ],
+    ...[
+      "ftp://pulse.example.com",
+      "https://user:password@pulse.example.com",
+      "https://pulse.example.com/path",
+      "https://pulse.example.com?query=1",
+      "https://pulse.example.com#fragment",
+    ].map((url) => ["serve", "--public-url", url]),
+  ])("rejects invalid runtime flags before changing the installed service: %j", (runtimeArgs) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "pulse-service-invalid-test-" });
+      const { service, installOptions } = makeTestService(status);
+      vi.spyOn(BootService, "layer").mockReturnValue(
+        Layer.succeed(BootService.BootService, service),
+      );
+      const result = yield* Command.runWith(serviceCommand, { version: packageJson.version })([
+        "install",
+        "--base-dir",
+        baseDir,
+        "--",
+        ...runtimeArgs,
+      ]).pipe(
+        Effect.provideService(HostProcess.Environment, {}),
+        Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} }))),
+        Effect.result,
+      );
+      expect(result._tag).toBe("Failure");
+      expect(installOptions).toEqual([]);
+    }),
+  );
+
   it.effect("restart restarts the installed service", () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;

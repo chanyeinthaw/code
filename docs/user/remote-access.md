@@ -3,6 +3,80 @@
 Connect a phone, browser, or another desktop app to T3 Code running on a different
 machine. That machine must stay running and reachable while you work.
 
+## Connect through a hub
+
+Run `pulse serve` to serve the app and a local hub with this machine connected.
+Electron starts this setup automatically. Open the served URL to use the app.
+
+Turn off **Settings > Hub > Local environment** to stop execution in the serving
+installation while keeping its client and hub running. This works from Electron
+or a browser with installation-admin access and applies without restarting.
+Separately running headless environments retain their own hub connections.
+Switching hubs moves only the client. Starting execution again uses the environment's
+saved hub destination. Use its **Move to hub…** menu action to change that destination.
+The execution setting survives restarts and overrides the initial CLI or Electron default.
+
+Use `pulse serve --no-environment` to host the app and hub without running agents on the
+host. A hub admin creates an environment invitation in **Settings > Hub**.
+Connect an execution machine with:
+
+```bash
+pulse environment --hub <hub-url> --invitation <code>
+```
+
+The environment saves its credential in its own Pulse home and reconnects without an
+invitation on later runs.
+
+Use `pulse client --hub <hub-url>` to serve a web client for an existing hub without
+starting a hub or environment. The client connects through its served origin.
+`pulse hub` runs only the hub transport and does not serve a web client.
+
+To connect the client to another hub, use **Settings > Hub > Switch hub** with
+its URL and a client pairing code. Your app URL stays the same, and the local
+environment keeps its current hub. **Use local hub** returns the client to the
+installation's owned hub without additional authentication.
+
+Paired clients renew their sessions automatically while the app is open and visible.
+A session that goes unused for 30 days expires and needs pairing again.
+
+For a deployment that serves both the client and its owned hub, turn off
+**Settings > Hub > Require pairing** to allow Admin access without a pairing code.
+This setting persists across restarts and lets you return after long periods of
+inactivity. Anyone who can reach that served client gets Admin access. It does
+not bypass pairing when the client switches to a remote hub or enroll environments.
+Turning pairing back on revokes sessions issued without pairing.
+
+To move a connected environment, choose **Move to hub…** from its menu under
+**Settings > Hub > Environments**. Enter the destination URL and an environment
+invitation from that hub. Hub admin access is required. Execution continues, and
+clients stay on their current hub. The saved destination survives restarts,
+including when a headless service still has its original `--hub` flag.
+
+This installation's bundled environment stays in the list with a **This environment**
+badge, even when it uses another hub. Choose **Bring back** from its menu to return
+it to the installation's owned hub. Installation-admin access is required. You can
+return a stopped environment without starting it. Client hub selection remains separate.
+Agent configurations belong to the hub and do not move with an environment.
+
+### Pair clients and manage access
+
+The startup link grants admin access to the hub you host. Electron signs into
+its own hub automatically. To connect another browser, a hub admin creates a
+pairing link in **Settings > Hub > Authorized clients**, or runs
+`pulse hub pair` on the hub machine. Open the link in the browser that needs access.
+Pairing defaults to Standard access. Use `--role read-only` or `--role admin`
+to choose another role.
+Each link can be used once; the resulting session survives reconnects.
+
+Pairing links default to **Standard** access. **Read-only** clients can view
+projects and threads. Standard clients can also run agents, edit files, and use
+terminals. **Admin** clients can create pairing links, invite environments, and revoke
+access. Choose Admin explicitly when another device needs to manage the hub.
+
+Revoke a client or environment in Hub to disconnect it and block further
+access. Revoking a client does not stop agent turns it already started. Unused
+pairing links and environment invitations can also be revoked there.
+
 ## T3 Connect
 
 T3 Connect makes an environment available to your other devices without setting
@@ -48,7 +122,7 @@ pulse serve --host <private-ip>
 If a server is already running, generate a fresh link without restarting it:
 
 ```bash
-t3 pair
+pulse hub pair
 ```
 
 Scan the QR code on your phone or paste the pairing URL into **Add environment**
@@ -133,7 +207,7 @@ pulse serve --tailscale-serve
 For an already-running server:
 
 ```bash
-t3 pair --tailscale
+pulse hub pair --tailscale
 ```
 
 The pairing link uses an address such as `https://machine.tailnet.ts.net/`.
@@ -145,7 +219,7 @@ tailscale serve --https=443 off
 ```
 
 If that port is already in use, choose another with
-`--tailscale-serve-port`. See `t3 pair --help` for other pairing options.
+`--tailscale-serve-port`. See `pulse hub pair --help` for other pairing options.
 
 ### Hosted web app
 
@@ -250,7 +324,7 @@ expires.
 To choose a token's permissions, pass `--scope` once for each scope you want:
 
 ```sh
-npx t3 pair --scope orchestration:read --scope relay:read
+npx pulse hub pair --scope orchestration:read --scope relay:read
 ```
 
 The selected scopes replace the default permissions. The same option works with

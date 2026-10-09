@@ -338,6 +338,27 @@ it.layer(NodeServices.layer)("boot service install", (it) => {
     }),
   );
 
+  it.effect("preserves runtime arguments during repair and replaces them only when supplied", () =>
+    Effect.gen(function* () {
+      const { service, fs, statePath } = yield* makeHarness();
+      const runtimeArgs = ["daemon", "--hub", "https://hub.example.test", "--invitation", "code"];
+      yield* service.install({ runtimeArgs });
+      expect(parseServiceState(yield* fs.readFileString(statePath))?.runtimeArgs).toEqual(
+        runtimeArgs,
+      );
+      yield* service.install();
+      yield* service.restart;
+      expect(parseServiceState(yield* fs.readFileString(statePath))?.runtimeArgs).toEqual(
+        runtimeArgs,
+      );
+      yield* service.install({ runtimeArgs: ["serve", "--no-daemon"] });
+      expect(parseServiceState(yield* fs.readFileString(statePath))?.runtimeArgs).toEqual([
+        "serve",
+        "--no-daemon",
+      ]);
+    }),
+  );
+
   it.effect("installs, reports current state, and uninstalls", () =>
     Effect.gen(function* () {
       const { service, fs, statePath, timeouts, runtime } = yield* makeHarness();
@@ -709,9 +730,9 @@ it.layer(NodeServices.layer)("boot service install", (it) => {
       expect(commands.some((command) => command.startsWith("systemctl "))).toBe(false);
       // A bootout can block up to the plist's 90s ExitTimeOut; the runner's
       // 60s default would cancel it and let bootstrap race a loaded job.
-      expect(timeouts.get("launchctl bootout --wait gui/501/com.chanyeinthaw.pulse.service")).toEqual(
-        Duration.seconds(120),
-      );
+      expect(
+        timeouts.get("launchctl bootout --wait gui/501/com.chanyeinthaw.pulse.service"),
+      ).toEqual(Duration.seconds(120));
     }),
   );
 

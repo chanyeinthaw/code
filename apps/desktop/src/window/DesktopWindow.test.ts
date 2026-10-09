@@ -663,41 +663,43 @@ describe("DesktopWindow", () => {
         assert.isTrue(createdWindowOptions[0]?.disableAutoHideCursor);
         assert.isFalse(createdWindowOptions[0]?.webPreferences?.backgroundThrottling);
         assert.deepEqual(fakeWindow.setAutoHideCursor.mock.calls, [[false]]);
-        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["t3code-dev://app/"]);
+        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["http://127.0.0.1:3773/"]);
         assert.equal(fakeWindow.openDevTools.mock.calls.length, 1);
       }).pipe(Effect.provide(layer));
     }),
   );
 
-  it.effect(
-    "opens and reopens the window without backend readiness when local execution is disabled",
-    () =>
-      Effect.gen(function* () {
-        const fakeWindow = makeFakeBrowserWindow();
-        const createCount = yield* Ref.make(0);
-        const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
-        const layer = layerTest({
-          window: fakeWindow.window,
-          createCount,
-          mainWindow,
-          createdWindowOptions: [],
-          desktopSettings: {
-            ...DesktopAppSettings.DEFAULT_DESKTOP_SETTINGS,
-            localEnvironmentEnabled: false,
-          },
-        });
-        yield* Effect.gen(function* () {
-          const desktopWindow = yield* DesktopWindow.DesktopWindow;
-          yield* desktopWindow.createMainIfBackendReady;
-          assert.equal(yield* Ref.get(createCount), 1);
-          yield* Ref.set(mainWindow, Option.none());
-          yield* desktopWindow.activate;
-          assert.equal(yield* Ref.get(createCount), 2);
-          yield* Ref.set(mainWindow, Option.none());
-          yield* desktopWindow.dispatchMenuAction("new-thread");
-          assert.equal(yield* Ref.get(createCount), 3);
-        }).pipe(Effect.provide(layer));
-      }),
+  it.effect("waits for the hub before opening when local execution is disabled", () =>
+    Effect.gen(function* () {
+      const fakeWindow = makeFakeBrowserWindow();
+      const createCount = yield* Ref.make(0);
+      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+      const layer = layerTest({
+        window: fakeWindow.window,
+        createCount,
+        mainWindow,
+        createdWindowOptions: [],
+        desktopSettings: {
+          ...DesktopAppSettings.DEFAULT_DESKTOP_SETTINGS,
+          localEnvironmentEnabled: false,
+        },
+      });
+      yield* Effect.gen(function* () {
+        const desktopWindow = yield* DesktopWindow.DesktopWindow;
+        yield* desktopWindow.createMainIfBackendReady;
+        assert.equal(yield* Ref.get(createCount), 0);
+        yield* desktopWindow.activate;
+        assert.equal(yield* Ref.get(createCount), 0);
+        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
+        assert.equal(yield* Ref.get(createCount), 1);
+        yield* Ref.set(mainWindow, Option.none());
+        yield* desktopWindow.activate;
+        assert.equal(yield* Ref.get(createCount), 2);
+        yield* Ref.set(mainWindow, Option.none());
+        yield* desktopWindow.dispatchMenuAction("new-thread");
+        assert.equal(yield* Ref.get(createCount), 3);
+      }).pipe(Effect.provide(layer));
+    }),
   );
 
   it.effect("blocks only repeated Cmd+W input before it reaches the native window menu", () =>
@@ -1371,17 +1373,18 @@ describe("DesktopWindow", () => {
           return yield* Effect.die("renderer load listeners were not registered");
         }
 
-        didFailLoad({}, -9, "ERR_UNEXPECTED", "t3code-dev://app/", true);
+        vi.mocked(fakeWindow.window.webContents.getURL).mockReturnValue("http://127.0.0.1:3773/");
+        didFailLoad({}, -9, "ERR_UNEXPECTED", "http://127.0.0.1:3773/", true);
         assert.equal(fakeWindow.loadURL.mock.calls.length, 1);
 
         yield* TestClock.adjust(100);
         assert.deepEqual(fakeWindow.loadURL.mock.calls, [
-          ["t3code-dev://app/"],
-          ["t3code-dev://app/"],
+          ["http://127.0.0.1:3773/"],
+          ["http://127.0.0.1:3773/"],
         ]);
         assert.equal(fakeWindow.reload.mock.calls.length, 0);
 
-        didFailLoad({}, -9, "ERR_UNEXPECTED", "t3code-dev://app/", true);
+        didFailLoad({}, -9, "ERR_UNEXPECTED", "http://127.0.0.1:3773/", true);
         didFinishLoad();
         yield* TestClock.adjust(250);
         assert.equal(fakeWindow.loadURL.mock.calls.length, 2);
@@ -1393,23 +1396,23 @@ describe("DesktopWindow", () => {
   it("retries only transient failures for the development renderer", () => {
     assert.isTrue(
       DesktopWindow.isRetryableDevelopmentRendererLoadFailure({
-        applicationUrl: "t3code-dev://app/",
+        applicationUrl: "http://127.0.0.1:3773/",
         errorCode: -102,
         isMainFrame: true,
-        validatedUrl: "t3code-dev://app/",
+        validatedUrl: "http://127.0.0.1:3773/",
       }),
     );
     assert.isFalse(
       DesktopWindow.isRetryableDevelopmentRendererLoadFailure({
-        applicationUrl: "t3code-dev://app/",
+        applicationUrl: "http://127.0.0.1:3773/",
         errorCode: -3,
         isMainFrame: true,
-        validatedUrl: "t3code-dev://app/",
+        validatedUrl: "http://127.0.0.1:3773/",
       }),
     );
     assert.isFalse(
       DesktopWindow.isRetryableDevelopmentRendererLoadFailure({
-        applicationUrl: "t3code-dev://app/",
+        applicationUrl: "http://127.0.0.1:3773/",
         errorCode: -102,
         isMainFrame: true,
         validatedUrl: "https://example.com/",

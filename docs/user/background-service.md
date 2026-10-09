@@ -8,17 +8,42 @@ to keep a terminal open.
 Install the `t3` CLI first ([Install T3 Code](./install.md#command-line)), then
 run these commands on the machine that will host T3 Code:
 
-| Task                            | Command                |
-| ------------------------------- | ---------------------- |
+| Task                            | Command                   |
+| ------------------------------- | ------------------------- |
 | Install and start               | `pulse service install`   |
 | Inspect status and log location | `pulse service status`    |
-| Move to a newer release         | `t3 update`            |
+| Move to a newer release         | `t3 update`               |
 | Restart                         | `pulse service restart`   |
 | Stop and remove from startup    | `pulse service uninstall` |
 
 Uninstalling the service leaves your projects, threads, and settings intact.
 Running `pulse service install` again repairs a service that `pulse service status`
 reports as broken.
+
+To choose what runs in the background, pass a runtime command after `--`:
+
+```sh
+pulse service install -- serve --no-environment
+pulse service install -- hub --host 0.0.0.0 --port 4780
+pulse service install -- environment --hub https://hub.example.com --invitation <code>
+```
+
+To serve Pulse through your domain with Newt/Pangolin or another reverse proxy:
+
+```sh
+pulse service install -- serve --host 127.0.0.1 --port 4780 --public-url https://pulse.example.com
+```
+
+Point the tunnel at `http://127.0.0.1:4780` and enable WebSocket forwarding.
+If the tunnel runs in a container or on another machine, choose a bind address it can reach.
+`--public-url` sets the address used in startup and CLI pairing links and accepts that browser origin behind the proxy.
+The client connects to the hub through the domain you open.
+The service saves this option for restarts and updates. Pulse does not configure the tunnel or DNS.
+Use `--no-environment` to host only the client and hub.
+
+Get environment invitations from **Settings > Hub**. Installation without a runtime
+command defaults to `serve` for a new service and preserves the existing command
+when repairing one. Updates and restarts preserve the command and its options.
 
 `t3 update` downloads the newest release on your channel and switches `t3`
 and the service to it. Restarting interrupts running agent turns, terminals,
@@ -85,7 +110,7 @@ that session open.
 | `linger-unavailable`                    | Run `loginctl show-user "$(id -un)" --property=Linger` and check that systemd-logind is available.                             |
 | `user-manager-unavailable`              | Run `systemctl --user status` in a login session for the service user; check your distribution's systemd user-session support. |
 | `service-disabled` or `service-stopped` | Read the log and `systemctl --user status t3code.service`, then use the repair command printed by T3 Code.                     |
-| `restart-pending`                       | A newer version is installed but the service still runs the previous one. Run `t3 service restart`.                            |
+| `restart-pending`                       | A newer version is installed but the service still runs the previous one. Run `pulse service restart`.                         |
 
 On macOS, check **System Settings → General → Login Items** if the service no
 longer starts at login. If agent work cannot access Desktop, Documents, or

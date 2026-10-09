@@ -227,6 +227,30 @@ const withPackagedWslHarness = <A, E, R>(
   }).pipe(Effect.scoped, Effect.provide(NodeServices.layer));
 
 describe("DesktopBackendConfiguration", () => {
+  it.effect(
+    "keeps the native hub running without bundled execution, including WSL-only settings",
+    () =>
+      withHarness(
+        Effect.gen(function* () {
+          const settings = yield* DesktopAppSettings.DesktopAppSettings;
+          const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
+          yield* settings.setLocalEnvironmentEnabled(false);
+          yield* settings.setWslBackendEnabled(true);
+          yield* settings.setWslOnly(true);
+          const disabled = yield* configuration.resolvePrimary;
+          assert.equal(disabled.executablePath, process.execPath);
+          assert.include(disabled.args, "serve");
+          assert.include(disabled.args, "--no-environment");
+          assert.isTrue(Option.isNone(disabled.preflightFailure));
+          yield* settings.setWslOnly(false);
+          yield* settings.setLocalEnvironmentEnabled(true);
+          const enabled = yield* configuration.resolvePrimary;
+          assert.include(enabled.args, "serve");
+          assert.notInclude(enabled.args, "--no-environment");
+        }),
+      ),
+  );
+
   it.effect("resolvePrimary produces a stable scoped bootstrap token", () =>
     withHarness(
       Effect.gen(function* () {
@@ -476,6 +500,7 @@ describe("DesktopBackendConfiguration", () => {
             "env",
             `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${resolvedPath}`,
             `${linuxAppRoot}/pulse`,
+            "serve",
             "--bootstrap-fd",
             "0",
           ]);
@@ -727,6 +752,7 @@ describe("DesktopBackendConfiguration", () => {
           "PATH=/home/test user's/.nvm/versions/node/v22.0.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/test user/bin:/opt/test's tools/bin:/usr/bin:/bin",
           nodePath,
           linuxEntryPath,
+          "serve",
           "--bootstrap-fd",
           "0",
           "--dev-url",

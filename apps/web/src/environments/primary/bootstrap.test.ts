@@ -13,6 +13,7 @@ import {
   resetPrimaryEnvironmentDescriptorForTests,
   writePrimaryEnvironmentDescriptor,
 } from ".";
+import { updateHubCatalog } from "../../hub";
 import { installEnvironmentHttpTest } from "../../../test/environmentHttpTest";
 
 const BASE_ENVIRONMENT = {
@@ -67,6 +68,7 @@ describe("environmentBootstrap", () => {
     await disposeHttpTest?.();
     disposeHttpTest = undefined;
     resetPrimaryEnvironmentDescriptorForTests();
+    updateHubCatalog({ environments: [] });
     vi.unstubAllEnvs();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -270,6 +272,27 @@ describe("environmentBootstrap", () => {
     expect(getPrimaryKnownEnvironment()).toBeNull();
     expect(() => resolvePrimaryEnvironmentHttpUrl("/api/auth/session")).toThrow(
       "The local environment is disabled.",
+    );
+  });
+
+  it("uses a hub environment when desktop bundled execution is disabled", () => {
+    vi.stubGlobal("window", {
+      location: new URL("https://pulse.example.test/"),
+      desktopBridge: {
+        getLocalEnvironmentEnabled: () => false,
+        getLocalEnvironmentBootstraps: () => [],
+      },
+    });
+    updateHubCatalog({
+      environments: [
+        { environmentId: EnvironmentId.make("headless"), label: "Headless", connected: true },
+      ],
+    });
+    expect(readPrimaryEnvironmentTarget()?.target.httpBaseUrl).toBe(
+      "https://pulse.example.test/hub/environments/headless/",
+    );
+    expect(resolvePrimaryEnvironmentHttpUrl("/api/auth/session")).toBe(
+      "https://pulse.example.test/hub/environments/headless/api/auth/session",
     );
   });
 

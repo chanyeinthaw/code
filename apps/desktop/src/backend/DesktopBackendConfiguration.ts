@@ -547,6 +547,7 @@ const buildObservabilityFragment = (observabilitySettings: BackendObservabilityS
 const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolvePrimary")(
   function* (
     input: SharedBootstrapInput & {
+      readonly localEnvironmentEnabled: boolean;
       readonly resourceMonitorPath: Option.Option<string>;
       readonly cliPath: Option.Option<string>;
     },
@@ -593,6 +594,8 @@ const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolv
       args: [
         ...(environment.isPackaged ? ["--require", environment.compileCachePath] : []),
         environment.backendEntryPath,
+        "serve",
+        ...(input.localEnvironmentEnabled ? [] : ["--no-environment"]),
         "--bootstrap-fd",
         "3",
       ],
@@ -830,6 +833,7 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
       "env",
       `PATH=${launchPath}`,
       ...command,
+      "serve",
       "--bootstrap-fd",
       "0",
       ...devUrlArgs,
@@ -924,7 +928,12 @@ export const make = Effect.gen(function* () {
       Effect.provideService(FileSystem.FileSystem, fileSystem),
       Effect.provideService(DesktopEnvironment.DesktopEnvironment, environment),
     );
-    return yield* resolvePrimaryStartConfig({ ...shared, resourceMonitorPath, cliPath }).pipe(
+    return yield* resolvePrimaryStartConfig({
+      ...shared,
+      resourceMonitorPath,
+      cliPath,
+      localEnvironmentEnabled: (yield* settings.get).localEnvironmentEnabled,
+    }).pipe(
       Effect.provideService(DesktopEnvironment.DesktopEnvironment, environment),
       Effect.provideService(DesktopServerExposure.DesktopServerExposure, serverExposure),
     );
@@ -939,7 +948,10 @@ export const make = Effect.gen(function* () {
   // created once at layer init, but configResolve fires on each restart).
   const describePrimary = Effect.gen(function* () {
     const persistedSettings = yield* settings.get;
-    const wslRequested = persistedSettings.wslOnly && persistedSettings.wslBackendEnabled;
+    const wslRequested =
+      persistedSettings.localEnvironmentEnabled &&
+      persistedSettings.wslOnly &&
+      persistedSettings.wslBackendEnabled;
     // Only honor wsl-only when WSL is actually usable. If the user
     // persisted wsl-only but WSL has since become unavailable (wsl.exe
     // removed, no distro), fall back to the Windows primary instead of

@@ -171,8 +171,8 @@ const bootstrap = Effect.gen(function* () {
   yield* logBootstrapInfo("bootstrap start");
 
   const settings = yield* desktopSettings.get;
-  // The renderer is served from the bundled client (or Vite in development)
-  // rather than through the local backend, so the window can open without one.
+  // Keep the desktop protocol registered for bundled assets and shell integrations.
+  // The main client window loads through the hub listener.
   const electronProtocol = yield* ElectronProtocol.ElectronProtocol;
   yield* electronProtocol.registerDesktopProtocol({
     scheme: ElectronProtocol.getDesktopScheme(environment.isDevelopment),
@@ -189,14 +189,6 @@ const bootstrap = Effect.gen(function* () {
   );
 
   yield* snapShot.initialize;
-
-  if (!settings.localEnvironmentEnabled) {
-    yield* logBootstrapInfo("bootstrap skipping local environment (disabled in settings)");
-    if (!(yield* Ref.get(state.quitting))) {
-      yield* desktopWindow.createMainIfBackendReady;
-    }
-    return;
-  }
 
   const pool = yield* DesktopBackendPool.DesktopBackendPool;
   const primaryBackend = yield* pool.primary;
@@ -248,7 +240,7 @@ const bootstrap = Effect.gen(function* () {
     // WSL" splash immediately so the app feels responsive instead of presenting
     // no window until WSL is ready. (Dual mode opens fast off the Windows
     // primary, so no splash there.)
-    if (settings.wslOnly === true && settings.wslBackendEnabled === true) {
+    if (settings.localEnvironmentEnabled && settings.wslOnly && settings.wslBackendEnabled) {
       yield* desktopWindow.showConnectingSplash;
     }
     yield* primaryBackend.start;

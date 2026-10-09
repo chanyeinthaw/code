@@ -1103,6 +1103,36 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
   });
 
   it.effect(
+    "prefers the public URL flag over PULSE_PUBLIC_URL without changing the bind address",
+    () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "pulse-public-url-" });
+        const resolve = (publicUrl?: URL) =>
+          resolveServerConfig(
+            { ...minimalWebFlags(baseDir), publicUrl: Option.fromUndefinedOr(publicUrl) },
+            Option.none(),
+          ).pipe(
+            Effect.provide(
+              Layer.merge(
+                NetService.layer,
+                ConfigProvider.layer(
+                  ConfigProvider.fromEnv({
+                    env: { PULSE_PUBLIC_URL: "https://env.example.test" },
+                  }),
+                ),
+              ),
+            ),
+          );
+        expect((yield* resolve()).publicUrl?.origin).toBe("https://env.example.test");
+        const config = yield* resolve(new URL("https://flag.example.test"));
+        expect(config.publicUrl?.origin).toBe("https://flag.example.test");
+        expect(config.host).toBeUndefined();
+        expect(config.port).toBe(3773);
+      }),
+  );
+
+  it.effect(
     "resolves each signal's endpoint through T3CODE_OTLP_*_URL, an OTEL endpoint, the bootstrap envelope, and persisted Settings, in that order",
     () =>
       Effect.gen(function* () {

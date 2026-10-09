@@ -57,9 +57,12 @@ const runtimePaths = (baseDir: string, version: string) => {
   };
 };
 
-const runtimeSpawnArguments = (paths: ReturnType<typeof runtimePaths>) => ({
+const runtimeSpawnArguments = (
+  paths: ReturnType<typeof runtimePaths>,
+  runtimeArgs: ReadonlyArray<string> = ["serve"],
+) => ({
   command: paths.entryPath,
-  args: ["serve"],
+  args: runtimeArgs,
 });
 
 /** SQLite persists across the main file plus its WAL and shared-memory sidecars. */
@@ -425,7 +428,7 @@ export class Launcher {
       childVersion: version,
       ...(update === undefined ? {} : { update }),
     };
-    const spawnArguments = runtimeSpawnArguments(paths);
+    const spawnArguments = runtimeSpawnArguments(paths, this.#state.runtimeArgs);
     const child = NodeChildProcess.spawn(spawnArguments.command, spawnArguments.args, {
       env: { ...process.env, [SERVICE_LAUNCHER_CONTEXT_ENV]: JSON.stringify(context) },
       stdio: ["inherit", "inherit", "inherit", "ipc"],

@@ -3,7 +3,7 @@ import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Terminal from "effect/Terminal";
-import { Command, Flag, GlobalFlag, Prompt } from "effect/cli";
+import { Argument, Command, Flag, GlobalFlag, Prompt } from "effect/cli";
 import { FetchHttpClient } from "effect/http";
 
 import packageJson from "../../package.json" with { type: "json" };
@@ -12,6 +12,8 @@ import { compareExactServiceVersions } from "../cloud/serviceProtocol.ts";
 import type * as ServerConfig from "../config.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import { projectLocationFlags, resolveCliAuthConfig } from "./config.ts";
+import { serveCommand } from "./server.ts";
+import { hubCommand, environmentCommand, clientCommand } from "./hub.ts";
 
 export const layer = (config: ServerConfig.ServerConfig["Service"]) =>
   BootService.layer({
@@ -37,12 +39,13 @@ export type ServiceReconcileResult =
 
 /** Install, update, or repair the service using the CLI version running this command. */
 export const reconcileService = Effect.fn("cli.service.reconcile")(function* (options?: {
+  readonly runtimeArgs?: ReadonlyArray<string>;
   readonly allowDowngrade?: boolean;
   readonly start?: boolean;
 }) {
   const service = yield* BootService.BootService;
   const status = yield* service.status;
-  if (status.installed && status.current) {
+  if (status.installed && status.current && options?.runtimeArgs === undefined) {
     return { changed: false, status } satisfies ServiceReconcileResult;
   }
   if (
@@ -101,9 +104,9 @@ export function formatServiceStatus(
   ].join("\n");
 }
 
-const runServiceCommand = Effect.fn("cli.service.run")(function* <A, E>(
+const runServiceCommand = Effect.fn("cli.service.run")(function* <A, E, R>(
   flags: { readonly baseDir: Parameters<typeof resolveCliAuthConfig>[0]["baseDir"] },
-  run: Effect.Effect<A, E, BootService.BootService>,
+  run: Effect.Effect<A, E, BootService.BootService | R>,
 ) {
   const logLevel = yield* GlobalFlag.LogLevel;
   const config = yield* resolveCliAuthConfig(flags, logLevel);
@@ -118,17 +121,35 @@ const serviceReconcileFlags = {
   ),
 };
 
-const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pipe(
+const validateRuntimeCommand = Command.make("runtime").pipe(
+  Command.withSubcommands([
+    serveCommand.pipe(Command.withHandler(() => Effect.void)),
+    hubCommand.pipe(Command.withHandler(() => Effect.void)),
+    environmentCommand.pipe(Command.withHandler(() => Effect.void)),
+    clientCommand.pipe(Command.withHandler(() => Effect.void)),
+  ]),
+);
+
+const serviceInstallCommand = Command.make("install", {
+  ...serviceReconcileFlags,
+  runtimeArgs: Argument.variadic(Argument.String("runtime-command")),
+}).pipe(
   Command.withDescription("Install Pulse as a background service for this user."),
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
       Effect.gen(function* () {
-        const result = yield* reconcileService({ allowDowngrade: flags.allowDowngrade });
-        if (!result.changed) {
-          yield* Console.log(
-            `Pulse service is already installed with pulse@${packageJson.version}.`,
+        if (flags.runtimeArgs.length > 0) {
+          yield* Command.runWith(validateRuntimeCommand, { version: packageJson.version })(
+            flags.runtimeArgs,
           );
+        }
+        const result = yield* reconcileService({
+          allowDowngrade: flags.allowDowngrade,
+          ...(flags.runtimeArgs.length > 0 ? { runtimeArgs: flags.runtimeArgs } : {}),
+        });
+        if (!result.changed) {
+          yield* Console.log(`Pulse service is already installed with pulse@${packageJson.version}.`);
           return;
         }
         yield* Console.log(

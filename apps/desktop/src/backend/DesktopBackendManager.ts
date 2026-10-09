@@ -67,7 +67,7 @@ const DEFAULT_BACKEND_READINESS_INTERVAL = Duration.millis(100);
 const DEFAULT_BACKEND_READINESS_REQUEST_TIMEOUT = Duration.seconds(1);
 const DEFAULT_BACKEND_TERMINATE_GRACE = Duration.seconds(2);
 const DEFAULT_BACKEND_OUTPUT_DRAIN_TIMEOUT = Duration.seconds(5);
-const BACKEND_READINESS_PATH = "/.well-known/t3/environment";
+const BACKEND_READINESS_PATH = "/hub/connection";
 const { logWarning: logBackendProcessWarning } =
   DesktopObservability.makeComponentLogger("desktop-backend-process");
 
@@ -254,7 +254,7 @@ export interface DesktopBackendSnapshot {
 // Opaque identifier for one backend process inside the pool. Today only
 // PRIMARY_INSTANCE_ID is registered. Follow-up commits add WSL distros
 // under ids derived from the distro name (e.g. "wsl:ubuntu"). Eventually
-// these map 1:1 with environment ids on the frontend; keeping them
+// these map 1:1 with environment ids on the client; keeping them
 // desktop-local for now avoids leaking the contracts dependency.
 export type BackendInstanceId = string & Brand.Brand<"BackendInstanceId">;
 export const BackendInstanceId = Brand.nominal<BackendInstanceId>();

@@ -532,6 +532,7 @@ export class BootService extends Context.Service<
   BootService,
   {
     readonly install: (options?: {
+      readonly runtimeArgs?: ReadonlyArray<string>;
       readonly allowDowngrade?: boolean;
       /**
        * Write the unit for this version but leave the service on whatever it
@@ -751,6 +752,7 @@ export const make = Effect.fn("cloud.boot_service.make")(function* (input: {
   });
 
   const install = Effect.fn("cloud.boot_service.install")(function* (options?: {
+    readonly runtimeArgs?: ReadonlyArray<string>;
     readonly allowDowngrade?: boolean;
     readonly start?: boolean;
   }) {
@@ -833,9 +835,11 @@ export const make = Effect.fn("cloud.boot_service.make")(function* (input: {
     }
 
     yield* Effect.gen(function* () {
+      let runtimeArgs = options?.runtimeArgs;
       if (installed) {
         const previousStateText = yield* fs.readFileString(statePath).pipe(Effect.option);
         if (Option.isSome(previousStateText)) {
+          runtimeArgs ??= parseServiceState(previousStateText.value)?.runtimeArgs;
           if (serviceStateHasPendingUpdate(previousStateText.value)) {
             return yield* new BootServiceUpdatePendingError();
           }
@@ -871,6 +875,7 @@ export const make = Effect.fn("cloud.boot_service.make")(function* (input: {
           {
             protocol: SERVICE_LAUNCHER_PROTOCOL,
             activeVersion: input.cliVersion,
+            ...(runtimeArgs === undefined ? {} : { runtimeArgs }),
           } satisfies ServiceState,
           null,
           2,

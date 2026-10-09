@@ -5,13 +5,15 @@ import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { useCallback } from "react";
 
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
+import { readPrimaryEnvironmentTarget } from "./target";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { fetchSessionState } from "./auth";
 
 const primarySessionStateAtom = Atom.make(
   Effect.suspend(() =>
-    isLocalEnvironmentDisabled() ? Effect.succeed(null) : Effect.promise(fetchSessionState),
+    readPrimaryEnvironmentTarget() === null
+      ? Effect.succeed(null)
+      : Effect.promise(fetchSessionState),
   ),
 ).pipe(
   Atom.swr({ staleTime: 5_000, revalidateOnMount: true }),
