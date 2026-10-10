@@ -35,6 +35,7 @@ type AgentStartHook = (
 
 export async function loadMcpBridge(
   options: {
+    readonly additionalInstructions?: string;
     readonly modern?: boolean;
     readonly result?: unknown;
     readonly toolSearchAvailable?: boolean;
@@ -85,8 +86,12 @@ export async function loadMcpBridge(
         T3_MCP_BEARER_TOKEN: "fixture-token",
         T3_PI_MCP_EXTENSION_PATH: "/fixture/pi-t3-extension.ts",
         T3_PI_RUNTIME_MODE: options.runtimeMode,
+        ...(options.additionalInstructions === undefined
+          ? {}
+          : { T3_PI_AGENT_INSTRUCTIONS_FILE: "/fixture/instructions" }),
       },
     },
+    NodeFSP: { readFile: async () => options.additionalInstructions ?? "" },
     AbortSignal,
     NodePath,
     Type: { Unsafe: (schema: unknown) => schema },

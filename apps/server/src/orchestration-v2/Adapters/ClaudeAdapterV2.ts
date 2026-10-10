@@ -115,7 +115,10 @@ import {
 } from "../../provider/claudeUsageLimits.ts";
 import type { ManagedServerProvider } from "@t3tools/provider-core/server/snapshot";
 import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@t3tools/provider-core/server/orchestrationInstructions";
+import {
+  appendAgentInstructions,
+  T3_CODE_ORCHESTRATION_INSTRUCTIONS,
+} from "@t3tools/provider-core/server/orchestrationInstructions";
 import { buildRuntimeInstructions } from "@t3tools/provider-core/server/runtimeInstructions";
 import {
   mcpToolPresentation,
@@ -894,6 +897,7 @@ export const layerQueryRunner: Layer.Layer<
 );
 
 export function makeClaudeQueryOptions(input: {
+  readonly additionalInstructions?: string;
   readonly modelSelection: ModelSelection;
   readonly nativeThreadId: string;
   readonly resume: boolean;
@@ -1001,8 +1005,11 @@ export function makeClaudeQueryOptions(input: {
       type: "preset" as const,
       preset: "claude_code" as const,
       append:
-        buildRuntimeInstructions({ harness: "Claude Code" }) +
-        (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS),
+        appendAgentInstructions(
+          buildRuntimeInstructions({ harness: "Claude Code" }) +
+            (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS),
+          input.additionalInstructions,
+        ) ?? "",
     },
     ...(Object.keys(extraArgs).length === 0 ? {} : { extraArgs }),
   };
@@ -7560,7 +7567,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               ? {}
               : { allowedTools: queryPolicy.allowedTools }),
           });
-          const queryPolicyKey = claudeEffectiveQueryPolicyKey(queryPolicy, mcpOverrides);
+          const queryPolicyKey = `${claudeEffectiveQueryPolicyKey(queryPolicy, mcpOverrides)}:agent:${turnInput.additionalInstructions ?? ""}`;
           const compiledSelection = compileClaudeModelSelection(turnInput.modelSelection);
           const resumeSessionAt = yield* getNativeConversationHeadId(turnInput.providerThread);
           const existing = yield* Ref.get(queryContext);
@@ -7630,6 +7637,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           const shouldResume =
             resumeSessionAt !== undefined || openedWithResume || hasPersistedProviderTurn;
           const queryOptions = makeClaudeQueryOptions({
+            ...(turnInput.additionalInstructions === undefined
+              ? {}
+              : { additionalInstructions: turnInput.additionalInstructions }),
             modelSelection: turnInput.modelSelection,
             nativeThreadId,
             resume: shouldResume,

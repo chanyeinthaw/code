@@ -115,10 +115,11 @@ function SettingsContentLayout() {
   const navigateToMainApp = useNavigateToMainApp();
   useEscapeToGoBack(navigateToMainApp);
   const { search, environment } = useSettingsScope();
-  const contentScopeKey =
-    location.pathname === "/settings/diagnostics" || location.pathname === "/settings/providers"
+  const contentScopeKey = SETTINGS_DEVICE_ONLY_PATHS.has(location.pathname)
+    ? location.pathname
+    : location.pathname === "/settings/diagnostics" || location.pathname === "/settings/providers"
       ? environment?.environmentId
-      : JSON.stringify(search);
+      : JSON.stringify(validateSettingsRouteSearch({ ...search }));
   const [restoreSignal, setRestoreSignal] = useState(0);
 
   return (

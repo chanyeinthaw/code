@@ -1,3 +1,5 @@
+import * as Layer from "effect/Layer";
+import * as OneChat from "../oneChat/OneChat.ts";
 import * as HubAuth from "../hub/HubAuth.ts";
 import * as Crypto from "effect/Crypto";
 import * as FileSystem from "effect/FileSystem";
@@ -33,10 +35,12 @@ export const runHubCommand = Effect.fn("HubCli.run")(
     readonly config: ServerConfig.ServerConfig["Service"];
   }) {
     const hub = yield* HubServer.HubServer;
+    const oneChat = yield* OneChat.OneChat;
     const { port } = yield* hub.listen({
       host: options.host,
       port: options.port,
       serveWeb: false,
+      oneChat,
       ...(options.config.publicUrl ? { publicOrigin: options.config.publicUrl.origin } : {}),
     });
     const auth = yield* HubAuth.HubAuth;
@@ -54,7 +58,15 @@ export const runHubCommand = Effect.fn("HubCli.run")(
     return yield* Effect.never;
   },
   (effect, options) =>
-    effect.pipe(Effect.provide(HubServer.layer), Effect.provide(HubAuth.layer(options.config))),
+    effect.pipe(
+      Effect.provide(
+        HubServer.layer.pipe(
+          Layer.provideMerge(
+            Layer.mergeAll(OneChat.layer(options.config), HubAuth.layer(options.config)),
+          ),
+        ),
+      ),
+    ),
 );
 
 export const hubCommand = Command.make("hub", {

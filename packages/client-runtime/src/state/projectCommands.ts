@@ -116,6 +116,12 @@ export function createProjectEnvironmentAtoms<R, E>(
             ),
         ),
     }),
+    ensureOneChatWorkspace: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:one-chat:ensure-workspace",
+      tag: WS_METHODS.oneChatEnsureWorkspace,
+      scheduler: projectScheduler,
+      concurrency: { mode: "serial", key: ({ environmentId }) => environmentId },
+    }),
     searchEntries: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:projects:search-entries",
       tag: WS_METHODS.projectsSearchEntries,

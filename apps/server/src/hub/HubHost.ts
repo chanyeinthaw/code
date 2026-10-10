@@ -1,6 +1,7 @@
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import { resolveServerEnvironmentLabel } from "../environment/ServerEnvironmentLabel.ts";
 import * as ProcessRunner from "../processRunner.ts";
+import * as OneChat from "../oneChat/OneChat.ts";
 import * as HubAuth from "./HubAuth.ts";
 import * as Crypto from "effect/Crypto";
 import { HubSwitchInput, type HubEnvironmentMoveInput } from "@t3tools/contracts";
@@ -77,6 +78,7 @@ const make = Effect.gen(function* () {
       options: HostMode = { mode: "serve", environment: true },
     ) {
       const auth = yield* HubAuth.HubAuth;
+      const oneChat = yield* OneChat.OneChat;
       const ingressSecret = Buffer.from(yield* crypto.randomBytes(32)).toString("base64url");
       const localPort = options.mode === "serve" ? yield* net.reserveLoopbackPort() : undefined;
       const ownedEnvironment =
@@ -130,6 +132,7 @@ const make = Effect.gen(function* () {
       const listener = yield* hub.listen({
         host: config.host ?? "127.0.0.1",
         port: config.port,
+        oneChat,
         ...(config.publicUrl ? { publicOrigin: config.publicUrl.origin } : {}),
         ...(localPort === undefined ? {} : { localPort }),
         ...(config.devUrl ? { devUrl: config.devUrl.toString() } : {}),
@@ -297,7 +300,7 @@ const make = Effect.gen(function* () {
             localPort,
             descriptor,
             ingressSecret,
-            enrollOwned: () =>
+              enrollOwned: () =>
               auth.enrollLocal(runningDescriptor.environmentId, runningDescriptor.label).pipe(
                 Effect.map((session) => session.token),
                 Effect.mapError((cause) => new HubServer.HubTransportError({ cause })),
@@ -383,7 +386,7 @@ const make = Effect.gen(function* () {
         Effect.provideService(FileSystem.FileSystem, fs),
         Effect.provideService(HttpClient.HttpClient, client),
         Effect.provide(
-          HubAuth.layer(config).pipe(
+          Layer.mergeAll(HubAuth.layer(config), OneChat.layer(config)).pipe(
             Layer.provide(
               Layer.mergeAll(
                 Layer.succeed(FileSystem.FileSystem, fs),

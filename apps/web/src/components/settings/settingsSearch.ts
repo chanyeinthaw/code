@@ -26,6 +26,7 @@ export type SettingsPath =
   | "/settings/storage"
   | "/settings/connections"
   | "/settings/hub-connections"
+  | "/settings/agents"
   | "/settings/archived";
 
 /**
@@ -105,6 +106,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/storage": "Storage",
   "/settings/connections": "Connections",
   "/settings/hub-connections": "Hub",
+  "/settings/agents": "Agents",
   "/settings/archived": "Archive",
 };
 
@@ -1002,6 +1004,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/storage": "project-defaults",
   "/settings/connections": "connections",
   "/settings/hub-connections": "connections",
+  "/settings/agents": "connections",
   "/settings/scheduled-tasks": null,
   "/settings/archived": "project-defaults",
 };
