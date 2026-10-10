@@ -1,4 +1,5 @@
 import type { HubEnvironmentMoveInput } from "@t3tools/contracts";
+import { createOrchestrationGateway } from "./OrchestrationGateway.ts";
 import { HUB_INGRESS_HEADER, signHubIngress } from "./ingress.ts";
 // @effect-diagnostics nodeBuiltinImport:off -- Node streams and upgrades implement the raw multiplexed transport.
 // @effect-diagnostics globalTimers:off -- WebSocket heartbeat and local request deadlines belong to this transport scope.
@@ -28,10 +29,13 @@ export const connectEnvironment = Effect.fn("EnvironmentTunnel.connect")(functio
   readonly credential?: string | undefined;
   readonly ingressSecret?: string;
   readonly onRegistered?: () => void;
+  readonly onReady?: (activate: () => void) => void;
+  readonly deferOrchestration?: boolean;
   readonly onMove?: (
     input: HubEnvironmentMoveInput,
     acknowledge: () => Promise<void>,
   ) => Promise<void>;
+  readonly orchestrationPort?: number;
 }) {
   const hub = new URL(options.hubUrl);
   hub.protocol = hub.protocol === "https:" ? "wss:" : "ws:";
@@ -45,7 +49,19 @@ export const connectEnvironment = Effect.fn("EnvironmentTunnel.connect")(functio
     handshakeTimeout: 10_000,
     ...(options.credential ? { headers: { authorization: `Bearer ${options.credential}` } } : {}),
   });
+  let registered = false;
   let moving = false;
+  const gateway =
+    options.orchestrationPort !== undefined && options.ingressSecret !== undefined
+      ? createOrchestrationGateway({
+          tunnel,
+          secret: options.ingressSecret,
+          ready: () => registered,
+        })
+      : undefined;
+  if (gateway) {
+    yield* Effect.addFinalizer(() => Effect.sync(gateway.close));
+  }
   const requests = new Map<string, NodeHttp.ClientRequest>();
   const sockets = new Map<string, WebSocket>();
   const waiting = new Map<string, Array<{ data: string; binary: boolean }>>();
@@ -61,6 +77,12 @@ export const connectEnvironment = Effect.fn("EnvironmentTunnel.connect")(functio
   yield* Effect.tryPromise({
     try: () =>
       new Promise<void>((_resolve, reject) => {
+        const activate = () => {
+          if (!gateway || gateway.server.listening) return;
+          gateway.server.once("error", reject);
+          gateway.server.listen(options.orchestrationPort, "127.0.0.1");
+        };
+        if (!options.deferOrchestration) activate();
         tunnel.on("open", () =>
           sendFrame(tunnel, {
             type: "register",
@@ -78,9 +100,12 @@ export const connectEnvironment = Effect.fn("EnvironmentTunnel.connect")(functio
             return;
           }
           const frame = decoded.value;
+          if (gateway?.handle(frame)) return;
           switch (frame.type) {
             case "registered":
+              registered = true;
               options.onRegistered?.();
+              options.onReady?.(activate);
               break;
             case "environment-move": {
               if (!options.onMove || moving) {

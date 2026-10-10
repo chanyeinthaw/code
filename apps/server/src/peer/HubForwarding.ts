@@ -1,0 +1,236 @@
+import {
+  type EnvironmentId,
+  OrchestratorMcpFailure,
+  type OrchestratorMcpEnvironmentListResult,
+  OrchestratorMcpThreadInterruptInput,
+  OrchestratorMcpThreadInterruptResult,
+  OrchestratorMcpThreadReadInput,
+  OrchestratorMcpThreadReadResult,
+  OrchestratorMcpThreadWaitInput,
+  OrchestratorMcpThreadWaitResult,
+} from "@t3tools/contracts";
+import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
+import * as Effect from "effect/Effect";
+import * as Hex from "effect/encoding/Hex";
+import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
+import type * as Tool from "effect/ai/Tool";
+
+import * as McpInvocationContext from "../mcp/McpInvocationContext.ts";
+import { loadCaller, unavailable } from "../mcp/threadAccess.ts";
+import * as ThreadManagement from "../orchestration-v2/ThreadManagementService.ts";
+import * as HubEnvironments from "./HubEnvironments.ts";
+import * as HubMcpClient from "./HubMcpClient.ts";
+
+/**
+ * The hub bounds each HTTP request to 60 seconds. Long waits use shorter
+ * pieces so task tracking can continue across that deadline.
+ */
+export const FORWARDED_WAIT_CHUNK_MS = 50_000;
+const DEFAULT_WAIT_TIMEOUT_MS = 10 * 60 * 1_000;
+const MAX_WAIT_TIMEOUT_MS = 60 * 60 * 1_000;
+
+type Scope = McpInvocationContext.McpInvocationScope;
+
+/**
+ * Runs T3 MCP tools in a hub environment for an agent here. The tool's own
+ * declaration checks the agent here first; the hub environment then holds
+ * the call to the destination's limits, narrowed to the agent's modes, which every
+ * forwarded call carries.
+ */
+export class HubForwarding extends Context.Service<
+  HubForwarding,
+  {
+    /** Runs `tool` in the hub environment `environmentId` with `params`. */
+    readonly call: <T extends Tool.Any>(
+      scope: Scope,
+      tool: T,
+      environmentId: EnvironmentId,
+      params: Tool.Parameters<T>,
+    ) => Effect.Effect<Tool.Success<T>, OrchestratorMcpFailure>;
+    /**
+     * Runs `here` unless `params.environmentId` names a hub environment, in
+     * which case `tool` runs there with the same parameters.
+     */
+    readonly route: <T extends Tool.Any, A, E, R>(
+      scope: Scope,
+      tool: T,
+      params: Tool.Parameters<T> & { readonly environmentId?: EnvironmentId | undefined },
+      here: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A | Tool.Success<T>, E | OrchestratorMcpFailure, R>;
+    /** `t3_thread_read` there. */
+    readonly readThread: (
+      scope: Scope,
+      environmentId: EnvironmentId,
+      input: OrchestratorMcpThreadReadInput,
+    ) => Effect.Effect<OrchestratorMcpThreadReadResult, OrchestratorMcpFailure>;
+    /** `t3_thread_interrupt` there. */
+    readonly interruptThread: (
+      scope: Scope,
+      environmentId: EnvironmentId,
+      input: OrchestratorMcpThreadInterruptInput,
+    ) => Effect.Effect<OrchestratorMcpThreadInterruptResult, OrchestratorMcpFailure>;
+    /** `t3_thread_wait` there, in pieces short enough to survive any route. */
+    readonly waitForThread: (
+      scope: Scope,
+      environmentId: EnvironmentId,
+      input: OrchestratorMcpThreadWaitInput,
+    ) => Effect.Effect<OrchestratorMcpThreadWaitResult, OrchestratorMcpFailure>;
+    /** The hub environment catalog as an agent sees it. */
+    readonly links: (
+      scope: Scope,
+    ) => Effect.Effect<OrchestratorMcpEnvironmentListResult, OrchestratorMcpFailure>;
+  }
+>()("t3/peer/HubForwarding") {}
+
+/** The hub environment a call names, or nothing when it names this one. */
+export const remoteTarget = (scope: Scope, environmentId: EnvironmentId | undefined) =>
+  environmentId === scope.environmentId ? undefined : environmentId;
+
+const make = Effect.gen(function* () {
+  const peers = yield* HubMcpClient.HubMcpClient;
+  const links = yield* HubEnvironments.HubEnvironments;
+  const crypto = yield* Crypto.Crypto;
+  const threads = yield* ThreadManagement.ThreadManagementService;
+
+  /**
+   * The caller's own limits here, which travel with every call it forwards.
+   */
+  const callerLimits = (scope: Scope) =>
+    loadCaller().pipe(
+      Effect.map((caller) => caller.limits),
+      Effect.provideService(McpInvocationContext.McpInvocationContext, scope),
+      Effect.provideService(ThreadManagement.ThreadManagementService, threads),
+    );
+
+  /**
+   * Every caller here reaches the peer as the one link session, so a retry
+   * key is scoped to its caller before it leaves: two agents here reusing a
+   * key never collide there, and one agent retrying gets its first result.
+   */
+  const scopedRequestId = (namespace: string, clientRequestId: string) =>
+    crypto.digest("SHA-256", new TextEncoder().encode(`${namespace}\n${clientRequestId}`)).pipe(
+      Effect.map((digest) => `fwd:${Hex.encode(digest)}`),
+      Effect.orDie,
+    );
+
+  /** Tool and contract schemas are plain data: they encode and decode without services. */
+  const forward = <A>(
+    scope: Scope,
+    toolName: string,
+    parameters: Schema.Top,
+    success: Schema.Top,
+    environmentId: EnvironmentId,
+    params: unknown,
+  ) =>
+    Effect.gen(function* () {
+      const limits = yield* callerLimits(scope);
+      const encoded = (yield* Schema.encodeUnknownEffect(parameters as Schema.Encoder<unknown>)(
+        params,
+      ).pipe(Effect.mapError(unavailable))) as Record<string, unknown>;
+      const { environmentId: _target, ...args } = encoded;
+      // A pending upload lives here, so it cannot go with the call.
+      if (Array.isArray(args.attachments) && args.attachments.length > 0) {
+        return yield* new OrchestratorMcpFailure({
+          code: "invalid_request",
+          message: "A launch in a hub environment cannot carry attachments yet.",
+        });
+      }
+      if (typeof args.clientRequestId === "string") {
+        args.clientRequestId = yield* scopedRequestId(scope.requestNamespace, args.clientRequestId);
+      }
+      return yield* peers.call({
+        environmentId,
+        tool: toolName,
+        arguments: args,
+        limits,
+        success: success as Schema.Decoder<A>,
+      });
+    });
+
+  const call: HubForwarding["Service"]["call"] = (scope, tool, environmentId, params) =>
+    forward(scope, tool.name, tool.parametersSchema, tool.successSchema, environmentId, params);
+
+  const route: HubForwarding["Service"]["route"] = (scope, tool, params, here) => {
+    const target = remoteTarget(scope, params.environmentId);
+    return target === undefined ? here : call(scope, tool, target, params);
+  };
+
+  const readThread: HubForwarding["Service"]["readThread"] = (scope, environmentId, input) =>
+    forward<OrchestratorMcpThreadReadResult>(
+      scope,
+      "t3_thread_read",
+      OrchestratorMcpThreadReadInput,
+      OrchestratorMcpThreadReadResult,
+      environmentId,
+      input,
+    );
+
+  const interruptThread: HubForwarding["Service"]["interruptThread"] = (
+    scope,
+    environmentId,
+    input,
+  ) =>
+    forward<OrchestratorMcpThreadInterruptResult>(
+      scope,
+      "t3_thread_interrupt",
+      OrchestratorMcpThreadInterruptInput,
+      OrchestratorMcpThreadInterruptResult,
+      environmentId,
+      input,
+    );
+
+  const waitForThread: HubForwarding["Service"]["waitForThread"] = (scope, environmentId, input) =>
+    Effect.gen(function* () {
+      let remaining = Math.min(
+        MAX_WAIT_TIMEOUT_MS,
+        Math.max(1, input.timeoutMs ?? DEFAULT_WAIT_TIMEOUT_MS),
+      );
+      let runId = input.runId;
+      while (true) {
+        const chunk = Math.min(remaining, FORWARDED_WAIT_CHUNK_MS);
+        const result = yield* forward<OrchestratorMcpThreadWaitResult>(
+          scope,
+          "t3_thread_wait",
+          OrchestratorMcpThreadWaitInput,
+          OrchestratorMcpThreadWaitResult,
+          environmentId,
+          { threadId: input.threadId, ...(runId === undefined ? {} : { runId }), timeoutMs: chunk },
+        );
+        remaining -= chunk;
+        if (!result.timedOut || remaining <= 0) return result;
+        // Later pieces wait for the run the first one picked, not a newer one.
+        runId = result.runId ?? undefined;
+      }
+    });
+
+  const listLinks: HubForwarding["Service"]["links"] = (scope) =>
+    links.list.pipe(
+      Effect.mapError(
+        (error) =>
+          new OrchestratorMcpFailure({ code: "orchestration_error", message: error.message }),
+      ),
+      Effect.map((listed) => ({
+        environmentId: scope.environmentId,
+        environments: listed.map((link) => ({
+          environmentId: link.environmentId,
+          label: link.label,
+          status: link.status,
+          access: link.access,
+          lastError: link.lastError,
+        })),
+      })),
+    );
+
+  return HubForwarding.of({
+    call,
+    route,
+    readThread,
+    interruptThread,
+    waitForThread,
+    links: listLinks,
+  });
+});
+
+export const layer = Layer.effect(HubForwarding, make);

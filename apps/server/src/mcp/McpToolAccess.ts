@@ -1,4 +1,5 @@
 import {
+  type OrchestrationV2LinkOrigin,
   OrchestratorMcpFailure,
   type ProviderInteractionMode,
   type RuntimeMode,
@@ -15,8 +16,9 @@ import {
   DispatchModeLimit,
   type DispatchModeRefusal,
 } from "../orchestration-v2/DispatchModeLimit.ts";
+import { callerLinkOrigin } from "./linkOrigin.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
-import { resolveInteractionMode, resolveRuntimeMode } from "./OrchestratorMcpService.ts";
+import { resolveInteractionMode, resolveRuntimeMode } from "./delegatedTaskModes.ts";
 import {
   assertFullAccess,
   assertLiveCaller,
@@ -153,7 +155,10 @@ export const actsAsCaller = <P, A, E, R>(handle: (params: P) => Effect.Effect<A,
     ),
   );
 
-/** Changes something that belongs to no thread, such as a pending upload or a scheduled task. */
+/**
+ * Changes something that belongs to no thread, such as a pending upload or a
+ * scheduled task. The caller's execution modes still apply.
+ */
 export const writes = <P, A, E, R>(handle: (params: P) => Effect.Effect<A, E, R>) =>
   declare((params: P) => orchestratingCaller.pipe(Effect.flatMap(() => handle(params))));
 
@@ -164,13 +169,16 @@ export const writes = <P, A, E, R>(handle: (params: P) => Effect.Effect<A, E, R>
  * does not exist is the handler's to report.
  */
 export const writesThreads = <P, A, E, R>(
-  threads: (params: P) => ReadonlyArray<ThreadId | undefined>,
+  threads: (
+    params: P,
+    scope: McpInvocationContext.McpInvocationScope,
+  ) => ReadonlyArray<ThreadId | undefined>,
   handle: (params: P) => Effect.Effect<A, E, R>,
 ) =>
   declare((params: P) =>
     Effect.gen(function* () {
       const caller = yield* writingCaller;
-      for (const threadId of threads(params)) {
+      for (const threadId of threads(params, caller.scope)) {
         if (threadId === undefined || threadId === caller.scope.thread?.threadId) continue;
         const target = yield* caller.threads
           .getThreadShell(threadId)
@@ -206,13 +214,18 @@ const escalationDenied = (refusal: DispatchModeRefusal) =>
     message: `Thread ${refusal.threadId} now runs in ${refusal.runtimeMode}/${refusal.interactionMode} mode, above this caller's. Its user changed it while this call ran.`,
   });
 
-/** The modes a started thread runs with: those requested, else the caller's own. */
+/** How a thread starts: the modes requested, else the caller's own, and the link it is for. */
 export interface StartedModes {
   readonly runtimeMode: RuntimeMode;
   readonly interactionMode: ProviderInteractionMode;
+  /** The linked environment the caller acts for. The thread must carry it. */
+  readonly linkOrigin: OrchestrationV2LinkOrigin | undefined;
 }
 
-/** Starts threads with the modes `modes` requests, which may not be broader than the caller's. */
+/**
+ * Starts threads with the modes `modes` requests, which may not be broader
+ * than the caller's. Remote provenance follows threads the caller starts.
+ */
 export const startsThreads = <P, A, E, R>(
   modes: (params: P) => {
     readonly runtimeMode?: RuntimeMode | undefined;
@@ -222,7 +235,8 @@ export const startsThreads = <P, A, E, R>(
 ) =>
   declare((params: P) =>
     Effect.gen(function* () {
-      const { limits } = yield* writingCaller;
+      const caller = yield* writingCaller;
+      const { limits } = caller;
       const requested = modes(params);
       const started: StartedModes = {
         runtimeMode: yield* resolveRuntimeMode(limits.runtimeMode, requested.runtimeMode),
@@ -230,6 +244,7 @@ export const startsThreads = <P, A, E, R>(
           limits.interactionMode,
           requested.interactionMode,
         ),
+        linkOrigin: callerLinkOrigin(caller),
       };
       return yield* handle(params, started);
     }),

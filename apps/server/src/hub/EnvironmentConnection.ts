@@ -50,6 +50,7 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
     readonly localPort: number;
     readonly descriptor: ExecutionEnvironmentDescriptor;
     readonly ingressSecret: string;
+    readonly orchestrationPort?: number;
     readonly enrollOwned?: () => Effect.Effect<string, HubTransportError>;
     readonly onSelected: (connection: HubConnection, persisted: boolean) => void;
   }) {
@@ -123,7 +124,8 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
       acknowledge: () => Promise<void>,
     ) => Promise<void>;
     const launch = Effect.fn("EnvironmentConnection.launch")(function* (next: HubConnection) {
-      const ready = yield* Deferred.make<void>();
+      const ready = yield* Deferred.make<() => void>();
+      let active = false;
       const fiber = yield* connectEnvironment({
         hubUrl: next.hubUrl ?? options.ownedHub ?? "",
         localPort: options.localPort,
@@ -131,7 +133,20 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
         label: options.descriptor.label,
         credential: credentials[next.hubUrl ?? "local"],
         ingressSecret: options.ingressSecret,
-        onRegistered: () => Effect.runSync(Deferred.succeed(ready, undefined)),
+        ...(options.orchestrationPort === undefined
+          ? {}
+          : { orchestrationPort: options.orchestrationPort }),
+        deferOrchestration: true,
+        onReady: (activate) => {
+          if (active) activate();
+          else
+            Effect.runSync(
+              Deferred.succeed(ready, () => {
+                active = true;
+                activate();
+              }),
+            );
+        },
         // Run outside the source tunnel's fiber so replacing it cannot interrupt the transfer.
         onMove: (input, acknowledge) => handleMove(next, input, acknowledge),
       }).pipe(Effect.scoped, Effect.retry(Schedule.spaced("2 seconds")), Effect.forkIn(scope));
@@ -166,7 +181,7 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
         yield* enroll({ ...input, ...next });
         const pending = yield* launch(next);
         yield* Effect.gen(function* () {
-          yield* Deferred.await(pending.ready).pipe(Effect.timeout("15 seconds"));
+          const activate = yield* Deferred.await(pending.ready).pipe(Effect.timeout("15 seconds"));
           if (persist) {
             yield* saveEnvironmentConnection(options.stateDir, next);
             saved = true;
@@ -181,6 +196,7 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
           tunnel = pending.fiber;
           current = next;
           options.onSelected(next, persist);
+          activate();
           committed = true;
           if (persist && previous.hubUrl !== next.hubUrl && previousCredential) {
             const previousHub = previous.hubUrl ?? options.ownedHub;
@@ -240,8 +256,11 @@ export const openEnvironmentConnection = Effect.fn("EnvironmentConnection.open")
         yield* enroll(current);
         const pending = yield* launch(current);
         tunnel = pending.fiber;
-        if (waitForRegistration)
-          yield* Deferred.await(pending.ready).pipe(Effect.timeout("15 seconds"));
+        const activate = Deferred.await(pending.ready).pipe(
+          Effect.tap((activate) => Effect.sync(activate)),
+        );
+        if (waitForRegistration) yield* activate.pipe(Effect.timeout("15 seconds"));
+        else yield* activate.pipe(Effect.forkIn(scope));
       },
       Effect.mapError((cause) => new HubTransportError({ cause })),
     );

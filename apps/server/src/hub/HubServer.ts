@@ -1,3 +1,4 @@
+import { createOrchestrationRouter } from "./OrchestrationRouter.ts";
 import { handleAgents, handleOneChat } from "../oneChat/http.ts";
 import type * as OneChat from "../oneChat/OneChat.ts";
 import * as HubAuth from "./HubAuth.ts";
@@ -173,6 +174,10 @@ const listen = Effect.fn("HubServer.listen")(function* (options: HubListenOption
       })),
     };
   };
+  const orchestration = createOrchestrationRouter({
+    destination: (id) => peers.get(id)?.socket,
+    catalog: readCatalog,
+  });
   const webSockets = new Set<WebSocket>();
   const sockets = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES });
   const clients = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES });
@@ -631,6 +636,7 @@ const listen = Effect.fn("HubServer.listen")(function* (options: HubListenOption
               sendFrame(tunnel, { type: "registered" });
               return;
             }
+            if (orchestration.handle(tunnel, registered.id, frame)) return;
             const { peer } = registered;
             const pending = "id" in frame ? peer.http.get(frame.id) : undefined;
             const client = "id" in frame ? peer.ws.get(frame.id) : undefined;
@@ -682,6 +688,7 @@ const listen = Effect.fn("HubServer.listen")(function* (options: HubListenOption
           tunnel.on("close", () => {
             clearTimeout(deadline);
             if (!registered) return;
+            orchestration.disconnect(tunnel);
             for (const move of registered.peer.moves.values()) {
               clearTimeout(move.timer);
               move.resolve(false);

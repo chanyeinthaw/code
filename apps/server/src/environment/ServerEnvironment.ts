@@ -260,6 +260,9 @@ export const make = Effect.gen(function* () {
         : {}),
       ...(desktopAppUpdate ? { desktopAppUpdate: true } : {}),
       serverBrowser: true,
+      peerLinks: serverConfig.hubOrchestrationPort !== undefined,
+      mcpModeLimitHeader: true,
+      threadImport: true,
     },
   };
 

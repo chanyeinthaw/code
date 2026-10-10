@@ -1,4 +1,4 @@
-import { HubEnvironmentMoveInput } from "@t3tools/contracts";
+import { HubEnvironmentCatalog, HubEnvironmentMoveInput } from "@t3tools/contracts";
 import { HubPrincipal } from "./ingress.ts";
 import * as Schema from "effect/Schema";
 import WebSocket from "ws";
@@ -7,6 +7,24 @@ const id = Schema.String;
 const headers = Schema.Record(Schema.String, Schema.String);
 /** Multiplex existing HTTP and WebSocket traffic over one outbound environment connection. */
 export const TunnelFrame = Schema.Union([
+  Schema.Struct({ type: Schema.Literal("peer-catalog"), id }),
+  Schema.Struct({
+    type: Schema.Literal("peer-catalog-result"),
+    id,
+    catalog: HubEnvironmentCatalog,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("peer-http-open"),
+    id,
+    environmentId: Schema.String,
+    method: Schema.String,
+    path: Schema.String,
+    headers,
+  }),
+  Schema.Struct({ type: Schema.Literal("peer-http-head"), id, status: Schema.Number, headers }),
+  Schema.Struct({ type: Schema.Literal("peer-http-data"), id, data: Schema.String }),
+  Schema.Struct({ type: Schema.Literal("peer-http-end"), id }),
+  Schema.Struct({ type: Schema.Literal("peer-cancel"), id }),
   Schema.Struct({ type: Schema.Literal("environment-move"), id, input: HubEnvironmentMoveInput }),
   Schema.Struct({ type: Schema.Literal("environment-move-result"), id, success: Schema.Boolean }),
   Schema.Struct({

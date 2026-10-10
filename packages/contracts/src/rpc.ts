@@ -15,6 +15,7 @@ import {
   McpAppToolInfoInput,
   McpAppUpdateModelContextInput,
 } from "./mcpApps.ts";
+import { ThreadHandoffError } from "./threadHandoff.ts";
 import {
   ChatGptReconnectProfileInput,
   ChatGptReconnectProfile,
@@ -26,7 +27,13 @@ import * as Schema from "effect/Schema";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
-import { ProjectId, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import {
+  EnvironmentId,
+  NonNegativeInt,
+  ProjectId,
+  ThreadId,
+  TrimmedNonEmptyString,
+} from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
   CodexAuthCallbackState,
@@ -213,6 +220,7 @@ import {
   OrchestrationV2GetShellSnapshotError,
   OrchestrationV2GetThreadProjectionError,
   OrchestrationV2RpcSchemas,
+  OrchestrationV2ThreadHandoff,
   OrchestrationV2ThreadLaunchError,
 } from "./orchestrationV2.ts";
 import {
@@ -481,6 +489,9 @@ export const WS_METHODS = {
   serverRemoveKeybinding: "server.removeKeybinding",
   serverRunStorageCleanup: "server.runStorageCleanup",
   serverGetStorageCleanupReport: "server.getStorageCleanupReport",
+  threadHandoffOptions: "threadHandoff.options",
+  threadHandoffStart: "threadHandoff.start",
+  threadHandoffCancel: "threadHandoff.cancel",
   serverGetSettings: "server.getSettings",
   serverUpdateSettings: "server.updateSettings",
   serverDiscoverSourceControl: "server.discoverSourceControl",
@@ -749,6 +760,38 @@ const WsServerRunStorageCleanupRpc = Rpc.make(WS_METHODS.serverRunStorageCleanup
   success: StorageCleanupReport,
   error: Schema.Union([ServerSettingsError, EnvironmentAuthorizationError]),
 });
+
+const WsThreadHandoffOptionsRpc = Rpc.make(WS_METHODS.threadHandoffOptions, {
+  payload: Schema.Struct({ threadId: ThreadId }),
+  success: Schema.Struct({
+    options: Schema.Array(
+      Schema.Struct({
+        environmentId: EnvironmentId,
+        label: Schema.String,
+        projectId: Schema.NullOr(ProjectId),
+        reason: Schema.NullOr(Schema.String),
+      }),
+    ),
+  }),
+  error: Schema.Union([ThreadHandoffError, EnvironmentAuthorizationError]),
+});
+
+const WsThreadHandoffStartRpc = Rpc.make(WS_METHODS.threadHandoffStart, {
+  payload: Schema.Struct({
+    threadId: ThreadId,
+    environmentId: EnvironmentId,
+    projectId: Schema.optional(ProjectId),
+  }),
+  success: OrchestrationV2ThreadHandoff,
+  error: Schema.Union([ThreadHandoffError, EnvironmentAuthorizationError]),
+});
+
+const WsThreadHandoffCancelRpc = Rpc.make(WS_METHODS.threadHandoffCancel, {
+  payload: Schema.Struct({ threadId: ThreadId }),
+  success: Schema.Struct({}),
+  error: Schema.Union([ThreadHandoffError, EnvironmentAuthorizationError]),
+});
+
 const WsServerGetStorageCleanupReportRpc = Rpc.make(WS_METHODS.serverGetStorageCleanupReport, {
   payload: Schema.Struct({}),
   success: Schema.NullOr(StorageCleanupReport),
@@ -1884,6 +1927,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetStorageCleanupReportRpc,
   WsServerGetSettingsRpc,
   WsServerUpdateSettingsRpc,
+  WsThreadHandoffOptionsRpc,
+  WsThreadHandoffStartRpc,
+  WsThreadHandoffCancelRpc,
   WsServerDiscoverSourceControlRpc,
   WsServerSearchAcpRegistryRpc,
   WsServerPrepareAcpRegistryAgentRpc,

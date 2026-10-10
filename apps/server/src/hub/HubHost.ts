@@ -100,6 +100,8 @@ const make = Effect.gen(function* () {
               Effect.provideService(Crypto.Crypto, crypto),
             )
           : undefined;
+      const orchestrationPort =
+        localPort === undefined ? undefined : yield* net.reserveLoopbackPort();
       const environmentSettingPath = path.join(config.stateDir, "hub-local-environment.json");
       const initiallyEnabled =
         options.mode === "serve" &&
@@ -271,6 +273,7 @@ const make = Effect.gen(function* () {
             noBrowser: true,
             noAuth: false,
             hubIngressSecret: ingressSecret,
+            ...(orchestrationPort === undefined ? {} : { hubOrchestrationPort: orchestrationPort }),
             staticDir: undefined,
             devUrl: undefined,
             tailscaleServeEnabled: false,
@@ -300,7 +303,8 @@ const make = Effect.gen(function* () {
             localPort,
             descriptor,
             ingressSecret,
-              enrollOwned: () =>
+            ...(orchestrationPort === undefined ? {} : { orchestrationPort }),
+            enrollOwned: () =>
               auth.enrollLocal(runningDescriptor.environmentId, runningDescriptor.label).pipe(
                 Effect.map((session) => session.token),
                 Effect.mapError((cause) => new HubServer.HubTransportError({ cause })),

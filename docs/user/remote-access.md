@@ -311,6 +311,31 @@ Claude Code, Codex, ChatGPT and other agents T3 Code did not start can drive
 threads on an environment through its MCP server. See
 [outside agents](./outside-agents.md) for setup.
 
+## Work across hub environments
+
+Agents can discover and control other environments enrolled in the same hub.
+No separate pairing or approval is needed between environments. Remote work
+remains within the calling agent's execution permissions. Mention a machine
+with `@` to identify where you want work to run.
+
+An agent can start an independent thread on another machine or delegate a child
+task there. Delegated results return to the parent conversation. If a machine
+is offline, task tracking resumes when it reconnects, including after restarts.
+
+### Continue a thread on another machine
+
+Choose **Continue on…** in a Code thread's menu or the command palette, then
+select an environment with a project for the same repository. The thread moves
+its conversation, unpushed commits, uncommitted edits, and new files into a new
+worktree there. The source becomes read-only and links to the destination.
+Ignored files such as `.env` stay behind. A move larger than 50 MB requires you
+to push the branch first.
+
+You can also ask the agent to move its own thread when its turn ends. Sending
+a message before then cancels the pending move. A divergent destination branch
+refuses the move. Dedicated agent conversations stay on their configured
+environments and do not support handoff.
+
 ## Manage or revoke access
 
 On the host, **Settings → Connections** lets authorized administrators create

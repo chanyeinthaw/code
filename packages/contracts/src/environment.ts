@@ -213,6 +213,12 @@ export const ExecutionEnvironmentCapabilities = Schema.Struct({
       "server"`) and streams them over `/api/preview-stream`. Clients
       without a local browser runtime open server tabs here. */
   serverBrowser: Schema.optionalKey(Schema.Boolean),
+  /** Cross-environment orchestration through the hub. Retains upstream's capability name. */
+  peerLinks: Schema.optionalKey(Schema.Boolean),
+  /** Remote calls retain the originating agent's runtime and interaction limits. */
+  mcpModeLimitHeader: Schema.optionalKey(Schema.Boolean),
+  /** Accepts retry-safe conversation imports for cross-environment handoff. */
+  threadImport: Schema.optionalKey(Schema.Boolean),
 });
 export type ExecutionEnvironmentCapabilities = typeof ExecutionEnvironmentCapabilities.Type;
 

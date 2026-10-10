@@ -2,6 +2,7 @@ import { ensureWorkspace as ensureOneChatWorkspace } from "./oneChat/workspace.t
 import { OrchestrationDispatchCommandError } from "@t3tools/contracts";
 import * as Crypto from "effect/Crypto";
 import * as Orchestrator from "./orchestration-v2/Orchestrator.ts";
+import * as ThreadHandoff from "./peer/handoff/ThreadHandoff.ts";
 
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
@@ -1282,6 +1283,7 @@ const layerWsRpc = (
       const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const serverSettings = yield* ServerSettings.ServerSettingsService;
+      const threadHandoff = yield* ThreadHandoff.ThreadHandoff;
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
@@ -2387,6 +2389,20 @@ const layerWsRpc = (
           }),
         [WS_METHODS.serverRunStorageCleanup]: () => storageCleanup.runNow,
         [WS_METHODS.serverGetStorageCleanupReport]: () => storageCleanup.reports,
+        [WS_METHODS.threadHandoffOptions]: ({ threadId }) =>
+          Effect.annotateCurrentSpan({ "orchestration_v2.thread_id": threadId }).pipe(
+            Effect.andThen(threadHandoff.options(threadId)),
+            Effect.map((options) => ({ options })),
+          ),
+        [WS_METHODS.threadHandoffStart]: (input) =>
+          Effect.annotateCurrentSpan({ "orchestration_v2.thread_id": input.threadId }).pipe(
+            Effect.andThen(threadHandoff.start(input)),
+          ),
+        [WS_METHODS.threadHandoffCancel]: ({ threadId }) =>
+          Effect.annotateCurrentSpan({ "orchestration_v2.thread_id": threadId }).pipe(
+            Effect.andThen(threadHandoff.cancel(threadId)),
+            Effect.as({}),
+          ),
         [WS_METHODS.serverGetSettings]: (_input) =>
           serverSettings.getSettings.pipe(Effect.map(ServerSettings.redactServerSettingsForClient)),
         [WS_METHODS.serverUpdateSettings]: ({ patch, providerInstanceMutation }) =>
@@ -3141,6 +3157,7 @@ export const layer = Layer.unwrap(
     const serverBrowser = yield* ServerBrowser.ServerBrowser;
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const pullRequests = yield* PullRequestService.PullRequestService;
+    const threadHandoff = yield* ThreadHandoff.ThreadHandoff;
     const sql = yield* SqlClient.SqlClient;
     return HttpRouter.add(
       "GET",
@@ -3208,6 +3225,7 @@ export const layer = Layer.unwrap(
               // One server-lifetime service means clients share the same PR caches, and a WS
               // mutation invalidates the HTTP diff cache that every client reads from.
               Layer.provide(Layer.succeed(PullRequestService.PullRequestService, pullRequests)),
+              Layer.provide(Layer.succeed(ThreadHandoff.ThreadHandoff, threadHandoff)),
               Layer.provide(
                 SourceControlDiscovery.layer.pipe(
                   Layer.provide(

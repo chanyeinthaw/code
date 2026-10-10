@@ -1,3 +1,6 @@
+import * as ServerConfig from "../config.ts";
+import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import { HUB_INGRESS_HEADER, verifyHubIngress } from "../hub/ingress.ts";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -13,10 +16,14 @@ import * as Stream from "effect/Stream";
 import type * as Types from "effect/Types";
 import { AiError, McpProtocol, McpSchema, McpServer, Tool, type Toolkit } from "effect/ai";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
-import { OrchestratorMcpFailure, PreviewAutomationError } from "@t3tools/contracts";
+import {
+  OrchestratorMcpFailure,
+  PreviewAutomationError,
+  ProviderInteractionMode,
+  RuntimeMode,
+} from "@t3tools/contracts";
 
 import packageJson from "../../package.json" with { type: "json" };
-import * as ServerConfig from "../config.ts";
 import * as DeviceService from "../device/DeviceService.ts";
 import * as HtmlRender from "../htmlRender/HtmlRender.ts";
 import * as ThreadCommandExecutor from "../orchestration-v2/ThreadCommandExecutor.ts";
@@ -145,8 +152,39 @@ export const normalizeMcpHttpResponse = (
 // Session tokens are `<payload>.<signature>`; registry tokens are a bare base64url secret.
 const looksLikeProviderToken = (token: string) => token.length > 0 && !token.includes(".");
 
+const decodeModeLimit = Schema.decodeUnknownOption(
+  Schema.Struct({ runtimeMode: RuntimeMode, interactionMode: ProviderInteractionMode }),
+);
+const parseModeLimit = (value: string) => {
+  const [runtimeMode, interactionMode, ...rest] = value.trim().split("/");
+  return rest.length === 0 ? decodeModeLimit({ runtimeMode, interactionMode }) : Option.none();
+};
+
+const invalidModeLimit = HttpServerResponse.jsonUnsafe(
+  {
+    error: "invalid_mode_limit",
+    message: "T3-Mode-Limit must be <runtimeMode>/<interactionMode>, e.g. auto/default.",
+  },
+  { status: 400, headers: { "cache-control": "no-store" } },
+);
+
+/** Applies a client's requested mode limit; undefined when the header is malformed. */
+const withModeLimit = (
+  invocation: McpInvocationContext.McpInvocationScope,
+  request: HttpServerRequest.HttpServerRequest,
+): McpInvocationContext.McpInvocationScope | undefined => {
+  const header = request.headers[McpInvocationContext.MODE_LIMIT_HEADER];
+  if (header === undefined || invocation.client === undefined) return invocation;
+  const limit = parseModeLimit(header);
+  return Option.isNone(limit)
+    ? undefined
+    : { ...invocation, client: { ...invocation.client, narrowedTo: limit.value } };
+};
+
 const makeMcpAuthMiddleware = Effect.gen(function* () {
   const registry = yield* McpSessionRegistry.McpSessionRegistry;
+  const hubConfig = yield* Effect.serviceOption(ServerConfig.ServerConfig);
+  const hubEnvironment = yield* Effect.serviceOption(ServerEnvironment.ServerEnvironment);
   const clients = yield* Effect.serviceOption(McpClientAuthenticator);
   return Effect.fn("McpHttpServer.authenticateRequest")(function* (httpEffect) {
     const request = yield* HttpServerRequest.HttpServerRequest;
@@ -155,7 +193,33 @@ const makeMcpAuthMiddleware = Effect.gen(function* () {
       authorization?.startsWith("Bearer ") === true
         ? authorization.slice("Bearer ".length).trim()
         : "";
+    const principal =
+      Option.isSome(hubConfig) && hubConfig.value.hubIngressSecret !== undefined
+        ? verifyHubIngress(
+            hubConfig.value.hubIngressSecret,
+            request.headers[HUB_INGRESS_HEADER],
+            request.method,
+            request.url,
+          )
+        : undefined;
+    const remoteInvocation: McpInvocationContext.McpInvocationScope | undefined =
+      principal?.subject.startsWith("hub-environment:") === true && Option.isSome(hubEnvironment)
+        ? {
+            environmentId: yield* hubEnvironment.value.getEnvironmentId,
+            requestNamespace: principal.sessionId,
+            thread: undefined,
+            client: {
+              sessionId: principal.sessionId,
+              label: principal.subject.slice("hub-environment:".length),
+              access: "full-access",
+              hubEnvironment: true,
+            },
+            capabilities: new Set(["orchestration"]),
+            issuedAt: 0,
+          }
+        : undefined;
     const invocation =
+      remoteInvocation ??
       (yield* registry.resolve(token)) ??
       (Option.isSome(clients) && token.length > 0
         ? yield* clients.value.authenticate(request)
@@ -173,8 +237,10 @@ const makeMcpAuthMiddleware = Effect.gen(function* () {
         offerOAuth: Option.isSome(clients) && !looksLikeProviderToken(token),
       });
     }
+    const limited = withModeLimit(invocation, request);
+    if (limited === undefined) return invalidModeLimit;
     return yield* httpEffect.pipe(
-      Effect.provideService(McpInvocationContext.McpInvocationContext, invocation),
+      Effect.provideService(McpInvocationContext.McpInvocationContext, limited),
       Effect.map(normalizeMcpHttpResponse),
     );
   }) satisfies McpAuthMiddleware;
@@ -831,7 +897,7 @@ export const layerEnvironmentToolkit = toolkitRegistration(
   EnvironmentHandlers.layer,
 ).pipe(Layer.provide(ThreadCommandExecutor.layer));
 
-const layerProjectRegistration = toolkitRegistration(ProjectToolkit, ProjectHandlers.layer);
+export const layerProjectRegistration = toolkitRegistration(ProjectToolkit, ProjectHandlers.layer);
 
 export const layerAttachmentToolkit = toolkitRegistration(
   AttachmentToolkit,

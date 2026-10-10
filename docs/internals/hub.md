@@ -11,7 +11,7 @@ routing.
 
 ## Ownership and routing
 
-The hub owns connectivity and an in-memory environment catalog. Environments own
+The hub owns connectivity and a catalog of enrolled environments. Environments own
 projects, provider sessions, threads, files, terminals, and checkpoints. Moving
 an environment to another hub preserves its environment identity and local state.
 
@@ -28,9 +28,10 @@ RPC and asset requests; they must not learn direct environment fallback URLs. A
 browser-wide machine selection would make concurrent environment sessions
 ambiguous.
 
-The catalog retains disconnected entries until the hub restarts or switches to
-another hub. It is not a durable machine registry. Revoking an environment blocks its
-credential and disconnects its tunnel, but leaves the catalog entry offline.
+The catalog derives membership from persisted, active environment credentials and
+connection status from live tunnels. Offline environments survive hub restarts.
+Revoking an environment blocks its credential, disconnects its tunnel, and removes
+it from the catalog.
 See [HubServer.ts](../../apps/server/src/hub/HubServer.ts)
 for transport ownership and [EnvironmentTunnel.ts](../../apps/server/src/hub/EnvironmentTunnel.ts)
 for the environment connection.
@@ -166,21 +167,34 @@ to the hub and affects every client. See
 [HubConnectionsSettings.tsx](../../apps/web/src/components/settings/HubConnectionsSettings.tsx)
 for the client boundary.
 
-## Orchestration boundary
+## Cross-environment orchestration
 
-Client access to multiple environments does not give a provider session the same
-reach. Provider MCP calls use the calling environment's services and projections.
-Delegated tasks rely on parent threads and runs in that environment's database.
-Forwarding a delegated-task command to another environment would leave its parent
-records unresolved. See
-[OrchestratorMcpService.ts](../../apps/server/src/mcp/OrchestratorMcpService.ts).
+Enrollment grants environments in the same hub access to remote orchestration.
+There are no separate peer links or pairing flows. Discovery reads active machine
+credentials, so an enrolled environment stays visible while offline, including
+after a hub restart. The calling environment
+checks the provider session and its execution modes before forwarding a tool.
+The hub accepts these requests only on enrolled tunnels and stamps the source
+identity. A private authenticated loopback gateway carries outgoing requests
+through that tunnel. Browser hub sessions still cannot authorize MCP requests.
 
-The tunnel currently routes client requests from the hub to an environment. It
-has no environment-originated orchestration request or remote task-completion
-delivery. Environment enrollment authorizes tunnel connectivity, not permission
-to execute agent operations on other environments. Cross-environment orchestration
-therefore requires explicit delegated authority and durable links between the
-source's parent task and the destination's execution state.
+The destination accepts the signed ingress principal on `/mcp` and narrows each
+call to the source's runtime and interaction modes. Hub routing permits only
+MCP and signed attachment uploads, not arbitrary environment HTTP operations.
+Environment and thread IDs remain destination-scoped. See
+[HubForwarding.ts](../../apps/server/src/peer/HubForwarding.ts).
+
+Remote delegated tasks keep parent state on the source and execution state on
+the destination. A durable remote-child reference lets the source resume task
+tracking and cancellation after restart. Completion uses the parent's existing
+delivery and wake-up rules. Offline destinations remain pending until they
+answer again. See [RemoteDelegation.ts](../../apps/server/src/peer/RemoteDelegation.ts).
+
+Thread handoff transfers conversation context and Git work, not a provider's
+native session. The source stops accepting turns during the move and becomes
+read-only after import. Destination imports use the handoff identity to deduplicate
+retries. Dedicated agent conversations cannot move. See
+[ThreadHandoff.ts](../../apps/server/src/peer/handoff/ThreadHandoff.ts).
 
 ## Current limits
 

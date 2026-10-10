@@ -1,3 +1,4 @@
+import * as NetService from "@t3tools/shared/Net";
 import * as Layer from "effect/Layer";
 import * as OneChat from "../oneChat/OneChat.ts";
 import * as HubAuth from "../hub/HubAuth.ts";
@@ -115,6 +116,7 @@ export const environmentCommand = Command.make("environment", {
       const ingressSecret = Buffer.from(yield* (yield* Crypto.Crypto).randomBytes(32)).toString(
         "base64url",
       );
+      const orchestrationPort = yield* (yield* NetService.NetService).reserveLoopbackPort();
       // The environment is reachable only through its outbound tunnel; it never binds a public interface.
       const environmentConfig = {
         ...config,
@@ -122,6 +124,7 @@ export const environmentCommand = Command.make("environment", {
         noBrowser: true,
         noAuth: false,
         hubIngressSecret: ingressSecret,
+        hubOrchestrationPort: orchestrationPort,
         staticDir: undefined,
         devUrl: undefined,
         tailscaleServeEnabled: false,
@@ -147,6 +150,7 @@ export const environmentCommand = Command.make("environment", {
             localPort: config.port,
             descriptor,
             ingressSecret,
+            orchestrationPort,
             onSelected: () => {},
           });
           if (!connection.hasCredential(initial)) {

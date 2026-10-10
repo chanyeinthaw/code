@@ -58,6 +58,13 @@ import * as TextGeneration from "./textGeneration/TextGeneration.ts";
 import * as ProviderInstanceRegistryHydration from "./provider/ProviderInstanceRegistryHydration.ts";
 import * as TerminalManager from "./terminal/Manager.ts";
 import * as McpHttpServer from "./mcp/McpHttpServer.ts";
+import * as HubForwarding from "./peer/HubForwarding.ts";
+import * as RemoteDelegation from "./peer/RemoteDelegation.ts";
+import * as HandoffGit from "./peer/handoff/HandoffGit.ts";
+import * as HandoffImport from "./peer/handoff/HandoffImport.ts";
+import * as ThreadHandoff from "./peer/handoff/ThreadHandoff.ts";
+import * as HubEnvironments from "./peer/HubEnvironments.ts";
+import * as HubMcpClient from "./peer/HubMcpClient.ts";
 import * as McpSessionRegistry from "./mcp/McpSessionRegistry.ts";
 import * as PreviewAutomationBroker from "./mcp/PreviewAutomationBroker.ts";
 import * as DeviceService from "./device/DeviceService.ts";
@@ -716,7 +723,25 @@ const layerMakeRoutes = Layer.mergeAll(
     Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
   ),
+  // Follows delegated tasks running in hub environments, including after a restart.
+  Layer.effectDiscard(
+    RemoteDelegation.RemoteDelegation.pipe(Effect.flatMap((remote) => remote.start())),
+  ),
+  // Runs moves that waited for a turn to end, and settles any a restart cut short.
+  Layer.effectDiscard(
+    ThreadHandoff.ThreadHandoff.pipe(Effect.flatMap((handoff) => handoff.start_())),
+  ),
 ).pipe(
+  // delegate_task to a hub environment, from /mcp and the follower above.
+  Layer.provide(RemoteDelegation.layer.pipe(Layer.provide(ProjectionStoreV2.layer))),
+  // Moving a thread to a hub environment from menus and agents,
+  // and applying one moved here (t3_thread_import).
+  Layer.provide(
+    Layer.merge(
+      ThreadHandoff.layer.pipe(Layer.provide(ProjectionStoreV2.layer)),
+      HandoffImport.layer,
+    ).pipe(Layer.provideMerge(HandoffGit.layer)),
+  ),
   // Both transports consume the same service instance, so caches single-flight across clients
   // and mutations observed on WebSocket invalidate patches subsequently read over HTTP.
   Layer.provide(layerPullRequestService),
@@ -724,6 +749,13 @@ const layerMakeRoutes = Layer.mergeAll(
   Layer.provide(ServerBrowser.layer.pipe(Layer.provide(DesktopBrowserChannel.layer))),
   // Server browser tabs and HTML render previews install and run the same headless browser.
   Layer.provide(PreviewBrowser.layer),
+  // Hub environment discovery and forwarding for remote work.
+  Layer.provide(
+    HubForwarding.layer.pipe(
+      Layer.provideMerge(HubMcpClient.layer),
+      Layer.provideMerge(HubEnvironments.layer),
+    ),
+  ),
   Layer.provide(PreviewAutomationBroker.layer),
   Layer.provide(ServerSelfUpdate.layer.pipe(Layer.provide(layerDesktopAppUpdate))),
   Layer.provide(layerCommandReadiness),

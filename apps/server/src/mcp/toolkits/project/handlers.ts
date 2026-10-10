@@ -1,14 +1,25 @@
-import { MessageId, ThreadId, OrchestratorMcpFailure, ProjectId } from "@t3tools/contracts";
+import {
+  CommandId,
+  type EnvironmentId,
+  MessageId,
+  ThreadId,
+  OrchestratorMcpFailure,
+  ProjectId,
+} from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as ThreadLaunch from "../../../orchestration-v2/ThreadLaunchService.ts";
+import * as ThreadImportService from "../../../orchestration-v2/ThreadImportService.ts";
+import * as HandoffImport from "../../../peer/handoff/HandoffImport.ts";
 import * as ThreadMessageIntake from "../../../orchestration-v2/ThreadMessageIntake.ts";
 import * as Claims from "../../../orchestration-v2/AttachmentClaims.ts";
 import * as Project from "../../../project/ProjectService.ts";
 import * as ManagedProjectFolders from "../../../project/ManagedProjectFolders.ts";
 import * as Repositories from "../../../sourceControl/SourceControlRepositoryService.ts";
+import * as HubForwarding from "../../../peer/HubForwarding.ts";
 import * as GitVcsDriver from "../../../vcs/GitVcsDriver.ts";
+import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import { newCommandId, readCaller, resolveProjectId, unavailable } from "../../threadAccess.ts";
 import { ProjectToolkit } from "./tools.ts";
@@ -52,14 +63,43 @@ const access = Effect.gen(function* () {
   yield* readCaller();
   return yield* Project.ProjectService;
 });
+
+/** The hub environment a call names, or nothing for this one. */
+const remoteTarget = (input: { readonly environmentId?: EnvironmentId | undefined }) =>
+  McpInvocationContext.McpInvocationContext.pipe(
+    Effect.map((scope) => ({
+      scope,
+      target: HubForwarding.remoteTarget(scope, input.environmentId),
+    })),
+  );
 export const layer = McpToolAccess.toLayer(ProjectToolkit, {
   t3_thread_launch: McpToolAccess.startsThreads(
     (input) => input,
-    (input, { runtimeMode, interactionMode }) =>
+    (input, { runtimeMode, interactionMode, linkOrigin }) =>
       Effect.gen(function* () {
+        const { scope, target } = yield* remoteTarget(input);
+        if (target !== undefined) {
+          // The call carries the caller's modes, so omitted modes inherit
+          // them there too, capped by the link's access.
+          const forwarding = yield* HubForwarding.HubForwarding;
+          return yield* forwarding.call(
+            scope,
+            ProjectToolkit.tools.t3_thread_launch,
+            target,
+            input,
+          );
+        }
         const context = yield* readCaller();
         const { caller } = context;
-        const commandId = yield* newCommandId();
+        // A retry with the same key replays the first launch: the ids derive
+        // from the caller and the key, and the launch service replays a
+        // command it already accepted.
+        const commandId =
+          input.clientRequestId === undefined
+            ? yield* newCommandId()
+            : CommandId.make(
+                `mcp:launch:${encodeURIComponent(scope.requestNamespace)}:${encodeURIComponent(input.clientRequestId)}`,
+              );
         const threadId = ThreadId.make(commandId);
         const messageId = MessageId.make(commandId);
         const attachments = input.attachments ?? [];
@@ -156,6 +196,9 @@ export const layer = McpToolAccess.toLayer(ProjectToolkit, {
               }),
           createdBy: "agent",
           creationSource: "mcp",
+          ...(linkOrigin === undefined ? {} : { linkOrigin }),
+          // Kept only alongside linkOrigin: thread.create drops it otherwise.
+          ...(input.delegatedFrom === undefined ? {} : { delegatedFrom: input.delegatedFrom }),
         }).pipe(
           Effect.mapError((error) =>
             error._tag === "AttachmentClaimError"
@@ -173,15 +216,74 @@ export const layer = McpToolAccess.toLayer(ProjectToolkit, {
           status: run?.status ?? null,
         };
       }),
+    // The launched thread carries the caller's link, if it has one.
+  ),
+  t3_thread_import: McpToolAccess.startsThreads(
+    (input) => input,
+    (input, { runtimeMode, interactionMode, linkOrigin }) =>
+      Effect.gen(function* () {
+        const projects = yield* access;
+        const project = yield* projects
+          .getById(input.projectId)
+          .pipe(Effect.mapError(unavailable), Effect.map(Option.getOrUndefined));
+        if (project === undefined)
+          return yield* new OrchestratorMcpFailure({
+            code: "invalid_request",
+            message: "The project was not found.",
+          });
+        if (input.worktreePath !== undefined && input.bundle !== undefined)
+          return yield* new OrchestratorMcpFailure({
+            code: "invalid_request",
+            message: "A bundle lands in a new worktree; omit worktreePath.",
+          });
+        if (input.worktreePath !== undefined)
+          yield* assertProjectWorktree(project.workspaceRoot, input.worktreePath);
+        const imports = yield* ThreadImportService.ThreadImportService;
+        const handoffs = yield* HandoffImport.HandoffImport;
+        const bundle = input.bundle;
+        const workspace =
+          bundle === undefined
+            ? undefined
+            : handoffs.applyBundle({
+                repoRoot: project.workspaceRoot,
+                handoffId: input.source.handoffId,
+                bundle,
+              });
+        return yield* imports
+          .importThread({
+            ...input,
+            runtimeMode,
+            interactionMode,
+            linkOrigin,
+            ...(workspace === undefined ? {} : { workspace }),
+          })
+          .pipe(
+            Effect.mapError((error) =>
+              error._tag === "OrchestratorMcpFailure"
+                ? error
+                : new OrchestratorMcpFailure({
+                    code:
+                      error._tag === "ThreadImportProjectMismatchError"
+                        ? "invalid_request"
+                        : "orchestration_error",
+                    message: error.message,
+                  }),
+            ),
+          );
+      }),
   ),
   t3_project_list: McpToolAccess.reads((input) =>
     Effect.gen(function* () {
+      const { scope, target } = yield* remoteTarget(input);
+      if (target !== undefined) {
+        const forwarding = yield* HubForwarding.HubForwarding;
+        return yield* forwarding.call(scope, ProjectToolkit.tools.t3_project_list, target, input);
+      }
       const projects = yield* access;
-      const snapshot = yield* projects.snapshot.pipe(Effect.mapError(unavailable));
-      const rows = snapshot.projects.filter((project) => project.deletedAt === null);
-      const start = input.cursor ?? 0,
-        end = start + (input.limit ?? 20);
-      return { projects: rows.slice(start, end), nextCursor: end < rows.length ? end : null };
+      // Identities are resolved: hub environments find this side's project by repository.
+      return yield* projects
+        .listPage({ cursor: input.cursor ?? 0, limit: input.limit ?? 20 })
+        .pipe(Effect.mapError(unavailable));
     }),
   ),
   t3_project_read: McpToolAccess.reads((input) =>

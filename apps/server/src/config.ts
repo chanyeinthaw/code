@@ -87,6 +87,8 @@ export class ServerConfig extends Context.Service<
     readonly noAuth?: boolean;
     /** Authenticates scoped requests from this environment’s outbound hub tunnel bridge. */
     readonly hubIngressSecret?: string;
+    /** Loopback gateway for environment-originated requests over the enrolled tunnel. */
+    readonly hubOrchestrationPort?: number;
     readonly port: number;
     readonly host: string | undefined;
     readonly cwd: string;
