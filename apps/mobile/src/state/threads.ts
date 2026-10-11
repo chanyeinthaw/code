@@ -1,3 +1,4 @@
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { useAtomValue } from "@effect/atom-react";
 import {
   createEnvironmentThreadDetailAtoms,
@@ -7,6 +8,7 @@ import {
   type EnvironmentThreadState,
   createThreadEnvironmentAtoms,
 } from "@t3tools/client-runtime/state/threads";
+import { isAgentThread } from "@t3tools/contracts";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
@@ -23,10 +25,24 @@ export const environmentThreads = createEnvironmentThreadStateAtoms(connectionAt
 export const environmentThreadDetails = createEnvironmentThreadDetailAtoms(
   environmentThreads.stateAtom,
 );
-export const environmentThreadShells = createEnvironmentThreadShellAtoms({
+const allThreadShells = createEnvironmentThreadShellAtoms({
   catalogValueAtom: environmentCatalog.catalogValueAtom,
   snapshotAtom: threadEnvironment.snapshotAtom,
 });
+
+export const environmentThreadShells = {
+  ...allThreadShells,
+  threadShellsAtom: Atom.map(
+    allThreadShells.threadShellsAtom,
+    (threads): ReadonlyArray<EnvironmentThreadShell> =>
+      threads.filter((thread) => !isAgentThread(thread.id)),
+  ),
+  navigationThreadShellsAtom: Atom.map(
+    allThreadShells.navigationThreadShellsAtom,
+    (threads): ReadonlyArray<EnvironmentThreadShell> =>
+      threads.filter((thread) => !isAgentThread(thread.id)),
+  ),
+};
 
 const EMPTY_THREAD_STATE_ATOM = Atom.make(AsyncResult.success(EMPTY_ENVIRONMENT_THREAD_STATE)).pipe(
   Atom.withLabel("mobile-environment-thread:empty"),

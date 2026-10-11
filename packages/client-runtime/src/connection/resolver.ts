@@ -10,6 +10,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as HttpClient from "effect/http/HttpClient";
+import * as HttpClientRequest from "effect/http/HttpClientRequest";
 
 import { appendClientConnectionParams } from "../authorization/remote.ts";
 import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
@@ -269,6 +270,7 @@ export const make = Effect.gen(function* () {
   const ssh = yield* makeSshBroker();
   const httpClient = yield* HttpClient.HttpClient;
   const presentation = yield* ClientCapabilities.ClientPresentation;
+  const hubAuth = yield* Effect.serviceOption(ClientCapabilities.HubEnvironmentAuth);
 
   const authorize = Effect.fn("clientRuntime.connection.broker.authorize")(function* (
     entry: ConnectionCatalogEntry,
@@ -280,18 +282,23 @@ export const make = Effect.gen(function* () {
     });
     const prepared = yield* (() => {
       switch (target._tag) {
-        case "HubConnectionTarget": {
-          const socket = new URL(environmentEndpointUrl(target.wsBaseUrl, "/ws"));
-          appendClientConnectionParams(socket, presentation.metadata, "direct");
-          return Effect.succeed({
-            environmentId: target.environmentId,
-            label: target.label,
-            httpBaseUrl: target.httpBaseUrl,
-            socketUrl: socket.toString(),
-            httpAuthorization: null,
-            target,
-          } satisfies PreparedConnection);
-        }
+        case "HubConnectionTarget":
+          return Effect.gen(function* () {
+            const socket = new URL(environmentEndpointUrl(target.wsBaseUrl, "/ws"));
+            appendClientConnectionParams(socket, presentation.metadata, "direct");
+            const credentials = Option.isSome(hubAuth)
+              ? yield* hubAuth.value.prepare(target.httpBaseUrl)
+              : null;
+            if (credentials) socket.searchParams.set("wsTicket", credentials.ticket);
+            return {
+              environmentId: target.environmentId,
+              label: target.label,
+              httpBaseUrl: target.httpBaseUrl,
+              socketUrl: socket.toString(),
+              httpAuthorization: credentials ? { _tag: "Bearer", token: credentials.token } : null,
+              target,
+            } satisfies PreparedConnection;
+          });
         case "PrimaryConnectionTarget":
           return primary(target);
         case "BearerConnectionTarget":
@@ -306,7 +313,15 @@ export const make = Effect.gen(function* () {
       httpBaseUrl: prepared.httpBaseUrl,
     }).pipe(
       Effect.mapError(mapRemoteEnvironmentError),
-      Effect.provideService(HttpClient.HttpClient, httpClient),
+      Effect.provideService(
+        HttpClient.HttpClient,
+        prepared.httpAuthorization?._tag === "Bearer"
+          ? HttpClient.mapRequest(
+              httpClient,
+              HttpClientRequest.bearerToken(prepared.httpAuthorization.token),
+            )
+          : httpClient,
+      ),
     );
     if (descriptor.environmentId !== target.environmentId) {
       return yield* environmentMismatchError({

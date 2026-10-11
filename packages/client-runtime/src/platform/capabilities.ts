@@ -76,3 +76,13 @@ export class SshEnvironmentGateway extends Context.Service<
     ) => Effect.Effect<void, ConnectionAttemptError>;
   }
 >()("@t3tools/client-runtime/platform/capabilities/SshEnvironmentGateway") {}
+
+/** Native clients keep hub credentials in secure storage and use one-use socket tickets. */
+export class HubEnvironmentAuth extends Context.Service<
+  HubEnvironmentAuth,
+  {
+    readonly prepare: (
+      httpBaseUrl: string,
+    ) => Effect.Effect<{ readonly token: string; readonly ticket: string }, ConnectionAttemptError>;
+  }
+>()("@t3tools/client-runtime/platform/capabilities/HubEnvironmentAuth") {}

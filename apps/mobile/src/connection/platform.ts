@@ -28,6 +28,7 @@ import { clearThreadOutboxEnvironment } from "../state/thread-outbox-removal";
 import { clearComposerDraftsEnvironment } from "../state/use-composer-drafts";
 import { clearThreadComposerErrorsForEnvironment } from "../state/thread-composer-error";
 import { mobileApplicationActiveWakeup } from "./app-state-wakeups";
+import * as MobileHub from "../hub/connection";
 import * as ConnectionStorage from "./storage";
 
 function networkStatus(state: Network.NetworkState): "unknown" | "offline" | "online" {
@@ -241,12 +242,21 @@ const layerCapabilities = Layer.effectContext(
   }),
 );
 
-const layerPlatformConnectionSource = Layer.succeed(
-  PlatformConnectionSource.PlatformConnectionSource,
-  PlatformConnectionSource.PlatformConnectionSource.of({
-    registrations: Stream.empty,
+const layerMobileHub = MobileHub.layer.pipe(Layer.provide(Runtime.layer));
+const layerPlatformConnectionSource = Layer.effectContext(
+  Effect.gen(function* () {
+    const hub = yield* MobileHub.HubConnection;
+    return Context.make(
+      PlatformConnectionSource.PlatformConnectionSource,
+      PlatformConnectionSource.PlatformConnectionSource.of({ registrations: hub.registrations }),
+    ).pipe(
+      Context.add(
+        ClientCapabilities.HubEnvironmentAuth,
+        ClientCapabilities.HubEnvironmentAuth.of({ prepare: hub.prepare }),
+      ),
+    );
   }),
-);
+).pipe(Layer.provideMerge(layerMobileHub));
 
 const layerProvidedConnectionStorage = ConnectionStorage.layer.pipe(Layer.provide(Runtime.layer));
 const layerProvidedCapabilities = layerCapabilities.pipe(Layer.provide(Runtime.layer));

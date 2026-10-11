@@ -57,8 +57,8 @@ import { ThreadHandoffSheet } from "./features/threads/ThreadHandoffSheet";
 import { ThreadQueueSheet } from "./features/threads/ThreadQueueControl";
 import { ThreadRouteScreen } from "./features/threads/ThreadRouteScreen";
 import { McpAppFullscreenScreen } from "./features/threads/McpAppFullscreenScreen";
-import { ConnectionsRouteScreen } from "./features/connection/ConnectionsRouteScreen";
-import { ConnectionsNewRouteScreen } from "./features/connection/ConnectionsNewRouteScreen";
+import { HubConnectionsRouteScreen } from "./features/connection/HubConnectionsRouteScreen";
+import { HubPairingRouteScreen } from "./features/connection/HubPairingRouteScreen";
 import { HomeRouteScreen } from "./features/home/HomeRouteScreen";
 import { AddProjectDestinationRoute } from "./features/projects/AddProjectDestinationRoute";
 import { AddProjectLocalRoute } from "./features/projects/AddProjectLocalRoute";
@@ -83,7 +83,6 @@ import { SettingsDiagnosticsRouteScreen } from "./features/diagnostics/SettingsD
 import { SettingsProviderAccountsRouteScreen } from "./features/settings/SettingsProviderAccountsRouteScreen";
 import { SettingsAuthRouteScreen } from "./features/settings/SettingsAuthRouteScreen";
 import { SettingsEnvironmentDetailRouteScreen } from "./features/settings/SettingsEnvironmentDetailRouteScreen";
-import { SettingsEnvironmentsRouteScreen } from "./features/settings/SettingsEnvironmentsRouteScreen";
 import { SettingsFollowUpRouteScreen } from "./features/settings/SettingsFollowUpRouteScreen";
 import {
   SettingsEnvironmentAgentBehaviorRouteScreen,
@@ -114,7 +113,7 @@ import { UsageLimitAccountScreen } from "./features/usage/UsageLimitsPooled";
 import { UsageRouteScreen } from "./features/usage/UsageRouteScreen";
 import { SettingsAboutRouteScreen } from "./features/settings/SettingsAboutRouteScreen";
 import { SettingsNotificationsRouteScreen } from "./features/settings/SettingsNotificationsRouteScreen";
-import { SettingsRouteScreen } from "./features/settings/SettingsRouteScreen";
+import { HubSettingsRouteScreen } from "./features/settings/HubSettingsRouteScreen";
 import { SettingsThreadsRouteScreen } from "./features/settings/SettingsThreadsRouteScreen";
 import { SettingsEnvironmentFilterProvider } from "./features/settings/settings-environment-filter";
 import { ShowcaseCaptureCoordinator } from "./features/showcase/ShowcaseCaptureCoordinator";
@@ -207,17 +206,17 @@ const SettingsContentStack = createV5SheetStackNavigator({
   },
   screens: {
     Settings: createNativeStackScreen({
-      screen: SettingsRouteScreen,
+      screen: HubSettingsRouteScreen,
       linking: "",
       options: {
         title: "Settings",
       },
     }),
     SettingsEnvironments: createNativeStackScreen({
-      screen: SettingsEnvironmentsRouteScreen,
+      screen: HubConnectionsRouteScreen,
       linking: "environments",
       options: {
-        title: "Environments",
+        title: "Hub",
       },
     }),
     SettingsEnvironmentDetail: createNativeStackScreen({
@@ -266,10 +265,10 @@ const SettingsContentStack = createV5SheetStackNavigator({
       options: { title: "About T3 Code" },
     }),
     SettingsEnvironmentNew: createNativeStackScreen({
-      screen: ConnectionsNewRouteScreen,
+      screen: HubPairingRouteScreen,
       linking: "environment-new",
       options: {
-        title: "Add Environment",
+        title: "Connect to hub",
       },
     }),
     SettingsArchive: createNativeStackScreen({
@@ -897,10 +896,10 @@ const RootStackConfig = createWorkspaceStackNavigator({
       },
     }),
     Connections: createNativeStackScreen({
-      screen: ConnectionsRouteScreen,
+      screen: HubConnectionsRouteScreen,
       linking: "connections",
       options: {
-        title: "Environments",
+        title: "Hub",
         // Android: full page; the screen renders its own AndroidScreenHeader,
         // so the native bar stays hidden. iOS keeps the sheet.
         ...(Platform.OS === "android"
@@ -913,7 +912,7 @@ const RootStackConfig = createWorkspaceStackNavigator({
       },
     }),
     ConnectionsNew: createNativeStackScreen({
-      screen: ConnectionsNewRouteScreen,
+      screen: HubPairingRouteScreen,
       linking: "connections/new",
       options: {
         ...FORM_SHEET_PRESENTATION_OPTIONS,

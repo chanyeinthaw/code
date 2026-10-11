@@ -1,4 +1,5 @@
 import type { ExpoConfig } from "expo/config";
+import { withPulseMobileConfig } from "./pulse.config.ts";
 
 import { BRAND_ASSET_PATHS } from "../../scripts/lib/brand-assets.ts";
 import { loadRepoEnv } from "../../scripts/lib/public-config.ts";
@@ -499,4 +500,4 @@ const config: ExpoConfig = {
   owner: "pingdotgg",
 };
 
-export default config;
+export default withPulseMobileConfig(config, repoEnv);

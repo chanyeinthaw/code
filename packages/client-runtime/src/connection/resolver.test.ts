@@ -268,6 +268,35 @@ describe("ConnectionResolver", () => {
     }),
   );
 
+  it.effect("uses native hub bearer auth for HTTP and a one-use ticket for the socket", () =>
+    Effect.gen(function* () {
+      const dependencies = yield* makeDependencies();
+      const broker = yield* ConnectionResolver.ConnectionResolver.pipe(
+        Effect.provide(
+          dependencies.pipe(
+            Layer.provide(
+              Layer.succeed(ClientCapabilities.HubEnvironmentAuth, {
+                prepare: () =>
+                  Effect.succeed({ token: "secure-hub-session", ticket: "one-use-ticket" }),
+              }),
+            ),
+          ),
+        ),
+      );
+      const target = new HubConnectionTarget({
+        environmentId: ENVIRONMENT_ID,
+        label: "Worker",
+        httpBaseUrl: "https://hub.test/hub/environments/environment-1/",
+        wsBaseUrl: "wss://hub.test/hub/environments/environment-1/",
+      });
+      const prepared = yield* broker.prepare(catalogEntry(target));
+      expect(prepared.httpAuthorization).toEqual({ _tag: "Bearer", token: "secure-hub-session" });
+      const socket = new URL(prepared.socketUrl);
+      expect(socket.searchParams.get("wsTicket")).toBe("one-use-ticket");
+      expect(socket.toString()).not.toContain("secure-hub-session");
+    }),
+  );
+
   it.effect("authorizes a desktop primary environment with its platform bearer token", () =>
     Effect.gen(function* () {
       const bearerInputs = yield* Ref.make<ReadonlyArray<{ token: string; method: string }>>([]);
