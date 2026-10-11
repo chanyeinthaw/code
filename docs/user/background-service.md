@@ -10,20 +10,20 @@ run these commands on the machine that will host T3 Code:
 
 | Task                            | Command                |
 | ------------------------------- | ---------------------- |
-| Install and start               | `t3 service install`   |
-| Inspect status and log location | `t3 service status`    |
+| Install and start               | `pulse service install`   |
+| Inspect status and log location | `pulse service status`    |
 | Move to a newer release         | `t3 update`            |
-| Restart                         | `t3 service restart`   |
-| Stop and remove from startup    | `t3 service uninstall` |
+| Restart                         | `pulse service restart`   |
+| Stop and remove from startup    | `pulse service uninstall` |
 
 Uninstalling the service leaves your projects, threads, and settings intact.
-Running `t3 service install` again repairs a service that `t3 service status`
+Running `pulse service install` again repairs a service that `pulse service status`
 reports as broken.
 
 `t3 update` downloads the newest release on your channel and switches `t3`
 and the service to it. Restarting interrupts running agent turns, terminals,
 and remote clients, so it asks first; answer no and the service keeps running
-the old version until you run `t3 service restart`. Pass `--yes` from a
+the old version until you run `pulse service restart`. Pass `--yes` from a
 script. A server you started by hand is left running; stop and start it again
 to pick up the new version. Wait for any remote update already in progress
 before updating; to match a remote client's version, follow
@@ -58,7 +58,7 @@ separately. Signing out of T3 Connect does not stop or uninstall the service.
 
 ## Troubleshooting
 
-Start with `t3 service status` on the host. It prints the log path and, on Linux,
+Start with `pulse service status` on the host. It prints the log path and, on Linux,
 checks whether the installed service is running, enabled, and allowed to survive
 logout.
 
@@ -77,7 +77,7 @@ ssh -t your-server 'sudo loginctl enable-linger "$(id -un)"'
 
 Then retry service setup as your normal user. Run only the `loginctl` command
 with sudo; running T3 Code as root creates a separate installation and Connect
-identity. Without administrator access, run `t3 serve` in a terminal and keep
+identity. Without administrator access, run `pulse serve` in a terminal and keep
 that session open.
 
 | Status problem                          | Next step                                                                                                                      |

@@ -13,15 +13,15 @@ describe.skipIf(HostProcess.Platform.defaultValue() !== "linux")("installer term
   it.each([false, true])(
     "preserves download and install behavior (HTTP failure: %s)",
     async (fail) => {
-      const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3-install-progress-"));
+      const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "pulse-install-progress-"));
       const version = "1.2.3";
-      const stem = `t3-${version}-linux-${HostProcess.Architecture.defaultValue()}`;
+      const stem = `pulse-${version}-linux-${HostProcess.Architecture.defaultValue()}`;
       const archiveName = `${stem}.tar.gz`;
       let resumeDownload: (() => void) | undefined;
       let sawPartialProgress = false;
       let output = "";
       await NodeFSP.mkdir(NodePath.join(root, stem));
-      await NodeFSP.writeFile(NodePath.join(root, stem, "t3"), "#!/bin/sh\necho 't3 v1.2.3'\n", {
+      await NodeFSP.writeFile(NodePath.join(root, stem, "pulse"), "#!/bin/sh\necho 'pulse v1.2.3'\n", {
         mode: 0o755,
       });
       await NodeFSP.writeFile(
@@ -61,7 +61,7 @@ describe.skipIf(HostProcess.Platform.defaultValue() !== "linux")("installer term
           TERM: "xterm",
           NO_COLOR: "1",
           T3CODE_VERSION: version,
-          T3CODE_HOME: NodePath.join(root, "home"),
+          PULSE_HOME: NodePath.join(root, "home"),
           T3CODE_INSTALL_BIN_DIR: NodePath.join(root, "bin"),
           T3CODE_RELEASE_BASE_URL: `http://127.0.0.1:${address.port}`,
         },
@@ -86,22 +86,22 @@ describe.skipIf(HostProcess.Platform.defaultValue() !== "linux")("installer term
           expect(code).not.toBe(0);
           expect(output).toContain("500");
           expect(output).not.toContain("100%");
-          expect(output).not.toContain("Installed T3 Code");
+          expect(output).not.toContain("Installed Pulse");
           expect(await NodeFSP.readdir(versions)).toEqual([]);
         } else {
           expect(code).toBe(0);
           expect(sawPartialProgress).toBe(true);
           expect(output).toContain("100%");
           expect(output).toContain("0.1 / 0.1 MB");
-          expect(output).toContain("Installed T3 Code 1.2.3");
+          expect(output).toContain("Installed Pulse 1.2.3");
           expect(
             await NodeFSP.readFile(NodePath.join(versions, version, ".install-complete"), "utf8"),
           ).toBe("1.2.3\n");
           expect(
-            NodeChildProcess.execFileSync(NodePath.join(root, "bin/t3"), ["--version"], {
+            NodeChildProcess.execFileSync(NodePath.join(root, "bin/pulse"), ["--version"], {
               encoding: "utf8",
             }).trim(),
-          ).toBe("t3 v1.2.3");
+          ).toBe("pulse v1.2.3");
           expect(await NodeFSP.readdir(versions)).toEqual([version]);
         }
       } finally {

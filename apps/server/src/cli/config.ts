@@ -23,7 +23,8 @@ import * as CliError from "effect/cli/CliError";
 
 import { readBootstrapEnvelope } from "../bootstrap.ts";
 import * as ServerConfig from "../config.ts";
-import { expandHomePath, resolveBaseDir } from "../os-jank.ts";
+import { expandHomePath } from "../os-jank.ts";
+import { resolvePulseBaseDir } from "../pulse/paths.ts";
 import { isProcessAlive, readPersistedServerRuntimeState } from "../serverRuntimeState.ts";
 
 const modeFlag = Flag.Literals("mode", ServerConfig.RuntimeMode.literals).pipe(
@@ -41,7 +42,7 @@ const hostFlag = Flag.String("host").pipe(
 );
 export const baseDirFlag = Flag.String("base-dir").pipe(
   Flag.withDescription(
-    "Explicit T3 Code data directory; runtime state is stored under userdata (equivalent to T3CODE_HOME).",
+    "Explicit T3 Code data directory; runtime state is stored under userdata (equivalent to PULSE_HOME).",
   ),
   Flag.optional,
 );
@@ -129,7 +130,7 @@ const EnvServerConfig = Config.all({
   ),
   port: Config.Port("T3CODE_PORT").pipe(Config.option, Config.map(Option.getOrUndefined)),
   host: Config.String("T3CODE_HOST").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  t3Home: Config.String("T3CODE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
+  t3Home: Config.String("PULSE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
   devUrl: Config.URL("VITE_DEV_SERVER_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
   devAllowedOrigins: Config.String("T3CODE_DEV_ALLOWED_ORIGINS").pipe(
     Config.withDefault(""),
@@ -320,7 +321,7 @@ export const resolveServerConfig = (
       normalizedFlags.baseDir,
       Option.fromUndefinedOr(env.t3Home),
     ).pipe(Option.filter((value) => value.trim().length > 0));
-    const baseDir = yield* resolveBaseDir(
+    const baseDir = yield* resolvePulseBaseDir(
       Option.getOrUndefined(
         resolveOptionPrecedence(explicitBaseDir, Option.fromUndefinedOr(bootstrap?.t3Home)),
       ),

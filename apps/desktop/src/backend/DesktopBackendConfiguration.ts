@@ -448,7 +448,7 @@ const runWslPreflight = Effect.fn("desktop.backendConfiguration.wslPreflight")(f
           _tag: "Ready",
           runningDistro,
           windowsEntryPath: environment.backendEntryPath,
-          runtime: { kind: "executable", entryPath: `${runtime.linuxAppRoot}/t3` },
+          runtime: { kind: "executable", entryPath: `${runtime.linuxAppRoot}/pulse` },
           resolvedPath: stagedProbe.resolvedPath,
           runtimeId: input.runtimeArchive.runtimeId,
         } as const;
@@ -604,7 +604,7 @@ const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolv
         // The server names this launcher in commands it asks a person to run.
         T3CODE_CLI_PATH: Option.getOrUndefined(input.cliPath),
       },
-      // Primary wants process.env (PATH, dev-runner's T3CODE_HOME, etc.).
+      // Primary wants process.env (PATH, dev-runner's PULSE_HOME, etc.).
       extendEnv: true,
       bootstrap,
       bootstrapDelivery: "fd3",
@@ -747,14 +747,14 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
     }
   }
 
-  // Build an explicit copy of process.env minus T3CODE_HOME (dev-runner
+  // Build an explicit copy of process.env minus PULSE_HOME (dev-runner
   // exports the Windows-side base dir for the primary; if it leaks into
   // the WSL backend the Linux side ends up sharing C:\Users\...\.t3 via
   // /mnt/c, which means both backends read/write the same database and
   // their env-ids collide).
   const parentEnvWithoutT3Home: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (key === "T3CODE_HOME") continue;
+    if (key === "PULSE_HOME") continue;
     parentEnvWithoutT3Home[key] = value;
   }
   const wslEnv = mergeWslEnv(parentEnvWithoutT3Home.WSLENV, forwardedEnvNames);
@@ -770,7 +770,7 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
       ...forwardedEnv,
       ...(wslEnv !== undefined ? { WSLENV: wslEnv } : {}),
     },
-    // env is already a complete process.env minus T3CODE_HOME; pass it
+    // env is already a complete process.env minus PULSE_HOME; pass it
     // verbatim instead of letting the spawner re-merge process.env on top.
     extendEnv: false,
     bootstrap,

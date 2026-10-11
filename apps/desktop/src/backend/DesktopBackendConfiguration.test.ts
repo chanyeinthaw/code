@@ -83,7 +83,7 @@ function layerEnvironment(
       Layer.mergeAll(
         NodeServices.layer,
         DesktopConfig.layerTest({
-          T3CODE_HOME: baseDir,
+          PULSE_HOME: baseDir,
           T3CODE_PORT: "9999",
           T3CODE_MODE: "desktop",
           T3CODE_DESKTOP_LAN_HOST: "192.168.1.50",
@@ -475,7 +475,7 @@ describe("DesktopBackendConfiguration", () => {
             "--exec",
             "env",
             `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${resolvedPath}`,
-            `${linuxAppRoot}/t3`,
+            `${linuxAppRoot}/pulse`,
             "--bootstrap-fd",
             "0",
           ]);
@@ -518,9 +518,9 @@ describe("DesktopBackendConfiguration", () => {
 
           assert.deepEqual(observedRuntimeIds, [`sha256-${firstHash}`, `sha256-${secondHash}`]);
           assert.equal(first.wslRuntimeId, observedRuntimeIds[0]);
-          assert.include(first.args, `/runtime/sha256-${firstHash}/t3`);
+          assert.include(first.args, `/runtime/sha256-${firstHash}/pulse`);
           assert.equal(second.wslRuntimeId, observedRuntimeIds[1]);
-          assert.include(second.args, `/runtime/sha256-${secondHash}/t3`);
+          assert.include(second.args, `/runtime/sha256-${secondHash}/pulse`);
           assert.isUndefined(invalidIdentity.wslRuntimeId);
           assert.include(invalidIdentity.args, "/usr/bin/node");
           assert.include(invalidIdentity.args, `${mountedAppRoot}/apps/server/dist/bin.mjs`);
@@ -573,7 +573,7 @@ describe("DesktopBackendConfiguration", () => {
             }),
           probeRuntime: (_distro, root) => {
             observedProbeRoots.push(root);
-            return { ok: false, reason: `${root}/t3 --version failed (exit 127)` };
+            return { ok: false, reason: `${root}/pulse --version failed (exit 127)` };
           },
           ensureNodePty: (_distro, root) => {
             observedNodePtyRoots.push(root);
@@ -590,7 +590,7 @@ describe("DesktopBackendConfiguration", () => {
           assert.deepEqual(observedNodePtyRoots, [mountedAppRoot]);
           assert.include(config.args, "/usr/bin/node");
           assert.include(config.args, `${mountedAppRoot}/apps/server/dist/bin.mjs`);
-          assert.notInclude(config.args, `${stagedAppRoot}/t3`);
+          assert.notInclude(config.args, `${stagedAppRoot}/pulse`);
           assert.equal(config.entryPath, mountedEntryPath);
           assert.isUndefined(config.wslRuntimeId);
           assert.isTrue(Option.isNone(config.preflightFailure));
@@ -683,7 +683,7 @@ describe("DesktopBackendConfiguration", () => {
         yield* fileSystem.writeFileString(entryPath, "");
 
         const nodePath = "/home/test user's/.nvm/versions/node/v22.0.0/bin/node";
-        const linuxAppRoot = "/tmp/t3 code's launch";
+        const linuxAppRoot = "/tmp/pulse code's launch";
         const linuxEntryPath = `${linuxAppRoot}/apps/server/dist/bin.mjs`;
         const resolvedPath = "/home/test user/bin:/opt/test's tools/bin:/usr/bin:/bin";
         const devServerUrl = "http://127.0.0.1:5733/dev%20assets/?label=hello%20world";
@@ -1045,7 +1045,7 @@ describe("DesktopBackendConfiguration", () => {
         const standard = {
           OTEL_EXPORTER_OTLP_ENDPOINT: "https://collector.example.com:4318/base?api_key=secret",
           OTEL_EXPORTER_OTLP_LOGS_HEADERS: "authorization=Bearer%20token",
-          T3CODE_OTLP_TRACES_URL: "http://t3.example.com:4318/v1/traces",
+          T3CODE_OTLP_TRACES_URL: "http://pulse.example.com:4318/v1/traces",
         };
         const previousWslEnv = process.env.WSLENV;
         // A developer's own OTLP variables would be forwarded too.
@@ -1073,7 +1073,7 @@ describe("DesktopBackendConfiguration", () => {
             const wslEnv = (config.env.WSLENV ?? "").split(":");
             assert.include(wslEnv, "OTEL_EXPORTER_OTLP_ENDPOINT");
             assert.include(wslEnv, "OTEL_EXPORTER_OTLP_LOGS_HEADERS");
-            assert.equal(config.env.T3CODE_OTLP_TRACES_URL, "http://t3.example.com:4318/v1/traces");
+            assert.equal(config.env.T3CODE_OTLP_TRACES_URL, "http://pulse.example.com:4318/v1/traces");
             assert.include(wslEnv, "T3CODE_OTLP_TRACES_URL");
           }).pipe(
             Effect.provide(

@@ -17,7 +17,7 @@ t3 connect
 
 Follow the sign-in instructions. Setup offers a
 [background service](./background-service.md); if you decline it, start the
-server with `t3 serve`. Saving your sign-in alone does not make the machine
+server with `pulse serve`. Saving your sign-in alone does not make the machine
 reachable.
 
 On your other device, sign in to the same T3 Connect account and choose the
@@ -42,7 +42,7 @@ For a command-line host, replace `<private-ip>` with the host's LAN or tailnet
 address:
 
 ```bash
-t3 serve --host <private-ip>
+pulse serve --host <private-ip>
 ```
 
 If a server is already running, generate a fresh link without restarting it:
@@ -127,7 +127,7 @@ HTTPS** in **Settings → Connections**. Turn it off there to remove that route.
 To start a command-line server with Tailscale HTTPS:
 
 ```bash
-t3 serve --tailscale-serve
+pulse serve --tailscale-serve
 ```
 
 For an already-running server:
@@ -315,7 +315,7 @@ screenshots, logs, or bug reports.
 
 Run `t3 connect status` on the host to inspect saved authorization and link
 configuration. It is not a live reachability check. If the environment appears
-offline, run `t3 service status` and read the displayed log. If it disappears
+offline, run `pulse service status` and read the displayed log. If it disappears
 when SSH closes, see [background-service troubleshooting](./background-service.md#troubleshooting).
 
 | Error                                                     | Recovery                                                                                                                                    |
@@ -328,7 +328,7 @@ when SSH closes, see [background-service troubleshooting](./background-service.m
 
 After fixing a permanent rejection, restart the host's server. On Linux, use
 `systemctl --user restart t3code.service` for the background service. For a
-foreground server, stop it and run `t3 serve` again with your usual options.
+foreground server, stop it and run `pulse serve` again with your usual options.
 Include the diagnostic message and trace ID when reporting a persistent failure.
 
 For a connection that still fails after linking, check the date and time on both
