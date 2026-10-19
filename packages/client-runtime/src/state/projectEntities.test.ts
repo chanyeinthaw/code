@@ -121,3 +121,59 @@ describe("project scratch identity", () => {
     }
   });
 });
+
+it("hides memory projects from pickers while keeping direct project lookup", () => {
+  const { registry, projects, snapshotAtom } = makeHarness();
+  try {
+    const source = registry.get(snapshotAtom(environmentId));
+    registry.set(snapshotAtom(environmentId), {
+      ...source,
+      projects: source.projects.map((project) =>
+        project.id === v2Project.id ? { ...project, isBot: true } : project,
+      ),
+    });
+    expect(
+      registry
+        .get(projects.projectsAtom)
+        .filter((project) => project.environmentId === environmentId)
+        .map((project) => project.id),
+    ).toEqual([ProjectId.make("ordinary")]);
+    const memory = registry.get(projects.projectAtom({ environmentId, projectId: v2Project.id }));
+    expect(memory?.isBot).toBe(true);
+    expect(registry.get(projects.allProjectsAtom)).toContain(memory);
+    const visibleProjects = registry.get(projects.projectsAtom);
+    const current = registry.get(snapshotAtom(environmentId));
+    registry.set(snapshotAtom(environmentId), {
+      ...current,
+      projects: current.projects.map((project) =>
+        project.id === v2Project.id ? { ...project, title: "Renamed memory" } : project,
+      ),
+    });
+    expect(
+      registry.get(projects.allProjectsAtom).find((project) => project.id === v2Project.id)?.title,
+    ).toBe("Renamed memory");
+    expect(registry.get(projects.projectsAtom)).toBe(visibleProjects);
+  } finally {
+    registry.dispose();
+  }
+});
+
+it("keeps unflagged agent workspaces in ordinary project fallbacks", () => {
+  const { registry, projects, snapshotAtom } = makeHarness();
+  try {
+    const source = registry.get(snapshotAtom(environmentId));
+    const legacyId = ProjectId.make("agent:8665b26d-7e56-464f-b935-4a909fe2eaed:workspace");
+    registry.set(snapshotAtom(environmentId), {
+      ...source,
+      projects: [{ ...v2Project, id: legacyId }, ...source.projects],
+    });
+    expect(registry.get(projects.projectsAtom).some((project) => project.id === legacyId)).toBe(
+      true,
+    );
+    expect(registry.get(projects.projectAtom({ environmentId, projectId: legacyId }))?.id).toBe(
+      legacyId,
+    );
+  } finally {
+    registry.dispose();
+  }
+});

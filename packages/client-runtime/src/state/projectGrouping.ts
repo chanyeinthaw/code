@@ -129,13 +129,14 @@ function deriveRepositoryScopedKey(
 function deriveLogicalProjectKey(
   project: Pick<
     EnvironmentProject,
-    "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch"
+    "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch" | "isBot"
   >,
   options?: {
     readonly groupingMode?: SidebarProjectGroupingMode;
     readonly groupScratchProjects?: boolean;
   },
 ): string {
+  if (project.isBot) return derivePhysicalProjectKey(project);
   if (options?.groupScratchProjects && project.isScratch) return SCRATCH_PROJECT_SCOPE_KEY;
   const groupingMode = options?.groupingMode ?? "repository";
   if (groupingMode === "separate") {
@@ -152,7 +153,7 @@ function deriveLogicalProjectKey(
 export function deriveLogicalProjectKeyFromSettings(
   project: Pick<
     EnvironmentProject,
-    "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch"
+    "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch" | "isBot"
   >,
   settings: ProjectGroupingSettings,
   options?: { readonly groupScratchProjects?: boolean },
@@ -168,7 +169,7 @@ export function resolveScratchProjectScopeKey(
   projects: ReadonlyArray<
     Pick<
       EnvironmentProject,
-      "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch"
+      "environmentId" | "id" | "workspaceRoot" | "repositoryIdentity" | "isScratch" | "isBot"
     >
   >,
   settings: ProjectGroupingSettings = {
@@ -199,9 +200,12 @@ export function resolveScratchProjectScopeKey(
 }
 
 export function deriveProjectGroupLabel(input: {
-  readonly representative: Pick<EnvironmentProject, "title" | "repositoryIdentity">;
-  readonly members: ReadonlyArray<Pick<EnvironmentProject, "title" | "repositoryIdentity">>;
+  readonly representative: Pick<EnvironmentProject, "title" | "repositoryIdentity" | "isBot">;
+  readonly members: ReadonlyArray<
+    Pick<EnvironmentProject, "title" | "repositoryIdentity" | "isBot">
+  >;
 }): string {
+  if (input.representative.isBot) return input.representative.title;
   const sharedTitles = uniqueNonEmptyValues(input.members.map((member) => member.title));
   const sharedDisplayNames = uniqueNonEmptyValues(
     input.members.map((member) =>

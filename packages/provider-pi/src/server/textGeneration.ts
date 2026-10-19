@@ -8,12 +8,13 @@ import { TextGenerationError } from "@t3tools/contracts";
 import type { PiSettings } from "../settings.ts";
 
 import { makePiRpcConnection, parsePiModelSlug } from "./rpc.ts";
-import { buildPiRpcLaunch, resolvePiLaunchArgs } from "./mcpInjection.ts";
+import { buildPiRpcLaunch, resolvePiLaunchArgs, withoutPiPromptResources } from "./mcpInjection.ts";
 import * as TextGenerationOperations from "@t3tools/provider-core/server/textGenerationOperations";
 
 const PI_TIMEOUT_MS = 180_000;
 
 const isTextGenerationError = Schema.is(TextGenerationError);
+const decodeSummary = Schema.decodeEffect(Schema.String);
 
 export const makePiTextGeneration = Effect.fn("makePiTextGeneration")(function* (
   piSettings: PiSettings,
@@ -33,7 +34,15 @@ export const makePiTextGeneration = Effect.fn("makePiTextGeneration")(function* 
         });
       }
       const launch = buildPiRpcLaunch({
-        launchArgs: resolvedLaunchArgs.args,
+        launchArgs:
+          operation === "generateMemorySummary"
+            ? [
+                ...withoutPiPromptResources(resolvedLaunchArgs.args),
+                "--no-context-files",
+                "--no-skills",
+                "--no-prompt-templates",
+              ]
+            : resolvedLaunchArgs.args,
         environment,
         mcpSession: undefined,
         extensionPath: undefined,
@@ -100,6 +109,7 @@ export const makePiTextGeneration = Effect.fn("makePiTextGeneration")(function* 
           detail: "Pi returned empty output.",
         });
       }
+      if (operation === "generateMemorySummary") return yield* decodeSummary(text);
       return yield* TextGenerationOperations.decodeJsonReply(request, "Pi", text);
     },
     (effect, request) => {

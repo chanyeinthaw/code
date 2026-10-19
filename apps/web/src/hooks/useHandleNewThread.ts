@@ -4,6 +4,7 @@ import {
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
 import { DEFAULT_SERVER_SETTINGS, type ScopedProjectRef, type ThreadId } from "@t3tools/contracts";
+import { isBotProject } from "@t3tools/shared/botChat";
 import { useRouter } from "@tanstack/react-router";
 import {
   composerDraftHasUserContent,
@@ -77,6 +78,8 @@ export function useNewThreadHandler() {
       replace?: boolean;
     },
   ): Promise<{ draftId: DraftId; threadId: ThreadId } | null> => {
+    const targetProject = readProject(projectRef);
+    if (isBotProject(targetProject ?? { id: projectRef.projectId })) return Promise.resolve(null);
     const projects = readProjects();
     // Read at call time: every provider status push replaces the config map, and
     // subscribing would hand every sidebar row a new handler.

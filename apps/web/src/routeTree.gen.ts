@@ -29,13 +29,17 @@ import { Route as SettingsIntegrationsRouteImport } from './routes/settings.inte
 import { Route as SettingsGeneralRouteImport } from './routes/settings.general'
 import { Route as SettingsDiagnosticsRouteImport } from './routes/settings.diagnostics'
 import { Route as SettingsConnectionsRouteImport } from './routes/settings.connections'
+import { Route as SettingsBotsRouteImport } from './routes/settings.bots'
 import { Route as SettingsArchivedRouteImport } from './routes/settings.archived'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
 import { Route as ProjectsProjectKeyRouteImport } from './routes/projects.$projectKey'
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
+import { Route as ChatBotsRouteImport } from './routes/_chat.bots'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
+import { Route as BotsSettingsEnvironmentIdBotIdRouteImport } from './routes/bots.settings.$environmentId.$botId'
+import { Route as ChatBotsEnvironmentIdThreadIdRouteImport } from './routes/_chat.bots.$environmentId.$threadId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -137,6 +141,11 @@ const SettingsConnectionsRoute = SettingsConnectionsRouteImport.update({
   path: '/connections',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsBotsRoute = SettingsBotsRouteImport.update({
+  id: '/bots',
+  path: '/bots',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsArchivedRoute = SettingsArchivedRouteImport.update({
   id: '/archived',
   path: '/archived',
@@ -162,6 +171,11 @@ const ChatNewRoute = ChatNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatBotsRoute = ChatBotsRouteImport.update({
+  id: '/bots',
+  path: '/bots',
+  getParentRoute: () => ChatRoute,
+} as any)
 const ChatDraftDraftIdRoute = ChatDraftDraftIdRouteImport.update({
   id: '/draft/$draftId',
   path: '/draft/$draftId',
@@ -173,6 +187,18 @@ const ChatEnvironmentIdThreadIdRoute =
     path: '/$environmentId/$threadId',
     getParentRoute: () => ChatRoute,
   } as any)
+const BotsSettingsEnvironmentIdBotIdRoute =
+  BotsSettingsEnvironmentIdBotIdRouteImport.update({
+    id: '/bots/settings/$environmentId/$botId',
+    path: '/bots/settings/$environmentId/$botId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ChatBotsEnvironmentIdThreadIdRoute =
+  ChatBotsEnvironmentIdThreadIdRouteImport.update({
+    id: '/$environmentId/$threadId',
+    path: '/$environmentId/$threadId',
+    getParentRoute: () => ChatBotsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ChatIndexRoute
@@ -182,11 +208,13 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/bots': typeof ChatBotsRouteWithChildren
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/archived': typeof SettingsArchivedRoute
+  '/settings/bots': typeof SettingsBotsRoute
   '/settings/connections': typeof SettingsConnectionsRoute
   '/settings/diagnostics': typeof SettingsDiagnosticsRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -201,6 +229,8 @@ export interface FileRoutesByFullPath {
   '/settings/storage': typeof SettingsStorageRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
@@ -209,11 +239,13 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/bots': typeof ChatBotsRouteWithChildren
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/archived': typeof SettingsArchivedRoute
+  '/settings/bots': typeof SettingsBotsRoute
   '/settings/connections': typeof SettingsConnectionsRoute
   '/settings/diagnostics': typeof SettingsDiagnosticsRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -229,6 +261,8 @@ export interface FileRoutesByTo {
   '/': typeof ChatIndexRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -239,11 +273,13 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/_chat/bots': typeof ChatBotsRouteWithChildren
   '/_chat/new': typeof ChatNewRoute
   '/_chat/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/archived': typeof SettingsArchivedRoute
+  '/settings/bots': typeof SettingsBotsRoute
   '/settings/connections': typeof SettingsConnectionsRoute
   '/settings/diagnostics': typeof SettingsDiagnosticsRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -259,6 +295,8 @@ export interface FileRoutesById {
   '/_chat/': typeof ChatIndexRoute
   '/_chat/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/_chat/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/_chat/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -270,11 +308,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/bots'
     | '/new'
     | '/pull-requests'
     | '/projects/$projectKey'
     | '/settings/appearance'
     | '/settings/archived'
+    | '/settings/bots'
     | '/settings/connections'
     | '/settings/diagnostics'
     | '/settings/general'
@@ -289,6 +329,8 @@ export interface FileRouteTypes {
     | '/settings/storage'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connect'
@@ -297,11 +339,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/bots'
     | '/new'
     | '/pull-requests'
     | '/projects/$projectKey'
     | '/settings/appearance'
     | '/settings/archived'
+    | '/settings/bots'
     | '/settings/connections'
     | '/settings/diagnostics'
     | '/settings/general'
@@ -317,6 +361,8 @@ export interface FileRouteTypes {
     | '/'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   id:
     | '__root__'
     | '/_chat'
@@ -326,11 +372,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/_chat/bots'
     | '/_chat/new'
     | '/_chat/pull-requests'
     | '/projects/$projectKey'
     | '/settings/appearance'
     | '/settings/archived'
+    | '/settings/bots'
     | '/settings/connections'
     | '/settings/diagnostics'
     | '/settings/general'
@@ -346,6 +394,8 @@ export interface FileRouteTypes {
     | '/_chat/'
     | '/_chat/$environmentId/$threadId'
     | '/_chat/draft/$draftId'
+    | '/_chat/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -357,6 +407,7 @@ export interface RootRouteChildren {
   UsageRoute: typeof UsageRoute
   WelcomeRoute: typeof WelcomeRoute
   ProjectsProjectKeyRoute: typeof ProjectsProjectKeyRoute
+  BotsSettingsEnvironmentIdBotIdRoute: typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -501,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsConnectionsRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/bots': {
+      id: '/settings/bots'
+      path: '/bots'
+      fullPath: '/settings/bots'
+      preLoaderRoute: typeof SettingsBotsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/archived': {
       id: '/settings/archived'
       path: '/archived'
@@ -536,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatNewRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/bots': {
+      id: '/_chat/bots'
+      path: '/bots'
+      fullPath: '/bots'
+      preLoaderRoute: typeof ChatBotsRouteImport
+      parentRoute: typeof ChatRoute
+    }
     '/_chat/draft/$draftId': {
       id: '/_chat/draft/$draftId'
       path: '/draft/$draftId'
@@ -550,10 +615,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatEnvironmentIdThreadIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/bots/settings/$environmentId/$botId': {
+      id: '/bots/settings/$environmentId/$botId'
+      path: '/bots/settings/$environmentId/$botId'
+      fullPath: '/bots/settings/$environmentId/$botId'
+      preLoaderRoute: typeof BotsSettingsEnvironmentIdBotIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_chat/bots/$environmentId/$threadId': {
+      id: '/_chat/bots/$environmentId/$threadId'
+      path: '/$environmentId/$threadId'
+      fullPath: '/bots/$environmentId/$threadId'
+      preLoaderRoute: typeof ChatBotsEnvironmentIdThreadIdRouteImport
+      parentRoute: typeof ChatBotsRoute
+    }
   }
 }
 
+interface ChatBotsRouteChildren {
+  ChatBotsEnvironmentIdThreadIdRoute: typeof ChatBotsEnvironmentIdThreadIdRoute
+}
+
+const ChatBotsRouteChildren: ChatBotsRouteChildren = {
+  ChatBotsEnvironmentIdThreadIdRoute: ChatBotsEnvironmentIdThreadIdRoute,
+}
+
+const ChatBotsRouteWithChildren = ChatBotsRoute._addFileChildren(
+  ChatBotsRouteChildren,
+)
+
 interface ChatRouteChildren {
+  ChatBotsRoute: typeof ChatBotsRouteWithChildren
   ChatNewRoute: typeof ChatNewRoute
   ChatPullRequestsRoute: typeof ChatPullRequestsRoute
   ChatIndexRoute: typeof ChatIndexRoute
@@ -562,6 +654,7 @@ interface ChatRouteChildren {
 }
 
 const ChatRouteChildren: ChatRouteChildren = {
+  ChatBotsRoute: ChatBotsRouteWithChildren,
   ChatNewRoute: ChatNewRoute,
   ChatPullRequestsRoute: ChatPullRequestsRoute,
   ChatIndexRoute: ChatIndexRoute,
@@ -574,6 +667,7 @@ const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 interface SettingsRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsArchivedRoute: typeof SettingsArchivedRoute
+  SettingsBotsRoute: typeof SettingsBotsRoute
   SettingsConnectionsRoute: typeof SettingsConnectionsRoute
   SettingsDiagnosticsRoute: typeof SettingsDiagnosticsRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
@@ -591,6 +685,7 @@ interface SettingsRouteChildren {
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsArchivedRoute: SettingsArchivedRoute,
+  SettingsBotsRoute: SettingsBotsRoute,
   SettingsConnectionsRoute: SettingsConnectionsRoute,
   SettingsDiagnosticsRoute: SettingsDiagnosticsRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
@@ -618,6 +713,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsageRoute: UsageRoute,
   WelcomeRoute: WelcomeRoute,
   ProjectsProjectKeyRoute: ProjectsProjectKeyRoute,
+  BotsSettingsEnvironmentIdBotIdRoute: BotsSettingsEnvironmentIdBotIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

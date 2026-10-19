@@ -3,7 +3,9 @@ import {
   ProjectId,
   ProviderDriverKind,
   ProviderInstanceId,
+  ServerSettings,
 } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 import { createModelSelection } from "./model.ts";
 import {
@@ -16,6 +18,7 @@ import {
 } from "./projectSettings.ts";
 import { applyServerSettingsPatch } from "./serverSettings.ts";
 
+const decodeServerSettings = Schema.decodeUnknownSync(ServerSettings);
 const projectId = ProjectId.make("project-a");
 const otherProjectId = ProjectId.make("project-b");
 
@@ -34,6 +37,15 @@ describe("resolveSendEnvMode", () => {
 });
 
 describe("resolveProjectSettings", () => {
+  it("lets bots load resources unless a project turns it off, including when the setting is absent", () => {
+    expect(decodeServerSettings({}).botLoadResources).toBe(true);
+    const settings = applyServerSettingsPatch(DEFAULT_SERVER_SETTINGS, {
+      projectSettingsOverrides: { [projectId]: { botLoadResources: false } },
+    });
+    expect(resolveProjectSettings(settings, projectId).settings.botLoadResources).toBe(false);
+    expect(resolveProjectSettings(settings, otherProjectId).settings.botLoadResources).toBe(true);
+  });
+
   it("ignores an override left undefined by a forward-compatible decode", () => {
     const resolved = resolveProjectSettings(
       {

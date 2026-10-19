@@ -1,3 +1,7 @@
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useBotRecords, useBotThreadShells } from "../../state/bots";
+import { resolveLegacyBotSettingsIdentity } from "../bots/botSettings.logic";
 import { EnvironmentId } from "@t3tools/contracts";
 import { LayersIcon } from "lucide-react";
 
@@ -28,6 +32,30 @@ export function ProjectsSettings() {
         </div>
       </SettingsPageContainer>
     ) : null;
+  const selectedMembers = scope.members;
+  const isBotSelection = selectedMembers.some((member) => member.isBot);
+  const records = useBotRecords();
+  const roots = useBotThreadShells();
+  const bot = resolveLegacyBotSettingsIdentity(records, selectedMembers, roots);
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!isBotSelection || !bot) return;
+    void navigate({
+      to: "/bots/settings/$environmentId/$botId",
+      params: { environmentId: bot.ownerEnvironmentId, botId: bot.id },
+      replace: true,
+    });
+  }, [isBotSelection, bot, navigate]);
+  if (isBotSelection)
+    return (
+      <SettingsPageContainer>
+        <p className="text-sm text-muted-foreground">
+          {bot
+            ? "Opening bot settings…"
+            : "Bot settings are unavailable. Connect the owning environment and wait for the bot to load."}
+        </p>
+      </SettingsPageContainer>
+    );
   // Keep the panel mounted so it can follow members when regrouping changes the project key.
   const projectScope =
     scope.kind === "project" ||

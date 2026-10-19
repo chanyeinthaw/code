@@ -102,8 +102,10 @@ export function useEnvironmentThreadRefs(
   );
 }
 
-export function useProjects(): ReadonlyArray<EnvironmentProject> {
-  return useAtomValue(environmentProjects.projectsAtom);
+export function useProjects(options?: { includeBot?: boolean }): ReadonlyArray<EnvironmentProject> {
+  return useAtomValue(
+    options?.includeBot ? environmentProjects.allProjectsAtom : environmentProjects.projectsAtom,
+  );
 }
 
 /** Providers are left out; read them with `useEnvironmentProviders()`. */
@@ -391,8 +393,8 @@ function shellParentThreadId(
 
 /**
  * The live shells the panel's immediate relationships can reach: the thread,
- * its parent, its children, and the threads its subagents, workflow members and
- * context transfers name. Keeps its array while those shells are unchanged, so
+ * its parent, its children, the threads it launched or was launched by, and the
+ * threads its subagents, workflow members and context transfers name. Keeps its array while those shells are unchanged, so
  * another thread streaming in the same environment does not re-render the panel.
  */
 /** Exported for tests. */
@@ -408,6 +410,8 @@ export function selectThreadRelationshipShells(
   if (projection !== null) {
     const parentThreadId = shellParentThreadId(projection.thread);
     if (parentThreadId !== null) named.add(parentThreadId);
+    if (projection.thread.launchedByThreadId !== undefined)
+      named.add(projection.thread.launchedByThreadId);
     for (const subagent of projection.subagents) {
       if (subagent.childThreadId !== null) named.add(subagent.childThreadId);
       for (const agent of subagent.workflow?.agents ?? []) {
@@ -422,10 +426,16 @@ export function selectThreadRelationshipShells(
   const current = threads.find((thread) => thread.id === threadId);
   const currentParentId = current === undefined ? null : shellParentThreadId(current);
   if (currentParentId !== null) named.add(currentParentId);
+  if (current?.launchedByThreadId !== undefined) named.add(current.launchedByThreadId);
   return threads.filter(
-    (thread) => named.has(thread.id) || shellParentThreadId(thread) === threadId,
+    (thread) =>
+      named.has(thread.id) ||
+      shellParentThreadId(thread) === threadId ||
+      thread.launchedByThreadId === threadId,
   );
 }
+
+const EMPTY_RELATIONSHIP_SHELLS_ATOM = Atom.make<ReadonlyArray<OrchestrationV2ThreadShell>>([]);
 
 const relationshipShellsAtomFamily = Atom.family((key: string) => {
   const ref = parseThreadKey(key);
@@ -443,7 +453,9 @@ const relationshipShellsAtomFamily = Atom.family((key: string) => {
 });
 
 export function useThreadRelationshipShells(
-  ref: ScopedThreadRef,
+  ref: ScopedThreadRef | null,
 ): ReadonlyArray<OrchestrationV2ThreadShell> {
-  return useAtomValue(relationshipShellsAtomFamily(threadKey(ref)));
+  return useAtomValue(
+    ref ? relationshipShellsAtomFamily(threadKey(ref)) : EMPTY_RELATIONSHIP_SHELLS_ATOM,
+  );
 }

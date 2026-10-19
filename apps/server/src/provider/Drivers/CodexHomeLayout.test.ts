@@ -232,12 +232,12 @@ it.layer(NodeServices.layer)("CodexHomeLayout", (it) => {
           const shadowHome = path.join(shadowRoot, "shadow");
 
           yield* fileSystem.makeDirectory(path.join(sharedHome, "log"));
-          yield* fileSystem.makeDirectory(path.join(sharedHome, "memories"));
+          yield* fileSystem.makeDirectory(path.join(sharedHome, "bots"));
           yield* fileSystem.makeDirectory(path.join(sharedHome, "tmp"));
           yield* writeTextFile(path.join(sharedHome, "config.toml"), 'model = "gpt-5-codex"\n');
           yield* writeTextFile(path.join(shadowHome, "auth.json"), '{"shadow":true}\n');
           yield* fileSystem.makeDirectory(path.join(shadowHome, "log"), { recursive: true });
-          yield* fileSystem.makeDirectory(path.join(shadowHome, "memories"), { recursive: true });
+          yield* fileSystem.makeDirectory(path.join(shadowHome, "bots"), { recursive: true });
           yield* fileSystem.makeDirectory(path.join(shadowHome, "tmp"), { recursive: true });
 
           const layout = yield* resolveCodexHomeLayout(
@@ -254,7 +254,7 @@ it.layer(NodeServices.layer)("CodexHomeLayout", (it) => {
             .readLink(path.join(shadowHome, "log"))
             .pipe(Effect.result);
           const memoriesLinkResult = yield* fileSystem
-            .readLink(path.join(shadowHome, "memories"))
+            .readLink(path.join(shadowHome, "bots"))
             .pipe(Effect.result);
           const tmpLinkResult = yield* fileSystem
             .readLink(path.join(shadowHome, "tmp"))
