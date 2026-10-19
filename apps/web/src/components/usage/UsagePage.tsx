@@ -1,3 +1,4 @@
+import { AlternatePageBrand } from "../alternate-layout/AlternatePageBrand";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
@@ -507,7 +508,10 @@ export function UsagePage() {
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none isolate">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground">
-        <WorkspacePageHeader electron={isElectron}>{topbarContent}</WorkspacePageHeader>
+        <WorkspacePageHeader electron={isElectron}>
+          <AlternatePageBrand />
+          {topbarContent}
+        </WorkspacePageHeader>
 
         <ScrollArea className="min-h-0 flex-1">
           <WorkspacePageContainer width="wide">
