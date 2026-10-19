@@ -1,3 +1,5 @@
+import * as BotStorage from "../../bots/BotStorage.ts";
+import * as BotChat from "../../bots/BotChat.ts";
 import * as OtelEnvironment from "@t3tools/shared/otelEnvironment";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -390,11 +392,13 @@ export function layerWithRegistry<Error>(
     ),
   );
   const layerProviderTurnStartServiceProvided = ProviderTurnStartService.layer.pipe(
+    Layer.provide(Layer.mock(BotChat.BotChat)({})),
     Layer.provide(
       Layer.mergeAll(
         layerContextHandoffServiceProvided,
         layerEventSinkProvided,
         IdAllocator.layer,
+        ThreadCommandExecutor.layer,
         layerStores,
         layerProviderSessionManagerProvided,
         Layer.mock(ProviderAuthService.ProviderAuthService)({
@@ -450,6 +454,7 @@ export function layerWithRegistry<Error>(
   const layerOrchestratorProvided = Orchestrator.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
+        BotStorage.layer.pipe(Layer.orDie),
         layerCheckpointServiceProvided,
         CommandPolicy.layer,
         layerContextHandoffServiceProvided,
@@ -464,6 +469,7 @@ export function layerWithRegistry<Error>(
         ThreadForkService.layer,
       ),
     ),
+    Layer.provide(layerDatabase),
   );
   const layerThreadManagementProvided = Layer.unwrap(
     Effect.gen(function* () {

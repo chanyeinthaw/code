@@ -1,10 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
-import { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ProviderInstanceId, RunId, ThreadId } from "@t3tools/contracts";
 
 import {
   T3_MCP_BEARER_ENV,
   T3_MCP_URL_ENV,
   T3_PI_RUNTIME_MODE_ENV,
+  T3_PI_MEMORY_CHAT_ENV,
   T3_PI_MCP_EXTENSION_PATH_ENV,
 } from "./mcpExtensionSource.ts";
 import { buildPiRpcLaunch, resolvePiLaunchArgs } from "./mcpInjection.ts";
@@ -22,6 +23,24 @@ const mcpSession = {
 };
 
 describe("pi T3 MCP injection", () => {
+  it("keeps native tools and coding instructions for workers with inherited memory", () => {
+    const launch = buildPiRpcLaunch({
+      launchArgs: [],
+      environment: { [T3_PI_MEMORY_CHAT_ENV]: "1" },
+      mcpSession: {
+        ...mcpSession,
+        endpoint: "http://127.0.0.1:43123/bot-mcp",
+        botRunId: RunId.make("parent-turn"),
+        botThreadId: ThreadId.make("parent"),
+      },
+      extensionPath: "/tmp/cache/pi-t3-mcp-extension.ts",
+    });
+    assert.equal(launch.env[T3_MCP_URL_ENV], "http://127.0.0.1:43123/bot-mcp");
+    assert.isUndefined(launch.env[T3_PI_MEMORY_CHAT_ENV]);
+    assert.notInclude(launch.args, "--no-tools");
+    assert.notInclude(launch.args, "--no-extensions");
+  });
+
   it("always adds the permission bridge and configures MCP when available", () => {
     const resolvedArgs = resolvePiLaunchArgs(
       "--extension=/home/user/.pi/agent/extensions/demo.ts --session-dir=/tmp/pi-sessions --provider=anthropic --model=claude-sonnet --tools='' --name=-review --extension-flag=kept",

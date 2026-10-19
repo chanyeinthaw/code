@@ -1505,6 +1505,7 @@ export type ComposerSendSnapshot = ReturnType<typeof snapshotComposerSend>;
 export function planComposerTurn(input: {
   readonly messageText: string;
   readonly sendQueuesBehindSetup: boolean;
+  readonly bufferBotSteers?: boolean;
   readonly isServerThread: boolean;
   readonly activeMessageCount: number;
   readonly sendEnvMode: DraftThreadEnvMode;
@@ -1516,7 +1517,9 @@ export function planComposerTurn(input: {
   readonly dispatchMode: ComposerDispatchMode;
 }) {
   const isFirstMessage =
-    !input.sendQueuesBehindSetup && (!input.isServerThread || input.activeMessageCount === 0);
+    !input.sendQueuesBehindSetup &&
+    !input.bufferBotSteers &&
+    (!input.isServerThread || input.activeMessageCount === 0);
   const shouldCreateWorktree =
     isFirstMessage && input.sendEnvMode === "worktree" && !input.worktreePath;
   // A stale Claude session compacts before this message so the turn does not re-read the
@@ -1537,7 +1540,8 @@ export function planComposerTurn(input: {
     shouldQueueBehindActiveRun:
       compactBeforeSend ||
       input.sendQueuesBehindSetup ||
-      (input.phase === "running" && input.dispatchMode === "queue"),
+      ((input.phase === "running" || input.bufferBotSteers === true) &&
+        input.dispatchMode === "queue"),
   };
 }
 

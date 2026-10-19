@@ -13349,3 +13349,52 @@ describe("ClaudeAdapterV2 query message stream", () => {
     }),
   );
 });
+
+it("keeps Claude's preset while adding memory coordination and available tool guidance", () => {
+  const options = ClaudeAdapterV2.makeClaudeQueryOptions({
+    modelSelection: CLAUDE_TEST_MODEL_SELECTION,
+    nativeThreadId: "claude-memory",
+    resume: false,
+    cwd: "/bots",
+    tools: [],
+    botPrompt: "Frozen memory. Delegate by default; act directly when explicitly asked.",
+    mcpSession: {
+      environmentId: EnvironmentId.make("owner"),
+      threadId: ThreadId.make("memory"),
+      providerInstanceId: CLAUDE_TEST_MODEL_SELECTION.instanceId,
+      providerSessionId: "memory-session",
+      endpoint: "http://localhost/bot-mcp",
+      authorizationHeader: "Bearer test",
+      browserToolsAvailable: true,
+      capabilities: new Set(["device"]),
+    },
+  });
+  assert.deepEqual(options.tools, []);
+  assert.isObject(options.systemPrompt);
+  const prompt = options.systemPrompt as { preset: string; append: string };
+  assert.equal(prompt.preset, "claude_code");
+  assert.include(prompt.append, "Frozen memory");
+  assert.include(prompt.append, "claude-sonnet-4-6");
+  assert.include(prompt.append, "orchestrator_capabilities");
+  assert.include(prompt.append, "## T3 Code collaborative browser");
+  assert.include(prompt.append, "## T3 Code devices");
+});
+
+it("keeps frozen memory recall available in Claude's read-only mode", () => {
+  const overrides = ClaudeAdapterV2.claudeMcpQueryOverrides({
+    readOnlySandbox: true,
+    mcpSession: {
+      environmentId: EnvironmentId.make("owner"),
+      threadId: ThreadId.make("memory"),
+      providerInstanceId: CLAUDE_TEST_MODEL_SELECTION.instanceId,
+      providerSessionId: "memory-session",
+      botRunId: RunId.make("memory-run"),
+      endpoint: "http://localhost/bot-mcp",
+      authorizationHeader: "Bearer test",
+      browserToolsAvailable: false,
+    },
+  });
+  assert.include(overrides.allowedTools ?? [], "mcp__t3-code__zoom");
+  assert.include(overrides.allowedTools ?? [], "mcp__t3-code__t3_attachment_read");
+  assert.notInclude(overrides.allowedTools ?? [], "mcp__t3-code__delegate_task");
+});

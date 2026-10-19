@@ -1,3 +1,5 @@
+import { WsBotRpcGroup } from "@t3tools/contracts";
+import * as BotChat from "./bots/BotChat.ts";
 import { OrchestrationDispatchCommandError } from "@t3tools/contracts";
 import * as Crypto from "effect/Crypto";
 import * as Orchestrator from "./orchestration-v2/Orchestrator.ts";
@@ -544,6 +546,47 @@ const PROVIDER_STATUS_DEBOUNCE_MS = 200;
 
 // Middleware added later wraps middleware added earlier, so instrumentation wraps authorization.
 const ServerWsRpcGroup = WsRpcGroup.middleware(RpcInstrumentation);
+const ServerBotRpcGroup = WsBotRpcGroup.middleware(RpcInstrumentation);
+const ServerMainRpcGroup = ServerWsRpcGroup.omit(
+  WS_METHODS.botsList,
+  WS_METHODS.botsCreate,
+  WS_METHODS.botsRename,
+  WS_METHODS.botsReset,
+  WS_METHODS.botsDelete,
+  WS_METHODS.botsTransferBegin,
+  WS_METHODS.botsTransferRead,
+  WS_METHODS.botsTransferWrite,
+  WS_METHODS.botsTransferStage,
+  WS_METHODS.botsTransferRelease,
+  WS_METHODS.botsTransferActivate,
+  WS_METHODS.botsTransferCancel,
+);
+const layerBotRpc = ServerBotRpcGroup.toLayer(
+  Effect.gen(function* () {
+    const bots = yield* BotChat.BotChat;
+    return ServerBotRpcGroup.of({
+      [WS_METHODS.botsList]: () => bots.list(),
+      [WS_METHODS.botsCreate]: (input) => bots.create(input),
+      [WS_METHODS.botsRename]: (input) => bots.rename(input.botId, input.name),
+      [WS_METHODS.botsReset]: (input) => bots.reset(input.botId),
+      [WS_METHODS.botsDelete]: (input) => bots.remove(input.botId),
+      [WS_METHODS.botsTransferBegin]: (input) =>
+        bots.beginTransfer(input.botId, input.destinationEnvironmentId),
+      [WS_METHODS.botsTransferRead]: (input) =>
+        bots.readTransferChunk(input.botId, input.transferId, input.offset),
+      [WS_METHODS.botsTransferWrite]: (input) =>
+        bots.writeTransferChunk(input.transferId, input.offset, input.data),
+      [WS_METHODS.botsTransferStage]: (input) => bots.stageTransfer(input.transferId, input.length),
+      [WS_METHODS.botsTransferRelease]: (input) =>
+        bots.releaseTransfer(input.botId, input.transferId),
+      [WS_METHODS.botsTransferActivate]: (input) =>
+        bots.activateTransfer(input.botId, input.transferId, input.secret),
+      [WS_METHODS.botsTransferCancel]: (input) =>
+        bots.cancelTransfer(input.botId, input.transferId),
+    });
+  }),
+);
+
 // Replaying each intervening event costs a shell refetch; past this gap a
 // single O(active-threads) snapshot is cheaper and bounded.
 const SHELL_RESUME_MAX_GAP = 1_000;
@@ -1187,7 +1230,7 @@ export const layerWsRpc = (
   previewAutomationBroker: PreviewAutomationBroker.PreviewAutomationBroker["Service"],
   serverBrowser: ServerBrowser.ServerBrowser["Service"],
 ) =>
-  ServerWsRpcGroup.toLayer(
+  ServerMainRpcGroup.toLayer(
     Effect.gen(function* () {
       const currentSessionId = currentSession.sessionId;
       const sql = yield* SqlClient.SqlClient;
@@ -1803,7 +1846,7 @@ export const layerWsRpc = (
         return result;
       });
 
-      const handlers = ServerWsRpcGroup.of({
+      const handlers = ServerMainRpcGroup.of({
         [ORCHESTRATION_V2_WS_METHODS.dispatchCommand]: (command) =>
           Effect.annotateCurrentSpan({
             "orchestration_v2.command_id": command.commandId,
@@ -2042,6 +2085,7 @@ export const layerWsRpc = (
               Effect.as(commandOutputHub.subscribe(input)),
             ),
           ),
+
         [WS_METHODS.scheduledTasksList]: (_input) =>
           scheduledTasks.list().pipe(Effect.map(withVisibleWebhookUrls)),
         [WS_METHODS.scheduledTasksSubscribe]: (_input) =>
@@ -3122,7 +3166,7 @@ export const layerWsRpc = (
       });
       return handlers;
     }),
-  );
+  ).pipe(Layer.merge(layerBotRpc));
 
 // RpcServer's default sends a socket-level Defect frame instead, and the client
 // ends every pending request on the socket with it.

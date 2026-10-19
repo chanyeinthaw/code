@@ -1,3 +1,5 @@
+import { resolveBotThreadContext } from "../botThreadContext";
+import { botChatProviderDisabledReason } from "@t3tools/shared/botChat";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
 import { ThreadFind, ThreadFindCanvas, type ThreadFindControls } from "./chat/ThreadFindProvider";
@@ -95,6 +97,7 @@ import {
   workflowOpeningParentThreadId,
 } from "@t3tools/client-runtime/state/subagentRuntime";
 import { threadSupportsProviderHandoff } from "@t3tools/client-runtime/state/thread-workflows";
+import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/models";
 import { resolvePendingHandoff } from "@t3tools/client-runtime/handoff";
 import { HandoffRow } from "./chat/V2LifecycleRow";
 import {
@@ -1014,7 +1017,8 @@ export default function ChatView(props: ChatViewProps) {
     serverProjection === null ? null : deriveProviderSubagentStatus(serverProjection);
   const isProviderSubagent =
     serverThread !== null && isProviderNativeSubagentThread(serverThread.source);
-  const supportsProviderSwitchingViaHandoff = threadSupportsProviderHandoff(serverProjection);
+  const supportsProviderSwitchingViaHandoff =
+    serverThread?.botId !== undefined || threadSupportsProviderHandoff(serverProjection);
   const activeLatestRun = isServerThread ? serverLatestRun : (activeThread?.latestRun ?? null);
   const activeActivityRun = isServerThread ? serverActivityRun : (activeThread?.latestRun ?? null);
   const activeRuntime = isServerThread ? serverRuntime : (activeThread?.runtime ?? null);
@@ -1841,7 +1845,7 @@ export default function ChatView(props: ChatViewProps) {
     (isSendBusy || phase === "connecting" || phase === "running") &&
     (compactionRunning || (compactRequestIsActive && !compactionSettled));
   const isWorking =
-    phase === "running" ||
+    threadRuntimeIsActive(activeRuntime) ||
     isSendBusy ||
     isConnecting ||
     isCompacting ||
@@ -1880,8 +1884,10 @@ export default function ChatView(props: ChatViewProps) {
     deriveActiveWorkStartedAt(activeActivityRun, activeRuntime, localDispatchStartedAt) ??
     runlessWorkStartedAt;
   const activeRunPreparing = activeActivityRun?.status === "preparing";
-  const sendQueuesBehindSetup =
+  const sendDuringPreparation =
     isServerThread && (activeRunPreparing || activeActivityRun?.status === "starting");
+  const bufferBotSteers = sendDuringPreparation && serverThread?.botId !== undefined;
+  const sendQueuesBehindSetup = sendDuringPreparation && !bufferBotSteers;
   const [setupQueueSendThreadKey, setSetupQueueSendThreadKey] = useState<string | null>(null);
   useEffect(() => {
     attachmentPreviewHandoffByMessageIdRef.current = attachmentPreviewHandoffByMessageId;
@@ -3841,8 +3847,12 @@ export default function ChatView(props: ChatViewProps) {
       toastManager.add({ type: "info", title: "This thread is no longer available" });
       return;
     }
+    const root = shell
+      ? readThreadShell(scopeThreadRef(environmentId, shell.lineage.rootThreadId))
+      : null;
+    const bot = resolveBotThreadContext(shell, root);
     void navigate({
-      to: "/$environmentId/$threadId",
+      to: bot ? "/bots/$environmentId/$threadId" : "/$environmentId/$threadId",
       params: buildThreadRouteParams(threadRef),
     });
   };
@@ -4670,7 +4680,7 @@ export default function ChatView(props: ChatViewProps) {
     if (
       !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope) ||
       !activeThread ||
-      (isSendBusy && !sendQueuesBehindSetup) ||
+      (isSendBusy && !sendDuringPreparation) ||
       isConnecting ||
       isRevertingCheckpoint ||
       !clientSettingsHydrated ||
@@ -5027,6 +5037,7 @@ export default function ChatView(props: ChatViewProps) {
     } = planComposerTurn({
       messageText: messageTextForSend,
       sendQueuesBehindSetup,
+      bufferBotSteers,
       isServerThread,
       activeMessageCount,
       sendEnvMode,
@@ -5271,7 +5282,7 @@ export default function ChatView(props: ChatViewProps) {
         return;
       }
     }
-    if (sendQueuesBehindSetup) {
+    if (sendDuringPreparation) {
       setSetupQueueSendThreadKey(activeThreadKey);
     } else {
       beginLocalDispatch({
@@ -5512,7 +5523,7 @@ export default function ChatView(props: ChatViewProps) {
         streaming: false,
         ...(shouldQueueBehindActiveRun
           ? { inputIntent: "queued_turn" as const }
-          : phase === "running" && dispatchMode === "steer"
+          : (phase === "running" || bufferBotSteers) && dispatchMode === "steer"
             ? { inputIntent: "steer" as const }
             : {}),
       },
@@ -5804,7 +5815,7 @@ export default function ChatView(props: ChatViewProps) {
       setDockedDraftHeroThreadKey((currentThreadKey) =>
         currentThreadKey === activeThreadKey ? null : currentThreadKey,
       );
-      if (!sendQueuesBehindSetup) resetLocalDispatch();
+      if (!sendDuringPreparation) resetLocalDispatch();
     }
   };
 
@@ -6091,7 +6102,7 @@ export default function ChatView(props: ChatViewProps) {
   const hasStartedSession = activeRuntime !== null;
   const runtimeProviderInstanceId = activeRuntime?.providerInstanceId ?? null;
   const currentModelSelection = activeThread?.modelSelection ?? null;
-  const getModelDisabledReason = makeModelDisabledReason(
+  const getStartedModelDisabledReason = makeModelDisabledReason(
     currentModelSelection
       ? {
           providers: providerStatuses,
@@ -6102,6 +6113,16 @@ export default function ChatView(props: ChatViewProps) {
         }
       : null,
   );
+
+  const getModelDisabledReason = (instanceId: ProviderInstanceId, model: string) => {
+    if (serverThread?.botId) {
+      const provider = providerStatuses.find((entry) => entry.instanceId === instanceId);
+      return provider
+        ? botChatProviderDisabledReason(provider)
+        : "This provider does not support bot chat.";
+    }
+    return getStartedModelDisabledReason(instanceId, model);
+  };
 
   const onProviderModelSelect = (
     instanceId: ProviderInstanceId,
@@ -6155,7 +6176,7 @@ export default function ChatView(props: ChatViewProps) {
         : { instanceId, model: resolvedModel };
     const modelChangeBlockReason = getStartedThreadModelChangeBlockReason({
       providers: providerStatuses,
-      hasStartedSession: activeRuntime !== null,
+      hasStartedSession: serverThread?.botId === undefined && activeRuntime !== null,
       supportsProviderSwitchingViaHandoff,
       currentModelSelection: activeThread.modelSelection,
       currentProviderInstanceId: activeRuntime?.providerInstanceId ?? null,
@@ -6856,12 +6877,12 @@ export default function ChatView(props: ChatViewProps) {
                               projectSelectionRequired={
                                 isLocalDraftThread && activeProject === null
                               }
-                              phase={phase}
+                              phase={bufferBotSteers ? "running" : phase}
                               isCompacting={isCompacting}
                               canInterrupt={canInterruptRunningThread}
                               isConnecting={isConnecting}
                               isSendBusy={
-                                (isSendBusy && !sendQueuesBehindSetup) ||
+                                (isSendBusy && !sendDuringPreparation) ||
                                 (setupQueueSendThreadKey !== null &&
                                   setupQueueSendThreadKey === activeThreadKey) ||
                                 queuedRunEdit.isSaving ||
@@ -6884,7 +6905,7 @@ export default function ChatView(props: ChatViewProps) {
                                             ? "Preparing worktree"
                                             : projectCloneSendBlockReason
                               }
-                              isPreparingWorktree={isPreparingWorktree && !sendQueuesBehindSetup}
+                              isPreparingWorktree={isPreparingWorktree && !sendDuringPreparation}
                               queuedRunsControl={queuedRunsControl}
                               bannerItems={composerBannerItems}
                               resumeCompactionTokens={resumeCompactionTokens}

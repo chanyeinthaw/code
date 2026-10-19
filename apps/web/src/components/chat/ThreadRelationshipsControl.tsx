@@ -1,3 +1,4 @@
+import { resolveBotThreadContext } from "../../botThreadContext";
 import { useAtomValue } from "@effect/atom-react";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { ThreadHoverCardPopup } from "../ThreadHoverCard";
@@ -31,6 +32,7 @@ import {
   isOrchestrationV2WorkActive,
   isProviderNativeSubagentThread,
   NodeId,
+  type ScopedThreadRef,
   type EnvironmentId,
   type OrchestrationV2Subagent,
   type OrchestrationV2ThreadShell,
@@ -207,6 +209,27 @@ function currentSubagent<Agent extends RuntimeSubagent>(
   };
 }
 
+export function useHasThreadLineage(ref: ScopedThreadRef | null) {
+  const projection = useThreadProjection(ref)?.projection ?? null;
+  const shells = useThreadRelationshipShells(ref);
+  const archived = useArchivedThreadSnapshots(ref ? [ref.environmentId] : []);
+  if (!ref) return false;
+  const archivedShells =
+    archived.snapshots.find((entry) => entry.environmentId === ref.environmentId)?.snapshot
+      .threads ?? [];
+  const graph = deriveThreadRelationshipGraph({
+    threads: [...shells, ...archivedShells],
+    projection,
+  });
+  return (
+    immediateThreadRelationships(graph, ref.threadId).length > 0 ||
+    (projection?.subagents.some(
+      (agent) => agent.childThreadId === null && agent.status === "running",
+    ) ??
+      false)
+  );
+}
+
 export function ThreadRelationshipsPanel(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
@@ -333,8 +356,16 @@ export function ThreadRelationshipsPanel(props: {
   }
 
   const openThread = (threadId: ThreadId) => {
+    const target =
+      relationshipShells.find((thread) => thread.id === threadId) ??
+      archivedShells?.find((thread) => thread.id === threadId);
+    const rootId = target?.lineage.rootThreadId;
+    const root =
+      relationshipShells.find((thread) => thread.id === rootId) ??
+      archivedShells?.find((thread) => thread.id === rootId);
+    const memory = resolveBotThreadContext(target ?? null, root ?? null);
     void navigate({
-      to: "/$environmentId/$threadId",
+      to: memory ? "/bots/$environmentId/$threadId" : "/$environmentId/$threadId",
       params: buildThreadRouteParams(scopeThreadRef(props.environmentId, threadId)),
     });
   };

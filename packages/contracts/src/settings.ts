@@ -1133,6 +1133,22 @@ export const StorageCleanupSettings = Schema.Struct({
 });
 export type StorageCleanupSettings = typeof StorageCleanupSettings.Type;
 
+export const MEMORY_COMPACTION_CONCURRENCY_OPTIONS = [2, 4, 6, 8] as const;
+const MemoryCompactionConcurrency = Schema.Literals(MEMORY_COMPACTION_CONCURRENCY_OPTIONS);
+
+// Older settings allowed every integer from 1 to 8; round them up to a supported limit.
+const PersistedMemoryCompactionConcurrency = Schema.Int.check(
+  Schema.isBetween({ minimum: 1, maximum: 8 }),
+).pipe(
+  Schema.decodeTo(
+    MemoryCompactionConcurrency,
+    SchemaTransformation.transform({
+      decode: (value) => (value <= 2 ? 2 : value <= 4 ? 4 : value <= 6 ? 6 : 8),
+      encode: (value) => value,
+    }),
+  ),
+);
+
 export const ServerSettings = Schema.Struct({
   // Null means no client has migrated this preference yet; an empty value is
   // authoritative so another device cannot resurrect cleared preferences.
@@ -1256,6 +1272,12 @@ export const ServerSettings = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
   addProjectBaseDirectory: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  memoryCompactionConcurrency: PersistedMemoryCompactionConcurrency.pipe(
+    Schema.withDecodingDefault(Effect.succeed(8)),
+  ),
+  memoryCompactionModelSelection: Schema.NullOr(ModelSelection).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(
       Effect.succeed({
@@ -1557,6 +1579,8 @@ export const ServerSettingsPatch = Schema.Struct({
   newWorktreesStartFromOrigin: Schema.optionalKey(Schema.Boolean),
   worktreeSubmodules: Schema.optionalKey(Schema.NullOr(WorktreeSubmodules)),
   addProjectBaseDirectory: Schema.optionalKey(TrimmedString),
+  memoryCompactionConcurrency: Schema.optionalKey(MemoryCompactionConcurrency),
+  memoryCompactionModelSelection: Schema.optionalKey(Schema.NullOr(ModelSelectionPatch)),
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   branchNamingMode: Schema.optionalKey(BranchNamingMode),
   branchNamePrefix: Schema.optionalKey(TrimmedString),

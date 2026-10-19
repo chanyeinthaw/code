@@ -136,6 +136,14 @@ describe("Pi MCP tool exposure", () => {
     ui: { notify: () => undefined },
   };
 
+  it("keeps the memory system prompt without coding orchestration instructions", async () => {
+    const bridge = await loadMcpBridge({ modern: true, botChat: true });
+    const start = bridge.handlers.get("before_agent_start");
+    if (start === undefined) throw new Error("Missing agent start hook");
+    const prompt = await start({ systemPrompt: "Frozen memory instructions" }, discoveryContext);
+    assert.equal(prompt?.systemPrompt, "Frozen memory instructions");
+  });
+
   it("keeps orchestration direct and optional bridge tools discoverable on modern Pi", async () => {
     const bridge = await loadMcpBridge({ modern: true, toolSearchAvailable: true });
     await bridge.handlers.get("session_start")!({ systemPrompt: "" }, discoveryContext);

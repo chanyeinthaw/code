@@ -1,3 +1,4 @@
+import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { AgentScope } from "@t3tools/shared/AgentScope";
 import { getModelSelectionStringOptionValue } from "@t3tools/shared/model";
@@ -468,7 +469,29 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
         return yield* protocolError(resolvedLaunchArgs.message);
       }
       const launch = buildPiRpcLaunch({
-        launchArgs: resolvedLaunchArgs.args,
+        launchArgs:
+          input.runtimePolicy.botChat === undefined
+            ? resolvedLaunchArgs.args
+            : [
+                ...resolvedLaunchArgs.args,
+                "--no-builtin-tools",
+                "--no-context-files",
+                "--no-skills",
+                "--no-prompt-templates",
+                "--system-prompt",
+                buildBotSystemPrompt({
+                  botPrompt: input.runtimePolicy.botChat.systemPrompt,
+                  runtime: {
+                    harness: "Pi",
+                    model: input.modelSelection.model,
+                    reasoningEffort: getModelSelectionStringOptionValue(
+                      input.modelSelection,
+                      "thinking",
+                    ),
+                  },
+                  mcpSession,
+                }),
+              ],
         environment: options.environment,
         mcpSession,
         extensionPath,
