@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { MessageSquareTextIcon } from "lucide-react";
 
 import { useProject, useThreadRefs, useThreadShell } from "../../state/entities";
+import { useBotAwareThreadRoute } from "../../state/bots";
 import { ProjectFavicon } from "../ProjectFavicon";
 
 export function MarkdownThreadLink(props: {
@@ -35,9 +36,10 @@ export function MarkdownThreadLink(props: {
     thread === null ? null : scopeProjectRef(environmentId, thread.projectId),
   );
   const title = thread?.title.trim() || props.label;
+  const route = useBotAwareThreadRoute(scopeThreadRef(environmentId, threadId));
   return (
     <Link
-      to="/$environmentId/$threadId"
+      to={route}
       params={{ environmentId, threadId }}
       title={thread === null ? "Thread no longer available" : project?.title}
       data-markdown-copy={formatThreadLink(threadId, title)}

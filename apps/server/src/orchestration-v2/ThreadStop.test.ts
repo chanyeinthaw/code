@@ -769,10 +769,10 @@ it.effect.each([false, true])(
       const snapshot = (yield* projections.getShellSnapshot()).threads.find(
         (thread) => thread.id === threadId,
       );
-      const memoryShell = ProjectionStore.threadShellFromProjection(
+      const botShell = ProjectionStore.threadShellFromProjection(
         yield* orchestrator.getThreadProjection(threadId),
       );
-      for (const result of [shell, snapshot, memoryShell]) {
+      for (const result of [shell, snapshot, botShell]) {
         assert.equal(result?.status, "completed");
         assert.isEmpty(result?.pendingBackgroundTasks ?? []);
         assert.equal(result?.latestRunStopRequested, stopped);

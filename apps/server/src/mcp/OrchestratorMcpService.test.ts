@@ -2,6 +2,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import {
   CommandId,
+  BotId,
   EnvironmentId,
   MessageId,
   NodeId,
@@ -1145,6 +1146,113 @@ describe("OrchestratorMcpService provider resolution", () => {
             "Driver 'forkOnly' is not registered in this build.",
             "Provider instance is disabled.",
           ]);
+        }).pipe(Effect.provide(layerOrchestratorService.pipe(Layer.provide(layerDependencies))));
+      }),
+  );
+
+  it.effect.each([false, true])(
+    "delegates to an Antigravity instance with memory coordinator=%s",
+    (botCoordinator) =>
+      Effect.gen(function* () {
+        let delegated = false;
+        const botParent = (tasks: Parameters<typeof parentProjection>[0]) => {
+          const projection = parentProjection(tasks);
+          return botCoordinator
+            ? {
+                ...projection,
+                thread: { ...projection.thread, botId: BotId.make("coordinator") },
+              }
+            : projection;
+        };
+        const task = {
+          id: taskId,
+          threadId: parentThreadId,
+          runId: parentRunId,
+          parentNodeId,
+          origin: "app_owned",
+          createdBy: "agent",
+          driver: ProviderDriverKind.make("antigravity"),
+          providerInstanceId: antigravityInstanceId,
+          providerThreadId: null,
+          childThreadId,
+          nativeTaskRef: null,
+          prompt: "Summarize the diff.",
+          title: null,
+          model: "ant-model",
+          status: "running",
+          result: null,
+          startedAt: null,
+          completedAt: null,
+        };
+        const dispatched = yield* Ref.make<ReadonlyArray<unknown>>([]);
+        const layerDependencies = Layer.mergeAll(
+          NodeServices.layer,
+          Layer.mock(ThreadManagementService.ThreadManagementService)({
+            hasReceipt: () => Effect.succeed(false),
+            assertProviderInstanceEnabled: () => Effect.void,
+            getThreadRecords: (threadId) =>
+              Effect.succeed(
+                threadId === parentThreadId ? botParent(delegated ? [task] : []) : childProjection,
+              ),
+            dispatch: (command) =>
+              Ref.update(dispatched, (commands) => [...commands, command]).pipe(
+                Effect.andThen(
+                  Effect.sync(() => {
+                    delegated = true;
+                  }),
+                ),
+                Effect.as({
+                  sequence: 1,
+                  storedEvents: [
+                    {
+                      sequence: 1,
+                      commandId: null,
+                      event: { type: "subagent.updated", payload: task },
+                    },
+                  ],
+                } as never),
+              ),
+          }),
+          ServerSettings.layerTest(),
+          Layer.mock(ProviderRegistry.ProviderRegistry)({
+            getProviders: Effect.succeed([
+              providerSnapshot({
+                instanceId: codexInstanceId,
+                driver: ProviderDriverKind.make("codex"),
+                model: "gpt-5.4",
+              }),
+              providerSnapshot({
+                instanceId: antigravityInstanceId,
+                driver: ProviderDriverKind.make("antigravity"),
+                model: "ant-model",
+              }),
+            ]),
+          }),
+          adapterRegistryLayer([codexInstanceId, antigravityInstanceId]),
+          Layer.mock(ProjectService.ProjectService)({}),
+          Layer.mock(SecretRequests.SecretRequests)({}),
+          Layer.mock(ScheduledTaskService.ScheduledTaskService)({}),
+        );
+
+        yield* Effect.gen(function* () {
+          const service = yield* OrchestratorMcpService.OrchestratorMcpService;
+          const result = yield* service.delegateTask(scope, {
+            task: "Summarize the diff.",
+            target: { providerInstanceId: antigravityInstanceId, model: "ant-model" },
+            mode: "async",
+            clientRequestId: "delegate-antigravity-1",
+          });
+          assert.equal(result.status, "running");
+          assert.equal(result.providerInstanceId, antigravityInstanceId);
+          const commands = yield* Ref.get(dispatched);
+          assert.equal(commands.length, 1);
+          const request = commands[0] as {
+            type: string;
+            modelSelection: { instanceId: string; model: string };
+          };
+          assert.equal(request.type, "delegated_task.request");
+          assert.equal(request.modelSelection.instanceId, antigravityInstanceId);
+          assert.equal(request.modelSelection.model, "ant-model");
         }).pipe(Effect.provide(layerOrchestratorService.pipe(Layer.provide(layerDependencies))));
       }),
   );

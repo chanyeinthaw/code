@@ -365,6 +365,24 @@ export function applyServerSettingsPatch(
 ): ServerSettings {
   const patch = translateLegacyProjectOverridePatch(current, rawPatch);
   const selectionPatch = patch.textGenerationModelSelection;
+  const memoryPatch = patch.memoryCompactionModelSelection;
+  const previousBot =
+    current.memoryCompactionModelSelection ?? current.textGenerationModelSelection;
+  const botSelection =
+    memoryPatch === undefined
+      ? current.memoryCompactionModelSelection
+      : memoryPatch === null
+        ? null
+        : createModelSelection(
+            memoryPatch.instanceId ?? previousBot.instanceId,
+            memoryPatch.model ?? previousBot.model,
+            shouldReplaceTextGenerationModelSelection(memoryPatch)
+              ? memoryPatch.options
+              : mergeModelSelectionOptionsById({
+                  current: previousBot.options,
+                  patch: memoryPatch.options,
+                }),
+          );
   const {
     migrateModelPreferences,
     setModelFavorites,
@@ -601,6 +619,7 @@ export function applyServerSettingsPatch(
     ...nextWithReplacementsBase,
     ...deriveLegacyProjectOverrides(nextWithReplacementsBase),
     backgroundActivity: normalizedBackgroundActivity,
+    memoryCompactionModelSelection: botSelection,
     automaticGitFetchInterval: resolvedBackgroundActivity.automaticGitFetchInterval,
     providerHealthRefreshInterval: resolvedBackgroundActivity.providerHealthRefreshInterval,
     backgroundActivityProfile: resolvedBackgroundActivity.profile,

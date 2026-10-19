@@ -1,3 +1,5 @@
+import * as MemoryHandlers from "./toolkits/bots/handlers.ts";
+import { MemoryToolkit } from "./toolkits/bots/tools.ts";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -178,6 +180,11 @@ const makeMcpAuthMiddleware = Effect.gen(function* () {
         offerOAuth: Option.isSome(clients) && !looksLikeProviderToken(token),
       });
     }
+    if (
+      invocation.thread?.botRunId !== undefined &&
+      !request.url.split("?")[0]?.startsWith("/bot-mcp")
+    )
+      return unauthorized({ request, presentedToken: true, offerOAuth: false });
     return yield* httpEffect.pipe(
       Effect.provideService(McpInvocationContext.McpInvocationContext, invocation),
       Effect.map(normalizeMcpHttpResponse),
@@ -1065,7 +1072,7 @@ export const layerMcpTransport = McpServer.layerHttp({
   allowSessionTermination: true,
 }).pipe(Layer.provide(layerMcpAuthMiddleware));
 
-export const layer = Layer.mergeAll(
+const layerTools = Layer.mergeAll(
   layerPreviewToolkit,
   layerOrchestratorToolkit,
   layerThreadToolkit,
@@ -1077,4 +1084,23 @@ export const layer = Layer.mergeAll(
   layerPullRequestsToolkit,
   layerDeviceToolkit,
   layerHtmlToolkit,
-).pipe(Layer.provideMerge(layerMcpTransport));
+);
+
+const layerStandard = layerTools.pipe(Layer.provideMerge(layerMcpTransport));
+
+export const layerBotTransport = McpServer.layerHttp({
+  name: "T3 Code bots",
+  version: packageJson.version,
+  path: "/bot-mcp",
+  protocols: [McpProtocol.v2025_06_18],
+  allowSessionTermination: true,
+}).pipe(Layer.provide(layerMcpAuthMiddleware));
+
+export const layerMemoryRecallToolkit = toolkitRegistration(MemoryToolkit, MemoryHandlers.layer);
+
+// Bots keep turn-bound recall alongside the same app tools ordinary threads use.
+export const layerBots = Layer.merge(layerTools, layerMemoryRecallToolkit).pipe(
+  Layer.provideMerge(layerBotTransport),
+  Layer.fresh,
+);
+export const layer = Layer.merge(layerStandard, layerBots);

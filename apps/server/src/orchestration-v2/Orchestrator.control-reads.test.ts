@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import {
   CommandId,
+  BotId,
   MessageId,
   EventId,
   NodeId,
@@ -1229,5 +1230,188 @@ it.effect("explicit settle clears snooze atomically and stays idempotent after r
     } as const;
     assert.deepInclude(yield* projections.getThreadShell(threadId), active);
     assert.deepInclude((yield* projections.getThreadProjection(threadId)).thread, active);
+  }).pipe(Effect.provide(layerTest)),
+);
+
+it.effect(
+  "creates a fresh provider session per memory turn while retaining the application thread",
+  () =>
+    Effect.gen(function* () {
+      const orchestrator = yield* Orchestrator.OrchestratorV2;
+      const projections = yield* ProjectionStore.ProjectionStoreV2;
+      const threadId = ThreadId.make("thread:memory-sessions");
+      const now = yield* DateTime.now;
+      yield* orchestrator.dispatch({
+        type: "thread.create",
+        commandId: CommandId.make("memory-create"),
+        threadId,
+        projectId: ProjectId.make("project:memory"),
+        title: "Memory",
+        modelSelection,
+        runtimeMode: "full-access",
+        interactionMode: "default",
+        branch: null,
+        worktreePath: null,
+        createdBy: "user",
+        creationSource: "web",
+      });
+      const thread = yield* projections.getThread(threadId);
+      yield* projections.apply({
+        id: EventId.make("memory-bind"),
+        type: "thread.metadata-updated",
+        threadId,
+        occurredAt: now,
+        payload: { ...thread, botId: BotId.make("personal") },
+      });
+      const sql = yield* SqlClient.SqlClient;
+      yield* sql`INSERT INTO sats_bots(id,name,owner_environment_id,thread_id,generation,status,state_json)
+        VALUES ('personal','Personal','owner',${threadId},0,'active','{}')`;
+      for (const index of [1, 2]) {
+        yield* orchestrator.dispatch({
+          type: "message.dispatch",
+          commandId: CommandId.make(`memory-turn-${index}`),
+          threadId,
+          messageId: MessageId.make(`memory-message-${index}`),
+          text: `Message ${index}`,
+          attachments: [],
+          dispatchMode: { type: "start_immediately" },
+          createdBy: "user",
+          creationSource: "web",
+        });
+        const projection = yield* projections.getThreadProjection(threadId);
+        const run = projection.runs.find(
+          (candidate) => candidate.userMessageId === `memory-message-${index}`,
+        );
+        assert.ok(run);
+        if (index === 2) {
+          yield* orchestrator.dispatch({
+            type: "message.dispatch",
+            commandId: CommandId.make("memory-queue-third"),
+            threadId,
+            messageId: MessageId.make("memory-message-3"),
+            text: "Queued message",
+            modelSelection: { ...modelSelection, model: "gpt-6" },
+            attachments: [],
+            dispatchMode: { type: "queue_after_active" },
+            createdBy: "user",
+            creationSource: "web",
+          });
+        }
+        yield* projections.apply({
+          id: EventId.make(`memory-complete-${index}`),
+          type: "run.updated",
+          threadId,
+          occurredAt: now,
+          payload: { ...run, status: "completed", completedAt: now },
+        });
+      }
+      yield* orchestrator.dispatch({
+        type: "queue.resume",
+        commandId: CommandId.make("memory-start-queued"),
+        threadId,
+      });
+      for (const status of ["transferring", "forwarded", "staged"] as const) {
+        yield* sql`UPDATE sats_bots SET status=${status} WHERE id='personal'`;
+        const denied = yield* Effect.result(
+          orchestrator.dispatch({
+            type: "message.dispatch",
+            commandId: CommandId.make(`memory-denied-${status}`),
+            threadId,
+            messageId: MessageId.make(`denied-${status}`),
+            text: "Wrong owner",
+            attachments: [],
+            dispatchMode: { type: "start_immediately" },
+            createdBy: "user",
+            creationSource: "web",
+          }),
+        );
+        assert.equal(denied._tag, "Failure");
+      }
+      const final = yield* projections.getThreadProjection(threadId);
+      assert.equal(final.runs.length, 3);
+      assert.equal(final.providerThreads.length, 3);
+      assert.equal(
+        new Set(final.providerThreads.map((thread) => thread.providerSessionId)).size,
+        3,
+      );
+      assert.equal(new Set(final.runs.map((run) => run.providerThreadId)).size, 3);
+      assert.equal(
+        final.runs.find((run) => run.userMessageId === "memory-message-3")?.modelSelection.model,
+        "gpt-6",
+      );
+      assert.equal(final.contextHandoffs.length, 0);
+      assert.equal(final.thread.botId, "personal");
+      assert.deepEqual(
+        final.messages.filter((message) => message.role === "user").map((message) => message.text),
+        ["Message 1", "Message 2", "Queued message"],
+      );
+    }).pipe(Effect.provide(layerTest)),
+);
+
+it.effect("delegates from memory into its own workspace without inheriting memory state", () =>
+  Effect.gen(function* () {
+    const orchestrator = yield* Orchestrator.OrchestratorV2;
+    const projections = yield* ProjectionStore.ProjectionStoreV2;
+    const parentThreadId = ThreadId.make("thread:memory-coordinator");
+    yield* orchestrator.dispatch({
+      type: "thread.create",
+      commandId: CommandId.make("memory-parent:create"),
+      threadId: parentThreadId,
+      projectId: ProjectId.make("project:memory-internal"),
+      title: "Personal",
+      modelSelection,
+      runtimeMode: "full-access",
+      interactionMode: "default",
+      branch: null,
+      worktreePath: "/internal-memory",
+      createdBy: "user",
+      creationSource: "web",
+    });
+    yield* orchestrator.dispatch({
+      type: "message.dispatch",
+      commandId: CommandId.make("memory-parent:start"),
+      threadId: parentThreadId,
+      messageId: MessageId.make("memory-parent:message"),
+      text: "Ask a subagent to say hello",
+      attachments: [],
+      dispatchMode: { type: "start_immediately" },
+      createdBy: "user",
+      creationSource: "web",
+    });
+    const parent = yield* projections.getThreadProjection(parentThreadId);
+    yield* projections.apply({
+      id: EventId.make("memory-parent:bind"),
+      type: "thread.metadata-updated",
+      threadId: parentThreadId,
+      occurredAt: yield* DateTime.now,
+      payload: { ...parent.thread, botId: BotId.make("personal-memory") },
+    });
+    const parentRun = (yield* projections.getThreadProjection(parentThreadId)).runs[0]!;
+    yield* orchestrator.dispatch({
+      type: "delegated_task.request",
+      commandId: CommandId.make("memory-parent:delegate"),
+      parentThreadId,
+      parentRunId: parentRun.id,
+      parentNodeId: parentRun.rootNodeId!,
+      task: "Say hello.",
+      modelSelection,
+      runtimeMode: "full-access",
+      interactionMode: "default",
+      completionWake: "always",
+      createdBy: "agent",
+      creationSource: "mcp",
+    });
+    const updated = yield* projections.getThreadProjection(parentThreadId);
+    const task = updated.subagents[0]!;
+    const child = yield* projections.getThreadProjection(task.childThreadId!);
+    assert.equal(child.thread.projectId, parent.thread.projectId);
+    assert.isUndefined(child.thread.botId);
+    assert.equal(child.thread.worktreePath, parent.thread.worktreePath);
+    assert.equal(child.thread.branch, parent.thread.branch);
+    assert.equal(child.thread.lineage.parentThreadId, parentThreadId);
+    assert.equal(child.thread.lineage.relationshipToParent, "subagent");
+    assert.equal(child.messages[0]?.text, "Say hello.");
+    assert.equal(updated.thread.botId, "personal-memory");
+    assert.equal(task.completionWake, "always");
   }).pipe(Effect.provide(layerTest)),
 );

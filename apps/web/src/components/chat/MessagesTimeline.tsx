@@ -1,3 +1,4 @@
+import { useBotAwareThreadRoute } from "../../state/bots";
 import { useRenderedAppearance } from "../../hooks/useTheme";
 import type { Root, RootContent } from "mdast";
 import { ThreadFindTimelineContext } from "./ThreadFindProvider";
@@ -3840,12 +3841,13 @@ function ThreadReadLabel({
   environmentId: EnvironmentId;
   linked: boolean;
 }) {
+  const route = useBotAwareThreadRoute(scopeThreadRef(environmentId, label.threadId));
   return (
     <span className="flex min-w-0">
       <span className="shrink-0">{label.prefix} “</span>
       {linked ? (
         <Link
-          to="/$environmentId/$threadId"
+          to={route}
           params={{ environmentId, threadId: label.threadId }}
           className="min-w-0 truncate rounded-sm text-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           onClick={stopRowToggle}
