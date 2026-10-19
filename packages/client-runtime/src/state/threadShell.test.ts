@@ -1,5 +1,6 @@
 import {
   EnvironmentId,
+  BotId,
   ProjectId,
   RunId,
   RuntimeRequestId,
@@ -344,4 +345,30 @@ describe("v2 thread shell lists", () => {
       harness.registry.dispose();
     }
   });
+});
+
+it("keeps memory threads addressable but out of thread lists and navigation", () => {
+  const { registry, threads, snapshotAtom } = makeHarness();
+  try {
+    const memory = {
+      ...v2ThreadShell,
+      id: ThreadId.make("memory"),
+      botId: BotId.make("personal"),
+    };
+    registry.set(snapshotAtom(environmentId), {
+      ...v2ShellSnapshot,
+      threads: [v2ThreadShell, memory],
+    });
+    expect(registry.get(threads.threadShellsAtom).map((thread) => thread.id)).toEqual([
+      v2ThreadShell.id,
+    ]);
+    expect(registry.get(threads.navigationThreadShellsAtom).map((thread) => thread.id)).toEqual([
+      v2ThreadShell.id,
+    ]);
+    expect(
+      registry.get(threads.threadShellAtom({ environmentId, threadId: memory.id }))?.botId,
+    ).toBe(memory.botId);
+  } finally {
+    registry.dispose();
+  }
 });

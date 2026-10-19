@@ -1,7 +1,11 @@
+import * as ThreadCommandExecutor from "./ThreadCommandExecutor.ts";
+import * as BotChat from "../bots/BotChat.ts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it, vi } from "vite-plus/test";
 import { it as effectIt } from "@effect/vitest";
 import {
+  BotId,
+  ChatAttachmentId,
   CheckpointScopeId,
   MessageId,
   NodeId,
@@ -61,7 +65,10 @@ const normalize = (target: string) => {
 const layerWorktreeLocation = (worktreesDir = managedWorktreesDir) =>
   Layer.mergeAll(
     Path.layer,
-    Layer.mock(ServerConfig.ServerConfig)({ worktreesDir } as ServerConfig.ServerConfig["Service"]),
+    Layer.mock(ServerConfig.ServerConfig)({
+      worktreesDir,
+      stateDir: "/tmp/t3-memory-turn-start-test",
+    } as ServerConfig.ServerConfig["Service"]),
     ServerSettings.layerTest(),
   );
 
@@ -89,6 +96,7 @@ function startWithMissingWorktree(
   );
   const projection = {
     thread: {
+      lineage: { parentThreadId: null, relationshipToParent: null, rootThreadId: threadId },
       id: threadId,
       projectId: ProjectId.make("project_provider_turn_start_projection_failure"),
       branch: "feature/restore",
@@ -122,6 +130,8 @@ function startWithMissingWorktree(
   const pruneWorktrees = vi.fn(() => Effect.void);
   const createWorktree = vi.fn(() => Effect.succeed({} as never));
   const layer = ProviderTurnStart.layer.pipe(
+    Layer.provide(ThreadCommandExecutor.layer),
+    Layer.provide(Layer.mock(BotChat.BotChat)({})),
     Layer.provide(
       Layer.mergeAll(
         Layer.mock(ContextHandoffService.ContextHandoffServiceV2)({}),
@@ -258,6 +268,8 @@ it.each([
 
 function makeLocalCommandHarness(input: {
   readonly text: string;
+  readonly botDriver?: "pi" | "claudeAgent";
+  readonly delegatedWorker?: boolean;
   readonly worktreePath?: string;
   readonly worktreesDir?: string;
   readonly fileSystem?: FileSystem.FileSystem;
@@ -303,7 +315,7 @@ function makeLocalCommandHarness(input: {
   };
   const providerThread: OrchestrationV2ThreadProjection["providerThreads"][number] = {
     id: providerThreadId,
-    driver: ProviderDriverKind.make("codex"),
+    driver: ProviderDriverKind.make(input.botDriver ?? "codex"),
     providerInstanceId: newInstanceId,
     providerSessionId,
     appThreadId: threadId,
@@ -334,7 +346,10 @@ function makeLocalCommandHarness(input: {
   };
   let projection: OrchestrationV2ThreadProjection = {
     thread: {
+      lineage: { parentThreadId: null, relationshipToParent: null, rootThreadId: threadId },
       id: threadId,
+      title: "Atlas",
+      ...(input.botDriver === undefined ? {} : { botId: BotId.make("test-bot") }),
       activeProviderThreadId: providerThreadId,
       projectId: ProjectId.make("project-native-account-command"),
       branch: input.worktreePath === undefined ? null : "feature/restore",
@@ -494,6 +509,20 @@ function makeLocalCommandHarness(input: {
       ),
     ensureThread: () => Effect.succeed(providerThread),
   };
+  const startTurn = vi.fn<ProviderAdapter.ProviderAdapterV2SessionRuntime["startTurn"]>(
+    () => Effect.void,
+  );
+  const delegatedContext = vi.fn<BotChat.BotChat["Service"]["delegatedContext"]>(() =>
+    Effect.succeed(undefined),
+  );
+  const prepareMemory = vi.fn<BotChat.BotChat["Service"]["prepare"]>((request) =>
+    Effect.succeed({
+      botId: request.botId,
+      runId: request.runId,
+      total: 2,
+      view: "<chat>frozen memory</chat>",
+    }),
+  );
   const open = vi.fn(() =>
     input.interruptOpen === true
       ? Effect.interrupt
@@ -515,7 +544,9 @@ function makeLocalCommandHarness(input: {
                   ),
                 ),
               )
-            : input.failReadsAfterRunning === true
+            : input.failReadsAfterRunning === true ||
+                input.botDriver !== undefined ||
+                input.delegatedWorker === true
               ? Effect.succeed({
                   driver: providerThread.driver,
                   providerSession: {
@@ -531,13 +562,16 @@ function makeLocalCommandHarness(input: {
                     lastError: null,
                   },
                   ensureThread: () => Effect.succeed(providerThread),
+                  startTurn,
                 } as never)
               : Effect.die("A local command must not open a native session."),
   );
   const startRootRun = vi.fn<
     (input: RunExecutionService.RunExecutionServiceV2StartRootRunInput) => Effect.Effect<void>
   >(() =>
-    input.failReadsAfterRunning === true
+    input.failReadsAfterRunning === true ||
+    input.botDriver !== undefined ||
+    input.delegatedWorker === true
       ? Effect.void
       : Effect.die("A local command must not start a native turn."),
   );
@@ -603,6 +637,8 @@ function makeLocalCommandHarness(input: {
     }),
   );
   const layer = ProviderTurnStart.layer.pipe(
+    Layer.provide(ThreadCommandExecutor.layer),
+    Layer.provide(Layer.mock(BotChat.BotChat)({ prepare: prepareMemory, delegatedContext })),
     Layer.provide(
       Layer.mergeAll(
         Layer.mock(ContextHandoffService.ContextHandoffServiceV2)({
@@ -652,6 +688,9 @@ function makeLocalCommandHarness(input: {
     ),
   );
   return {
+    startTurn,
+    prepareMemory,
+    delegatedContext,
     getThreadRecords,
     getTurnStartContext,
     setProjection: (next: OrchestrationV2ThreadProjection) => {
@@ -1050,3 +1089,203 @@ for (const previousMessages of [[], ["/compact", " /COMPACT "]]) {
       }),
   );
 }
+
+effectIt.effect.each(["pi", "claudeAgent"] as const)(
+  "delivers the frozen memory and attachment IDs to %s without ordinary history",
+  (botDriver) =>
+    Effect.gen(function* () {
+      const harness = makeLocalCommandHarness({
+        text: "Read the file",
+        botDriver,
+        fileSystem: FileSystem.makeNoop({
+          exists: () => Effect.succeed(true),
+          makeDirectory: () => Effect.void,
+        }),
+      });
+      const file = {
+        type: "file" as const,
+        id: ChatAttachmentId.make("notes"),
+        name: "notes.txt",
+        mimeType: "text/plain",
+        sizeBytes: 6,
+      };
+      const image = {
+        ...file,
+        type: "image" as const,
+        id: ChatAttachmentId.make("image"),
+        name: "image.png",
+        mimeType: "image/png",
+      };
+      harness.setProjection({
+        ...harness.projection(),
+        messages: harness
+          .projection()
+          .messages.map((message) => ({ ...message, attachments: [file, image] })),
+      });
+      yield* harness.start;
+      const controls = harness.startRootRun.mock.calls[0]?.[0];
+      expect(controls).toBeDefined();
+      if (controls === undefined) return;
+      yield* controls.session.startTurn({
+        appThread: controls.appThread,
+        threadId: controls.run.threadId,
+        runId: controls.run.id,
+        runOrdinal: controls.run.ordinal,
+        providerTurnOrdinal: controls.providerTurnOrdinal,
+        attemptId: controls.attemptId,
+        rootNodeId: controls.rootNode.id,
+        providerThread: controls.providerThread,
+        message: controls.message,
+        modelSelection: controls.modelSelection,
+        runtimePolicy: controls.runtimePolicy,
+      });
+      expect(harness.prepareMemory).toHaveBeenCalledOnce();
+      const delivered = harness.startTurn.mock.calls[0]?.[0];
+      expect(delivered?.message.text).toContain("<chat>frozen memory</chat>");
+      expect(delivered?.message.text).toContain("Read the file");
+      expect(delivered?.message.text).toContain("notes");
+      expect(delivered?.message.attachments).toEqual([image]);
+      expect(delivered?.runtimePolicy.botChat?.systemPrompt).toContain("zoom");
+      expect(delivered?.runtimePolicy.botChat?.systemPrompt).toContain("You are Atlas,");
+      expect(delivered?.message.text).not.toContain("# Turns");
+    }),
+);
+
+effectIt.effect.each(["pi", "claudeAgent"] as const)(
+  "includes steers accepted during memory preparation in the initial %s request",
+  (botDriver) =>
+    Effect.gen(function* () {
+      const harness = makeLocalCommandHarness({
+        text: "Start the task",
+        botDriver,
+        fileSystem: FileSystem.makeNoop({
+          exists: () => Effect.succeed(true),
+          makeDirectory: () => Effect.void,
+        }),
+      });
+      const preparing = yield* Deferred.make<void>();
+      const release = yield* Deferred.make<void>();
+      const snapshot = {
+        botId: BotId.make("test-memory"),
+        runId: harness.projection().runs[0]!.id,
+        total: 2,
+        view: "<chat>frozen memory</chat>",
+      };
+      harness.prepareMemory.mockImplementationOnce(() =>
+        Deferred.succeed(preparing, undefined).pipe(
+          Effect.andThen(Deferred.await(release)),
+          Effect.as(snapshot),
+        ),
+      );
+      const startup = yield* harness.start.pipe(Effect.forkScoped);
+      yield* Deferred.await(preparing);
+      expect(harness.open).not.toHaveBeenCalled();
+      const original = harness.projection().messages[0]!;
+      const file = {
+        type: "file" as const,
+        id: ChatAttachmentId.make("buffered-notes"),
+        name: "notes.txt",
+        mimeType: "text/plain",
+        sizeBytes: 6,
+      };
+      const buffered = [
+        {
+          ...original,
+          id: MessageId.make("steer-1"),
+          text: "Use these notes",
+          attachments: [file],
+        },
+        { ...original, id: MessageId.make("steer-2"), text: "Then report the result" },
+      ];
+      harness.setProjection({ ...harness.projection(), messages: [original, ...buffered] });
+      yield* Deferred.succeed(release, undefined);
+      yield* Fiber.join(startup);
+      const controls = harness.startRootRun.mock.calls[0]![0];
+      yield* controls.session.startTurn({
+        appThread: controls.appThread,
+        threadId: controls.run.threadId,
+        runId: controls.run.id,
+        runOrdinal: controls.run.ordinal,
+        providerTurnOrdinal: controls.providerTurnOrdinal,
+        attemptId: controls.attemptId,
+        rootNodeId: controls.rootNode.id,
+        providerThread: controls.providerThread,
+        message: controls.message,
+        modelSelection: controls.modelSelection,
+        runtimePolicy: controls.runtimePolicy,
+      });
+      const delivered = harness.startTurn.mock.calls[0]![0];
+      expect(delivered.runId).toBe(original.runId);
+      expect(delivered.message.text).toContain(
+        "Start the task\n\nUse these notes\n\nThen report the result",
+      );
+      expect(delivered.message.text).toContain("buffered-notes");
+      expect(harness.prepareMemory.mock.calls.map(([request]) => request.message.id)).toEqual([
+        original.id,
+        ...buffered.map((message) => message.id),
+      ]);
+      expect(harness.projection().runs).toHaveLength(1);
+    }),
+);
+
+effectIt.effect(
+  "gives delegated memory workers a frozen view without the memory chat's tool policy",
+  () =>
+    Effect.gen(function* () {
+      const harness = makeLocalCommandHarness({
+        text: "Inspect the project",
+        delegatedWorker: true,
+      });
+      const parentId = ThreadId.make("memory-parent");
+      const parentRunId = RunId.make("memory-parent-run");
+      harness.setProjection({
+        ...harness.projection(),
+        thread: {
+          ...harness.projection().thread,
+          lineage: {
+            parentThreadId: parentId,
+            relationshipToParent: "subagent",
+            rootThreadId: parentId,
+          },
+        },
+      });
+      harness.delegatedContext.mockImplementation(() =>
+        Effect.succeed({
+          threadId: parentId,
+          snapshot: {
+            botId: BotId.make("personal"),
+            runId: parentRunId,
+            total: 2,
+            view: "<chat>parent frozen memory</chat>",
+          },
+        }),
+      );
+      yield* harness.start;
+      const controls = harness.startRootRun.mock.calls[0]?.[0];
+      expect(controls).toBeDefined();
+      if (controls === undefined) return;
+      yield* controls.session.startTurn({
+        appThread: controls.appThread,
+        threadId: controls.run.threadId,
+        runId: controls.run.id,
+        runOrdinal: controls.run.ordinal,
+        providerTurnOrdinal: controls.providerTurnOrdinal,
+        attemptId: controls.attemptId,
+        rootNodeId: controls.rootNode.id,
+        providerThread: controls.providerThread,
+        message: controls.message,
+        modelSelection: controls.modelSelection,
+        runtimePolicy: controls.runtimePolicy,
+      });
+      expect(harness.prepareMemory).not.toHaveBeenCalled();
+      expect(controls.runtimePolicy.memoryContext).toEqual({
+        threadId: parentId,
+        runId: parentRunId,
+      });
+      const delivered = harness.startTurn.mock.calls[0]?.[0];
+      expect(delivered?.message.text).toContain("<chat>parent frozen memory</chat>");
+      expect(delivered?.message.text).toContain("Inspect the project");
+      expect(delivered?.message.text).toContain("zoom(id,n)");
+      expect(delivered?.runtimePolicy.botChat).toBeUndefined();
+    }),
+);

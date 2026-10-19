@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
-import { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ProviderInstanceId, RunId, ThreadId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import { HttpServer } from "effect/http";
 import * as NetAddress from "effect/net/NetAddress";
@@ -219,4 +219,62 @@ it.effect.each(["provider-session", "thread", "all"] as const)(
       yield* registry.touch(threadId);
       expect(yield* registry.resolve(token)).toBeUndefined();
     }),
+);
+
+it.effect("binds each memory credential to its turn and the memory-only endpoint", () =>
+  Effect.gen(function* () {
+    const registry = yield* makeRegistry(() => 1_000);
+    const threadId = ThreadId.make("memory-thread");
+    const first = yield* registry.issue({
+      threadId,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      botRunId: RunId.make("turn-one"),
+    });
+    const second = yield* registry.issue({
+      threadId,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      botRunId: RunId.make("turn-two"),
+    });
+    expect(first.config.endpoint).toBe("http://127.0.0.1:43123/bot-mcp");
+    expect(first.config.authorizationHeader).not.toBe(second.config.authorizationHeader);
+    const resolve = (header: string) => registry.resolve(header.replace(/^Bearer\s+/, ""));
+    expect((yield* resolve(first.config.authorizationHeader))?.thread.botRunId).toBe("turn-one");
+    expect((yield* resolve(second.config.authorizationHeader))?.thread.botRunId).toBe("turn-two");
+    yield* registry.revokeThread(threadId);
+    expect(yield* resolve(first.config.authorizationHeader)).toBeUndefined();
+    expect(yield* resolve(second.config.authorizationHeader)).toBeUndefined();
+  }),
+);
+
+it.effect("keeps delegated memory authority separate from the child thread's identity", () =>
+  Effect.gen(function* () {
+    const registry = yield* makeRegistry(() => 1_000);
+    const parentId = ThreadId.make("memory-owner");
+    const childId = ThreadId.make("delegated-child");
+    const child = yield* registry.issue({
+      threadId: childId,
+      providerInstanceId: ProviderInstanceId.make("claude"),
+      botThreadId: parentId,
+      botRunId: RunId.make("parent-turn"),
+    });
+    expect(child.config.endpoint).toBe("http://127.0.0.1:43123/bot-mcp");
+    expect(child.config.botThreadId).toBe(parentId);
+    const token = child.config.authorizationHeader.replace(/^Bearer\s+/, "");
+    expect((yield* registry.resolve(token))?.thread).toMatchObject({
+      threadId: childId,
+      botThreadId: parentId,
+      botRunId: "parent-turn",
+    });
+    yield* registry.revokeThread(parentId);
+    expect(yield* registry.resolve(token)).toBeDefined();
+    yield* registry.revokeThread(childId);
+    expect(yield* registry.resolve(token)).toBeUndefined();
+    const ordinary = yield* registry.issue({
+      threadId: childId,
+      providerInstanceId: ProviderInstanceId.make("claude"),
+    });
+    expect(ordinary.config.endpoint).toBe("http://127.0.0.1:43123/mcp");
+    expect(ordinary.config.botThreadId).toBeUndefined();
+    expect(ordinary.config.botRunId).toBeUndefined();
+  }),
 );

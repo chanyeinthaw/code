@@ -315,3 +315,35 @@ describe("server model preferences", () => {
     expect(decodeServerSettingsPatch(input)).toEqual(input);
   });
 });
+
+describe("memory compaction concurrency", () => {
+  it("defaults to eight and accepts supported settings and patches", () => {
+    expect(decodeServerSettings({}).memoryCompactionConcurrency).toBe(8);
+    expect(decodeServerSettingsPatch({})).not.toHaveProperty("memoryCompactionConcurrency");
+    for (const memoryCompactionConcurrency of [2, 4, 6, 8]) {
+      const input = { memoryCompactionConcurrency };
+      expect(encodeServerSettings(decodeServerSettings(input))).toMatchObject(input);
+      expect(decodeServerSettingsPatch(input)).toEqual(input);
+    }
+  });
+  it.each([
+    [1, 2],
+    [3, 4],
+    [5, 6],
+    [7, 8],
+  ])("migrates persisted limit %s to %s but rejects it in new patches", (previous, expected) => {
+    const input = { memoryCompactionConcurrency: previous };
+    const settings = decodeServerSettings(input);
+    expect(settings.memoryCompactionConcurrency).toBe(expected);
+    expect(encodeServerSettings(settings).memoryCompactionConcurrency).toBe(expected);
+    expect(() => decodeServerSettingsPatch(input)).toThrow();
+  });
+  it.each([0, -1, 9, 1.5, "2", null])(
+    "rejects invalid concurrency %s",
+    (memoryCompactionConcurrency) => {
+      const input = { memoryCompactionConcurrency };
+      expect(() => decodeServerSettings(input)).toThrow();
+      expect(() => decodeServerSettingsPatch(input)).toThrow();
+    },
+  );
+});
