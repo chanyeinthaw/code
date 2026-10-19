@@ -158,6 +158,7 @@ export const make = Effect.gen(function* () {
     enrichment: ProjectEnrichmentService.ProjectEnrichment | null,
   ): Project => ({
     id: row.projectId,
+    isBot: row.isBot,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
     repositoryIdentity: enrichment?.repositoryIdentity ?? null,
