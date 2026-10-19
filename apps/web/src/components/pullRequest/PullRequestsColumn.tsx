@@ -1,3 +1,4 @@
+import { AlternatePageBrand } from "../alternate-layout/AlternatePageBrand";
 import type { PullRequestInvolvement, PullRequestListState } from "@t3tools/contracts";
 import { Plug2Icon, SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
@@ -178,6 +179,7 @@ export function PullRequestsColumn({
         className="relative bg-background"
       >
         {titlebarControls}
+        <AlternatePageBrand />
         {condensed ? (
           <WorkspaceBreadcrumb ariaLabel="Pull request scope" className="overflow-hidden">
             <WorkspaceBreadcrumbItem current className={cn(searchExpanded && "sr-only")}>
