@@ -1,3 +1,9 @@
+import * as BotTransferFiles from "../bots/BotTransferFiles.ts";
+import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as BotOwnership from "../bots/BotOwnership.ts";
+import * as BotChat from "../bots/BotChat.ts";
+import * as BotStorage from "../bots/BotStorage.ts";
+import * as MemoryCompaction from "../bots/MemoryCompaction.ts";
 import * as UsageLimitRecoveryWorker from "./UsageLimitRecoveryWorker.ts";
 import * as Scheduler from "../scheduling/Scheduler.ts";
 import * as Layer from "effect/Layer";
@@ -90,16 +96,16 @@ const layerLegacyV1ThreadImporterProvided = LegacyV1ThreadImporter.layer.pipe(
   Layer.provide(layerEventSinkProvided),
 );
 
+const layerProjectDependencies = Layer.mergeAll(
+  ProjectStore.layer,
+  ProjectionStore.layer,
+  layerEventSinkProvided,
+  IdAllocator.layer,
+  layerLegacyV1ThreadImporterProvided,
+);
+
 export const layerProjectService = ProjectService.layer.pipe(
-  Layer.provide(
-    Layer.mergeAll(
-      ProjectStore.layer,
-      ProjectionStore.layer,
-      layerEventSinkProvided,
-      IdAllocator.layer,
-      layerLegacyV1ThreadImporterProvided,
-    ),
-  ),
+  Layer.provide(layerProjectDependencies),
 );
 
 const layerProviderEventIngestorProvided = ProviderEventIngestor.layer.pipe(
@@ -140,6 +146,8 @@ const layerProviderSessionManagerProvided = ProviderSessionManager.layer.pipe(
       IdAllocator.layer,
       layerProviderEventIngestorProvided,
       ProjectionStore.layer,
+      // BotChat also builds this shared manager, so lookup cannot depend on layerWithBots.
+      layerProjectService,
     ),
   ),
 );
@@ -161,12 +169,36 @@ const layerRunExecutionServiceProvided = RunExecutionService.layer.pipe(
   ),
 );
 
+const layerBotChatProvided = BotChat.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      BotStorage.layer,
+      layerProviderSessionManagerProvided,
+      MemoryCompaction.layer,
+      BotTransferFiles.layer,
+      BotOwnership.layer.pipe(Layer.provide(BotStorage.layer)),
+      ProjectStore.layer,
+      ServerEnvironment.layerIdentity,
+      layerEventSinkProvided,
+      ProjectionStore.layer,
+      OrchestrationEventStore.layer,
+      IdAllocator.layer,
+    ),
+  ),
+);
+
+const layerBotProjectServiceProvided = ProjectService.layerWithBots.pipe(
+  Layer.provide(Layer.mergeAll(layerProjectDependencies, layerBotChatProvided)),
+);
+
 const layerProviderTurnStartServiceProvided = ProviderTurnStartService.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
+      layerBotChatProvided,
       layerContextHandoffServiceProvided,
       layerEventSinkProvided,
       IdAllocator.layer,
+      ThreadCommandExecutor.layer,
       ProjectionStore.layer,
       layerProviderSessionManagerProvided,
       layerProviderAuthServiceProvided,
@@ -213,6 +245,7 @@ const layerRunFinalizationServiceProvided = RunFinalizationService.layer.pipe(
 const layerOrchestratorProvided = Orchestrator.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
+      BotStorage.layer,
       layerCheckpointServiceProvided,
       CommandPolicy.layer,
       layerStores,
@@ -360,8 +393,9 @@ export const layer = Layer.mergeAll(
 );
 
 export const layerProduction = Layer.mergeAll(
-  layer.pipe(Layer.provide(layerProjectService)),
-  layerProjectService,
+  layerBotChatProvided,
+  layer.pipe(Layer.provide(layerBotProjectServiceProvided)),
+  layerBotProjectServiceProvided,
   layerManagedProjectFoldersProvided,
   layerThreadLaunchProvided,
   layerThreadLifecycleProvided,

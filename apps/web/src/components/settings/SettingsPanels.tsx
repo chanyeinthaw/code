@@ -524,6 +524,11 @@ export function useSettingsRestore(onRestored?: () => void) {
     ...(settings.threadTitleInstructions !== DEFAULT_UNIFIED_SETTINGS.threadTitleInstructions
       ? ["Thread title instructions"]
       : []),
+    ...(settings.memoryCompactionConcurrency !==
+    DEFAULT_UNIFIED_SETTINGS.memoryCompactionConcurrency
+      ? ["Memory compaction concurrency"]
+      : []),
+    ...(settings.memoryCompactionModelSelection !== null ? ["Memory compaction model"] : []),
     ...getChangedBrowserSettingLabels(settings),
     ...(settings.enableAgentBrowserAccess !== DEFAULT_UNIFIED_SETTINGS.enableAgentBrowserAccess
       ? ["Agent browser access"]
@@ -634,6 +639,8 @@ export function useSettingsRestore(onRestored?: () => void) {
       confirmQuit: DEFAULT_UNIFIED_SETTINGS.confirmQuit,
       textGenerationModelSelection: DEFAULT_UNIFIED_SETTINGS.textGenerationModelSelection,
       threadTitleInstructions: DEFAULT_UNIFIED_SETTINGS.threadTitleInstructions,
+      memoryCompactionModelSelection: DEFAULT_UNIFIED_SETTINGS.memoryCompactionModelSelection,
+      memoryCompactionConcurrency: DEFAULT_UNIFIED_SETTINGS.memoryCompactionConcurrency,
       fontFamilySans: DEFAULT_UNIFIED_SETTINGS.fontFamilySans,
       fontFamilyComposer: DEFAULT_UNIFIED_SETTINGS.fontFamilyComposer,
       fontFamilyCode: DEFAULT_UNIFIED_SETTINGS.fontFamilyCode,

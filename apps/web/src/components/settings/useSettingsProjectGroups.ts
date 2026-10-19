@@ -1,10 +1,11 @@
+import { isBotProject } from "@t3tools/shared/botChat";
 import { useClientSettings } from "../../hooks/useSettings";
 import { buildSidebarProjectSnapshots } from "../../sidebarProjectGrouping";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
 import { useProjects } from "../../state/entities";
 
-export function useSettingsProjectGroups() {
-  const projects = useProjects();
+export function useSettingsProjectGroups(selectedProjectKey?: string) {
+  const projects = useProjects({ includeBot: true });
   // Read the grouping fields one by one: a selector that builds an object hands back a new
   // identity on every client settings write, which rebuilds every group and, through the
   // settings scope, re-renders every settings row.
@@ -22,5 +23,10 @@ export function useSettingsProjectGroups() {
     settings: { sidebarProjectGroupingMode, sidebarProjectGroupingOverrides },
     primaryEnvironmentId,
     resolveEnvironmentLabel: (id) => labels.get(id) ?? null,
-  }).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  })
+    .filter(
+      (group) =>
+        group.projectKey === selectedProjectKey || !group.memberProjects.some(isBotProject),
+    )
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }

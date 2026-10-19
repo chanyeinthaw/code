@@ -5,6 +5,7 @@ import * as DateTime from "effect/DateTime";
 import {
   deriveThreadRelationshipGraph,
   immediateThreadRelationships,
+  isParentThreadRelationship,
   orderWebThreadLineageRows,
   relatedThreadIds,
   resolveMergeBackTargetThreadId,
@@ -41,6 +42,79 @@ describe("thread relationships", () => {
     expect(
       threadRelationshipRowStatus(graph, immediateThreadRelationships(graph, parent)[0]!),
     ).toBe(childStatus);
+  });
+
+  it("links a launched thread to its launcher without making it a child", () => {
+    const bot = ThreadId.make("bot");
+    const launched = ThreadId.make("launched");
+    const graph = deriveThreadRelationshipGraph({
+      threads: [
+        { id: bot, status: "idle", lineage: { parentThreadId: null } },
+        {
+          id: launched,
+          status: "running",
+          launchedByThreadId: bot,
+          lineage: { parentThreadId: null },
+        },
+      ] as never,
+      projection: null,
+    });
+    const [fromBot] = immediateThreadRelationships(graph, bot);
+    expect(fromBot).toMatchObject({ threadId: launched, edge: { kind: "launch" } });
+    expect(isParentThreadRelationship(fromBot!.edge, bot)).toBe(false);
+    expect(threadRelationshipRowStatus(graph, fromBot!)).toBe("running");
+    const [fromLaunched] = immediateThreadRelationships(graph, launched);
+    expect(fromLaunched?.threadId).toBe(bot);
+    expect(isParentThreadRelationship(fromLaunched!.edge, launched)).toBe(true);
+  });
+
+  it("lists only direct children: a launched thread's own delegates never surface in its launcher", () => {
+    const a = ThreadId.make("thread-a");
+    const b = ThreadId.make("thread-b");
+    const b1 = ThreadId.make("thread-b1");
+    const b2 = ThreadId.make("thread-b2");
+    const a1 = ThreadId.make("thread-a1");
+    // Delegated children are cloned from their parent shell, so they carry the
+    // parent's launchedByThreadId even though they were not launched by it.
+    const subagentOf = (id: ThreadId, parent: ThreadId, launchedBy: ThreadId | undefined) => ({
+      id,
+      status: "running",
+      ...(launchedBy === undefined ? {} : { launchedByThreadId: launchedBy }),
+      forkedFrom: { type: "node", nodeId: `node-${id}` },
+      lineage: { rootThreadId: a, parentThreadId: parent, relationshipToParent: "subagent" },
+    });
+    const threads = [
+      { id: a, status: "idle", lineage: { rootThreadId: a, parentThreadId: null } },
+      {
+        id: b,
+        status: "running",
+        launchedByThreadId: a,
+        lineage: { rootThreadId: b, parentThreadId: null, relationshipToParent: null },
+      },
+      subagentOf(b1, b, a),
+      subagentOf(b2, b, a),
+      subagentOf(a1, a, undefined),
+    ];
+    const graph = deriveThreadRelationshipGraph({ threads: threads as never, projection: null });
+    const children = (threadId: ThreadId) =>
+      immediateThreadRelationships(graph, threadId)
+        .filter(({ edge }) => !isParentThreadRelationship(edge, threadId))
+        .map(({ threadId: id, edge }) => [id, edge.kind]);
+
+    expect(children(a)).toEqual(
+      expect.arrayContaining([
+        [b, "launch"],
+        [a1, "subagent"],
+      ]),
+    );
+    expect(children(a)).toHaveLength(2);
+    expect(children(b)).toEqual([
+      [b1, "subagent"],
+      [b2, "subagent"],
+    ]);
+    expect(
+      immediateThreadRelationships(graph, b1).map(({ threadId: id, edge }) => [id, edge.kind]),
+    ).toEqual([[b, "subagent"]]);
   });
 
   it("does not label a missing parent with its child's running status", () => {

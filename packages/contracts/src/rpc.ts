@@ -1,3 +1,7 @@
+import { ModelSelection } from "./modelSelection.ts";
+import { RuntimeMode } from "./providerPolicy.ts";
+import { ThreadId, BotId, EnvironmentId } from "./baseSchemas.ts";
+import { BotIdentity, BotChatError } from "./botChat.ts";
 import {
   OrchestrationV2SearchThreadError,
   OrchestrationV2SearchThreadInput,
@@ -378,6 +382,18 @@ import { VcsError } from "./vcs.ts";
 import { Project, ProjectMutation, ProjectMutationError } from "./project.ts";
 
 export const WS_METHODS = {
+  botsList: "bots.list",
+  botsCreate: "bots.create",
+  botsReset: "bots.reset",
+  botsRename: "bots.rename",
+  botsDelete: "bots.delete",
+  botsTransferBegin: "bots.transferBegin",
+  botsTransferRead: "bots.transferRead",
+  botsTransferWrite: "bots.transferWrite",
+  botsTransferStage: "bots.transferStage",
+  botsTransferRelease: "bots.transferRelease",
+  botsTransferActivate: "bots.transferActivate",
+  botsTransferCancel: "bots.transferCancel",
   projectsList: "projects.list",
   projectsAdd: "projects.add",
   projectsRemove: "projects.remove",
@@ -1784,6 +1800,91 @@ const WsSubscribeServerLifecycleRpc = Rpc.make(WS_METHODS.subscribeServerLifecyc
   stream: true,
 });
 
+const WsBotsListRpc = Rpc.make(WS_METHODS.botsList, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(BotIdentity),
+  error: Schema.Union([BotChatError, EnvironmentAuthorizationError]),
+});
+const WsBotsCreateRpc = Rpc.make(WS_METHODS.botsCreate, {
+  payload: Schema.Struct({
+    threadId: ThreadId,
+    name: Schema.optionalKey(Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(255))),
+    modelSelection: ModelSelection,
+    runtimeMode: RuntimeMode,
+    reuseExisting: Schema.optionalKey(Schema.Boolean),
+  }),
+  success: BotIdentity,
+  error: Schema.Union([BotChatError, EnvironmentAuthorizationError]),
+});
+
+const WsBotsRenameRpc = Rpc.make(WS_METHODS.botsRename, {
+  payload: Schema.Struct({
+    botId: BotId,
+    name: BotIdentity.fields.name.check(Schema.isMinLength(1), Schema.isMaxLength(255)),
+  }),
+  success: BotIdentity,
+  error: Schema.Union([BotChatError, EnvironmentAuthorizationError]),
+});
+const WsBotsResetRpc = Rpc.make(WS_METHODS.botsReset, {
+  payload: Schema.Struct({ botId: BotId }),
+  success: BotIdentity,
+  error: Schema.Union([BotChatError, EnvironmentAuthorizationError]),
+});
+const WsBotsDeleteRpc = Rpc.make(WS_METHODS.botsDelete, {
+  payload: Schema.Struct({ botId: BotId }),
+  success: Schema.Void,
+  error: Schema.Union([BotChatError, EnvironmentAuthorizationError]),
+});
+
+const BotTransferKey = Schema.Struct({ botId: BotId, transferId: Schema.String });
+const botRpcError = Schema.Union([BotChatError, EnvironmentAuthorizationError]);
+const WsBotsTransferBeginRpc = Rpc.make(WS_METHODS.botsTransferBegin, {
+  payload: Schema.Struct({ botId: BotId, destinationEnvironmentId: EnvironmentId }),
+  success: Schema.Struct({
+    transferId: Schema.String,
+    length: NonNegativeInt,
+    chunkSize: NonNegativeInt,
+  }),
+  error: botRpcError,
+});
+const WsBotsTransferReadRpc = Rpc.make(WS_METHODS.botsTransferRead, {
+  payload: Schema.Struct({ ...BotTransferKey.fields, offset: NonNegativeInt }),
+  success: Schema.Struct({ data: Schema.String, nextOffset: NonNegativeInt }),
+  error: botRpcError,
+});
+const WsBotsTransferWriteRpc = Rpc.make(WS_METHODS.botsTransferWrite, {
+  payload: Schema.Struct({
+    transferId: Schema.String,
+    offset: NonNegativeInt,
+    data: Schema.String.check(Schema.isMaxLength(262144)),
+  }),
+  success: Schema.Void,
+  error: botRpcError,
+});
+const WsBotsTransferStageRpc = Rpc.make(WS_METHODS.botsTransferStage, {
+  payload: Schema.Struct({
+    transferId: Schema.String,
+    length: NonNegativeInt,
+  }),
+  success: BotIdentity,
+  error: botRpcError,
+});
+const WsBotsTransferReleaseRpc = Rpc.make(WS_METHODS.botsTransferRelease, {
+  payload: BotTransferKey,
+  success: Schema.Struct({ secret: Schema.String }),
+  error: botRpcError,
+});
+const WsBotsTransferActivateRpc = Rpc.make(WS_METHODS.botsTransferActivate, {
+  payload: Schema.Struct({ ...BotTransferKey.fields, secret: Schema.String }),
+  success: BotIdentity,
+  error: botRpcError,
+});
+const WsBotsTransferCancelRpc = Rpc.make(WS_METHODS.botsTransferCancel, {
+  payload: BotTransferKey,
+  success: BotIdentity,
+  error: botRpcError,
+});
+
 const WsScheduledTasksListRpc = Rpc.make(WS_METHODS.scheduledTasksList, {
   payload: ScheduledTaskListInput,
   success: ScheduledTaskListResult,
@@ -1878,6 +1979,21 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   "t3/contracts/RpcScopeAuthorization",
   { error: EnvironmentAuthorizationError },
 ) {}
+
+export const WsBotRpcGroup = RpcGroup.make(
+  WsBotsListRpc,
+  WsBotsCreateRpc,
+  WsBotsRenameRpc,
+  WsBotsResetRpc,
+  WsBotsDeleteRpc,
+  WsBotsTransferBeginRpc,
+  WsBotsTransferReadRpc,
+  WsBotsTransferWriteRpc,
+  WsBotsTransferStageRpc,
+  WsBotsTransferReleaseRpc,
+  WsBotsTransferActivateRpc,
+  WsBotsTransferCancelRpc,
+).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = RpcGroup.make(
   WsServerProbeRpc,
@@ -2078,4 +2194,6 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
   WsOrchestrationV2SubscribeCommandOutputRpc,
-).middleware(RpcScopeAuthorization);
+)
+  .middleware(RpcScopeAuthorization)
+  .merge(WsBotRpcGroup);

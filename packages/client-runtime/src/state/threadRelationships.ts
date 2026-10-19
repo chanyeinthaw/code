@@ -6,7 +6,7 @@ import {
 } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 
-export type ThreadRelationshipKind = "parent" | "fork" | "subagent" | "transfer";
+export type ThreadRelationshipKind = "parent" | "fork" | "subagent" | "transfer" | "launch";
 
 export interface ThreadRelationshipNode {
   readonly threadId: ThreadId;
@@ -85,6 +85,17 @@ export function deriveThreadRelationshipGraph(input: {
       thread.forkedFrom?.type === "run"
         ? thread.forkedFrom.threadId
         : thread.lineage.parentThreadId;
+    // Subagents and forks are cloned from their parent shell and so inherit its
+    // launchedByThreadId. Only a thread with no lineage parent was itself
+    // launched; otherwise its parent edge below is its one direct relationship.
+    if (thread.launchedByThreadId !== undefined && parentThreadId === null) {
+      addEdge({
+        sourceThreadId: thread.launchedByThreadId,
+        targetThreadId: thread.id,
+        kind: "launch",
+        status: thread.activityRunStatus ?? thread.status,
+      });
+    }
     if (parentThreadId === null) continue;
     addEdge({
       sourceThreadId: parentThreadId,

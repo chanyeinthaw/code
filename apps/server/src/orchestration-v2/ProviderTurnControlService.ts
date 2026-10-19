@@ -1,4 +1,5 @@
 import { projectComposerContextForProvider } from "@t3tools/shared/composerContextReferences";
+import { botMessageText } from "../bots/BotInput.ts";
 import {
   MessageId,
   type NodeId,
@@ -353,6 +354,14 @@ export const layer: Layer.Layer<
               cause: "The persisted steering message or target run is missing.",
             });
           }
+          const text = projectComposerContextForProvider({
+            text: message.text,
+            records: message.context?.records ?? [],
+          });
+          const isAgentMessageToBot =
+            message.createdBy === "agent" &&
+            message.senderThreadId !== undefined &&
+            (yield* projections.getThread(input.threadId)).botId !== undefined;
           yield* loaded.session.value
             .steerTurn({
               threadId: input.threadId,
@@ -361,10 +370,7 @@ export const layer: Layer.Layer<
               providerTurnId: loaded.providerTurn.id,
               message: {
                 messageId: message.id,
-                text: projectComposerContextForProvider({
-                  text: message.text,
-                  records: message.context?.records ?? [],
-                }),
+                text: isAgentMessageToBot ? botMessageText({ ...message, text }) : text,
                 attachments: message.attachments,
                 createdBy: message.createdBy,
                 creationSource: message.creationSource,

@@ -1,3 +1,5 @@
+import { BotChatHeader } from "../bots/BotHeader";
+import { useBotThreadContext } from "../../state/bots";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
@@ -84,6 +86,7 @@ export const ChatHeader = memo(function ChatHeader({
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
   const [collapseParentTitle, setCollapseParentTitle] = useState(false);
   const activeThreadRef = scopeThreadRef(activeThreadEnvironmentId, activeThreadId);
+  const botContext = useBotThreadContext(activeThreadRef);
   const canOperateThread = useEnvironmentScope(
     activeThreadEnvironmentId,
     AuthOrchestrationOperateScope,
@@ -191,6 +194,9 @@ export const ChatHeader = memo(function ChatHeader({
     threadRef: isServerThread ? activeThreadRef : null,
     projectCwd: activeProjectCwd,
     onStartRename: startRename,
+    ...(botContext
+      ? { actions: ["copy", "project-settings"] as const, projectSettingsLabel: "Bot settings" }
+      : {}),
   });
   const titleButtonRef = useRef<HTMLButtonElement | null>(null);
   const titleMenuTimerRef = useRef<number | null>(null);
@@ -265,6 +271,15 @@ export const ChatHeader = memo(function ChatHeader({
       setRenaming(null);
     }
   };
+  if (botContext)
+    return (
+      <BotChatHeader
+        bot={botContext}
+        environmentId={activeThreadEnvironmentId}
+        subagentTitle={botContext.isSubagent ? activeThreadTitle : undefined}
+        openMenu={openMenu}
+      />
+    );
   return (
     <div
       ref={breadcrumbContainerRef}

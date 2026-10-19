@@ -1,6 +1,7 @@
 import * as Migrator from "effect/sql/Migrator";
 import * as Effect from "effect/Effect";
 import * as SqlClient from "effect/sql/SqlClient";
+import { reconcileForkMigrations } from "./reconcileForkMigrations.ts";
 import { reconcileV2PreviewMigration } from "./reconcileV2PreviewMigration.ts";
 
 import Migration0001 from "./Migrations/001_OrchestrationEvents.ts";
@@ -72,6 +73,9 @@ import Migration0066 from "./Migrations/066_RepairClientSettlementTimestamps.ts"
 import Migration0067 from "./Migrations/067_WebhookDedupe.ts";
 import Migration0068 from "./Migrations/068_ShellStopRequestIndex.ts";
 
+import Migration0069 from "./Migrations/069_BotChat.ts";
+import Migration0070 from "./Migrations/070_BotProjects.ts";
+
 const migrationEntries = [
   [1, "OrchestrationEvents", Migration0001],
   [2, "OrchestrationCommandReceipts", Migration0002],
@@ -142,6 +146,8 @@ const migrationEntries = [
   [66, "RepairClientSettlementTimestamps", Migration0066],
   [67, "WebhookDedupe", Migration0067],
   [68, "ShellStopRequestIndex", Migration0068],
+  [69, "BotChat", Migration0069],
+  [70, "BotProjects", Migration0070],
 ] as const;
 
 export const migrationManifest = migrationEntries.map(([id, name]) => [id, name] as const);
@@ -208,6 +214,9 @@ export const runMigrations = Effect.fn("runMigrations")(function* ({
     toMigrationInclusive === undefined || toMigrationInclusive >= FIRST_V2_MIGRATION_ID;
   const previewMigrations = includesV2 ? yield* reconcileV2PreviewMigration() : [];
   if (includesV2) {
+    if (toMigrationInclusive === undefined || toMigrationInclusive >= 68) {
+      yield* reconcileForkMigrations();
+    }
     yield* assertV2MigrationsCanRun(toMigrationInclusive);
   }
   const executedMigrations = [

@@ -23,7 +23,7 @@ import {
   isValidFaviconCapturedAt,
   migratePersistedBrowserFaviconState,
 } from "./browserFaviconLogic";
-import { createMemoryStorage, type StateStorage } from "./lib/storage";
+import { createBotStorage, type StateStorage } from "./lib/storage";
 
 const BROWSER_FAVICON_STORAGE_KEY = "t3code:browser-favicons:v1";
 const MAX_PENDING_ORIGINS_PER_THREAD = 10;
@@ -77,7 +77,7 @@ function addPendingFavicon(
 }
 
 export function resolveBrowserFaviconStorage(): StateStorage {
-  const fallback = createMemoryStorage();
+  const fallback = createBotStorage();
   const shadowedNames = new Set<string>();
   let primary: Storage;
   try {
