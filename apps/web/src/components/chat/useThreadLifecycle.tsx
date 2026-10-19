@@ -1,3 +1,4 @@
+import { resolveBotThreadContext } from "../../botThreadContext";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import type { Dispatch } from "react";
@@ -435,8 +436,12 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       toastManager.add({ type: "info", title: "This thread is no longer available" });
       return;
     }
+    const root = shell
+      ? readThreadShell(scopeThreadRef(environmentId, shell.lineage.rootThreadId))
+      : null;
+    const bot = resolveBotThreadContext(shell, root);
     void navigate({
-      to: "/$environmentId/$threadId",
+      to: bot ? "/bots/$environmentId/$threadId" : "/$environmentId/$threadId",
       params: buildThreadRouteParams(threadRef),
     });
   };

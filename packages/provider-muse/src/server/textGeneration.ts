@@ -340,9 +340,20 @@ export const makeMuseTextGeneration = Effect.fn("makeMuseTextGeneration")(functi
     });
     return { title: sanitizeThreadTitle(generated.title) };
   });
+  const generateMemorySummary: NonNullable<ProviderTextGeneration["generateMemorySummary"]> =
+    Effect.fn("MuseTextGeneration.generateMemorySummary")(function* (input) {
+      const result = yield* runMuseJson({
+        operation: "generateMemorySummary",
+        prompt: `${input.instructions}\n\n${input.context}\n\n${input.task}\n\nReturn JSON with one string field named summary.`,
+        outputSchema: Schema.Struct({ summary: Schema.String }),
+        modelSelection: input.modelSelection,
+      });
+      return result.summary;
+    });
   const generateReviewGuide: ProviderTextGeneration["generateReviewGuide"] = () =>
     Effect.fail(investigationUnsupported("generateReviewGuide", "Muse Code"));
   return {
+    generateMemorySummary,
     generateCommitMessage,
     generatePrContent,
     generateBranchName,

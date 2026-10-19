@@ -101,6 +101,8 @@ export function createSidebarSortingStrategy(input: {
   routeThreadKey?: string | null;
   snoozedThreadCount?: number;
   cardHeight?: number;
+  /** Explicit scale for card layouts whose unscaled height differs from thread cards. */
+  layoutScale?: number;
   slimHeight?: number;
   boundaryLabelHeight?: number;
 }): SortingStrategy {
@@ -140,7 +142,8 @@ export function createSidebarSortingStrategy(input: {
       if (item.key !== active.key) groups[item.section].push(item);
     }
     const scale =
-      slimHeight !== undefined ? slimHeight / 36 : (headerScale ?? (cardHeight ?? 82) / 82);
+      input.layoutScale ??
+      (slimHeight !== undefined ? slimHeight / 36 : (headerScale ?? (cardHeight ?? 82) / 82));
     cardHeight ??= 82 * scale;
     slimHeight ??= 36 * scale;
     const labelHeight = (input.boundaryLabelHeight ?? 0) * scale;

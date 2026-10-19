@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./botChat": {
+      "types": "./src/botChat.ts",
+      "import": "./src/botChat.ts"
+    },
     "./changedFileKind": {
       "types": "./src/changedFileKind.ts",
       "import": "./src/changedFileKind.ts"

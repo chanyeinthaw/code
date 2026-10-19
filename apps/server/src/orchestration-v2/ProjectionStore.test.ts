@@ -3056,12 +3056,12 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
           const sqlShell = (yield* projectionStore.getShellSnapshot()).threads.find(
             (row) => row.id === threadId,
           )!;
-          const memoryShell = ProjectionStore.threadShellFromProjection(projection);
+          const botShell = ProjectionStore.threadShellFromProjection(projection);
           const expected = activityStatus === "completed" ? null : DateTime.toEpochMillis(now);
           const timestamp = (value: DateTime.Utc | null | undefined) =>
             value == null ? null : DateTime.toEpochMillis(value);
           assert.equal(timestamp(sqlShell.activityRunStartedAt), expected);
-          assert.equal(timestamp(memoryShell.activityRunStartedAt), expected);
+          assert.equal(timestamp(botShell.activityRunStartedAt), expected);
           assert.equal(sqlShell.latestRunId, "run:clock:newer");
         }
       }
@@ -3386,10 +3386,10 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
         lastErrorClass: string | null,
       ) {
         const projection = yield* store.getThreadProjection(threadId);
-        const memoryShell = ProjectionStore.threadShellFromProjection(projection);
+        const botShell = ProjectionStore.threadShellFromProjection(projection);
         const shells = yield* store.getShellSnapshot();
         const sqlShell = shells.threads.find((row) => row.id === threadId)!;
-        for (const shell of [memoryShell, sqlShell]) {
+        for (const shell of [botShell, sqlShell]) {
           assert.equal(shell.lastError, lastError);
           assert.equal(shell.lastErrorClass, lastErrorClass);
           assert.equal(
@@ -3454,12 +3454,12 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
       });
       yield* assertSummary("Plan limit reached.", "usage_limit");
       const queuedProjection = yield* store.getThreadProjection(threadId);
-      const queuedMemoryShell = ProjectionStore.threadShellFromProjection(queuedProjection);
+      const queuedBotShell = ProjectionStore.threadShellFromProjection(queuedProjection);
       const queuedSqlShell = (yield* store.getShellSnapshot()).threads.find(
         (row) => row.id === threadId,
       )!;
-      assert.equal(queuedMemoryShell.status, "failed");
-      assert.equal(queuedMemoryShell.latestRunId, original.id);
+      assert.equal(queuedBotShell.status, "failed");
+      assert.equal(queuedBotShell.latestRunId, original.id);
       assert.equal(queuedSqlShell.status, "failed");
       assert.equal(queuedSqlShell.latestRunId, original.id);
       assert.equal(queuedProjection.runs.find((run) => run.id === queuedRunId)?.status, "queued");
@@ -4105,14 +4105,14 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
         const thread = shell.threads.find((candidate) => candidate.id === threadId);
         assert.isDefined(thread);
         const projection = yield* projectionStore.getThreadProjection(threadId);
-        const memoryShell = ProjectionStore.threadShellFromProjection(projection);
+        const botShell = ProjectionStore.threadShellFromProjection(projection);
         const terminal = status === "completed" || status === "rolled_back";
         assert.deepEqual(
-          [thread?.pendingRuntimeRequest?.id, memoryShell.pendingRuntimeRequest?.id],
+          [thread?.pendingRuntimeRequest?.id, botShell.pendingRuntimeRequest?.id],
           terminal ? [requestId, requestId] : ["secret:b", "secret:b"],
         );
         assert.deepEqual(
-          [thread?.pendingRuntimeRequest?.blocking, memoryShell.pendingRuntimeRequest?.blocking],
+          [thread?.pendingRuntimeRequest?.blocking, botShell.pendingRuntimeRequest?.blocking],
           terminal ? [false, false] : [true, true],
         );
       }
