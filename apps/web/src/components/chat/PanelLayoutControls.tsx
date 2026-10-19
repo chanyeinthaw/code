@@ -1,4 +1,6 @@
-import { PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
+import { useClientSettings } from "../../hooks/useSettings";
+import { FolderGit2Icon, PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
 import { Maximize2, Minimize2 } from "lucide";
 import { MorphIcon } from "~/components/MorphIcon";
 import { memo, type ReactElement } from "react";
@@ -47,6 +49,12 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
   onToggleThreadPanel,
   onToggleRightPanel,
 }: PanelLayoutControlsProps) {
+  const router = useRouter();
+  const alternateLayoutEnabled = useClientSettings((settings) => settings.alternateLayoutEnabled);
+  const ThreadDetailsIcon =
+    alternateLayoutEnabled || router.options.basepath === "/layout"
+      ? FolderGit2Icon
+      : SquareMenuIcon;
   const threadPanelToggle = (
     <Toggle
       className="relative shrink-0 [-webkit-app-region:no-drag]"
@@ -55,7 +63,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
       variant="ghost"
       size="sm"
     >
-      <SquareMenuIcon className="size-4" />
+      <ThreadDetailsIcon className="size-4" />
     </Toggle>
   );
   const threadPanelTooltip = (trigger: ReactElement) => (
