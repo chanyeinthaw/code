@@ -5,6 +5,7 @@ import * as DateTime from "effect/DateTime";
 import {
   deriveThreadRelationshipGraph,
   immediateThreadRelationships,
+  isParentThreadRelationship,
   orderWebThreadLineageRows,
   relatedThreadIds,
   resolveMergeBackTargetThreadId,
@@ -41,6 +42,30 @@ describe("thread relationships", () => {
     expect(
       threadRelationshipRowStatus(graph, immediateThreadRelationships(graph, parent)[0]!),
     ).toBe(childStatus);
+  });
+
+  it("links a launched thread to its launcher without making it a child", () => {
+    const bot = ThreadId.make("bot");
+    const launched = ThreadId.make("launched");
+    const graph = deriveThreadRelationshipGraph({
+      threads: [
+        { id: bot, status: "idle", lineage: { parentThreadId: null } },
+        {
+          id: launched,
+          status: "running",
+          launchedByThreadId: bot,
+          lineage: { parentThreadId: null },
+        },
+      ] as never,
+      projection: null,
+    });
+    const [fromBot] = immediateThreadRelationships(graph, bot);
+    expect(fromBot).toMatchObject({ threadId: launched, edge: { kind: "launch" } });
+    expect(isParentThreadRelationship(fromBot!.edge, bot)).toBe(false);
+    expect(threadRelationshipRowStatus(graph, fromBot!)).toBe("running");
+    const [fromLaunched] = immediateThreadRelationships(graph, launched);
+    expect(fromLaunched?.threadId).toBe(bot);
+    expect(isParentThreadRelationship(fromLaunched!.edge, launched)).toBe(true);
   });
 
   it("does not label a missing parent with its child's running status", () => {

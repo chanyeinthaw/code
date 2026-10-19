@@ -9,6 +9,7 @@ import {
   T3_MCP_BEARER_ENV,
   T3_MCP_URL_ENV,
   T3_PI_RUNTIME_MODE_ENV,
+  T3_PI_MEMORY_CHAT_ENV,
   T3_PI_MCP_EXTENSION_PATH_ENV,
 } from "./mcpExtensionSource.ts";
 
@@ -197,6 +198,27 @@ function withoutExplicitExtensions(args: ReadonlyArray<string>): ReadonlyArray<s
   return filtered;
 }
 
+export function withoutPiPromptResources(args: ReadonlyArray<string>): ReadonlyArray<string> {
+  const resources = new Set([
+    "--skill",
+    "--prompt-template",
+    "--system-prompt",
+    "--append-system-prompt",
+  ]);
+  const filtered: string[] = [];
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (resources.has(arg)) {
+      index++;
+      continue;
+    }
+    if (resources.has(arg.split("=", 1)[0]!)) continue;
+    filtered.push(arg);
+  }
+  return filtered;
+}
+
 function withoutToolSelectionArgs(args: ReadonlyArray<string>): ReadonlyArray<string> {
   const filtered: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
@@ -288,6 +310,7 @@ export function buildPiRpcLaunch(input: {
   // These values belong to the current T3 session. Never let a Pi child reuse
   // credentials inherited from the server or a parent provider process.
   delete environment[T3_MCP_URL_ENV];
+  delete environment[T3_PI_MEMORY_CHAT_ENV];
   delete environment[T3_MCP_BEARER_ENV];
   delete environment[T3_PI_MCP_EXTENSION_PATH_ENV];
 
@@ -295,6 +318,11 @@ export function buildPiRpcLaunch(input: {
     args,
     env: {
       ...environment,
+      ...(hasT3Mcp &&
+      input.mcpSession?.botRunId !== undefined &&
+      input.mcpSession.botThreadId === undefined
+        ? { [T3_PI_MEMORY_CHAT_ENV]: "1" }
+        : {}),
       ...(hasT3Extension && input.extensionPath !== undefined
         ? { [T3_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
         : {}),

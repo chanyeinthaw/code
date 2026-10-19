@@ -1,3 +1,4 @@
+import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
 import type {
   Event as OpenCodeEvent,
   Message as OpenCodeMessage,
@@ -947,6 +948,13 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
           serverUrl: options.settings.serverUrl,
           environment: options.environment,
         });
+        if (input.runtimePolicy.botChat !== undefined && connection.external) {
+          return yield* new ProviderAdapter.ProviderAdapterOpenSessionError({
+            driver: OPENCODE_PROVIDER,
+            providerSessionId: input.providerSessionId,
+            cause: "Bots require a local OpenCode server for its turn-scoped MCP tools.",
+          });
+        }
         const client = runtime.createOpenCodeSdkClient({
           baseUrl: connection.url,
           directory: cwd,
@@ -955,6 +963,25 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
             : {}),
         });
 
+        const memoryTools =
+          input.runtimePolicy.botChat === undefined
+            ? undefined
+            : yield* OpenCodeRuntime.runOpenCodeSdk("tool.ids", (signal) =>
+                client.tool.ids(undefined, { signal, throwOnError: true }),
+              ).pipe(
+                Effect.flatMap((response) =>
+                  response.data === undefined
+                    ? Effect.fail(
+                        new OpenCodeRuntime.OpenCodeRuntimeError({
+                          operation: "tool.ids",
+                          detail: "OpenCode did not return its tool inventory.",
+                        }),
+                      )
+                    : Effect.succeed(
+                        Object.fromEntries(response.data.map((name) => [name, false])),
+                      ),
+                ),
+              );
         const mcpSession = yield* mcpSessions.read(input.threadId);
         const hasT3Mcp = mcpSession !== undefined && !connection.external;
         const orchestrationSystemPrompt = t3OrchestrationSystemPrompt(hasT3Mcp);
@@ -3234,15 +3261,29 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
                 );
                 return;
               }
-              const systemPrompt = [
-                orchestrationSystemPrompt,
-                buildRuntimeInstructions({
-                  harness: "OpenCode",
-                  model: turnInput.modelSelection.model,
-                }),
-              ]
-                .filter(Boolean)
-                .join("\n\n");
+              const systemPrompt =
+                turnInput.runtimePolicy.botChat === undefined
+                  ? [
+                      orchestrationSystemPrompt,
+                      buildRuntimeInstructions({
+                        harness: "OpenCode",
+                        model: turnInput.modelSelection.model,
+                      }),
+                    ]
+                      .filter(Boolean)
+                      .join("\n\n")
+                  : buildBotSystemPrompt({
+                      botPrompt: turnInput.runtimePolicy.botChat.systemPrompt,
+                      runtime: {
+                        harness: "OpenCode",
+                        model: turnInput.modelSelection.model,
+                        reasoningEffort: getModelSelectionStringOptionValue(
+                          turnInput.modelSelection,
+                          "variant",
+                        ),
+                      },
+                      mcpSession,
+                    });
               const agent =
                 getModelSelectionStringOptionValue(turnInput.modelSelection, "agent") ??
                 (turnInput.runtimePolicy.interactionMode === "plan" ? "plan" : undefined);
@@ -3260,6 +3301,7 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
                   ...(agent === undefined ? {} : { agent }),
                   ...(variant === undefined ? {} : { variant }),
                   system: systemPrompt,
+                  ...(memoryTools === undefined ? {} : { tools: memoryTools }),
                   parts,
                 },
                 admissionAbortController!,

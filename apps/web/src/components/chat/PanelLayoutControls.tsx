@@ -1,3 +1,6 @@
+import { useBotThreadContext } from "../../state/bots";
+import { useThreadRouteRef } from "../../hooks/useThreadRouteTarget";
+import { useHasThreadLineage } from "./ThreadRelationshipsControl";
 import { useClientSettings } from "../../hooks/useSettings";
 import { FolderGit2Icon, PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
@@ -52,6 +55,9 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
   onToggleRightPanel,
 }: PanelLayoutControlsProps) {
   const router = useRouter();
+  const ref = useThreadRouteRef();
+  const memory = useBotThreadContext(ref);
+  const hasLineage = useHasThreadLineage(memory ? ref : null);
   const alternateLayoutEnabled = useClientSettings((settings) => settings.alternateLayoutEnabled);
   const ThreadDetailsIcon =
     alternateLayoutEnabled || router.options.basepath === "/layout"
@@ -86,7 +92,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
       className="flex h-full shrink-0 items-center gap-1 [-webkit-app-region:no-drag]"
       data-panel-layout-controls
     >
-      {showThreadPanelControl
+      {showThreadPanelControl && (!memory || hasLineage)
         ? threadPanelPresentation === "popover"
           ? threadPanelTooltip(
               <PopoverTrigger handle={threadPanelPopoverHandle} render={threadPanelToggle} />,

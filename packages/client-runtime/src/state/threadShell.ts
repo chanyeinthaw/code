@@ -378,7 +378,8 @@ export function createEnvironmentThreadShellAtoms(input: {
     for (const environmentId of enabledEnvironmentIds(get(input.catalogValueAtom))) {
       const subagentRequests = get(pendingSubagentRequestsAtom(environmentId));
       for (const thread of get(environmentThreadsAtom(environmentId))) {
-        next.push(scopedThread(environmentId, thread, subagentRequests));
+        if (thread.botId === undefined)
+          next.push(scopedThread(environmentId, thread, subagentRequests));
       }
     }
     if (arrayElementsEqual(previousThreadShells, next)) {
@@ -410,7 +411,8 @@ export function createEnvironmentThreadShellAtoms(input: {
       for (const thread of get(environmentThreadsAtom(environmentId))) {
         if (thread.archivedAt !== null || thread.lineage.relationshipToParent === "subagent")
           continue;
-        next.push(scopedThread(environmentId, thread, subagentRequests));
+        if (thread.botId === undefined)
+          next.push(scopedThread(environmentId, thread, subagentRequests));
       }
     }
     if (arrayElementsEqual(previousNavigationShells, next)) return previousNavigationShells;

@@ -125,17 +125,29 @@ export const assertFullAccess = (context: Caller, message: string) =>
     ? Effect.void
     : Effect.fail(new OrchestratorMcpFailure({ code: "capability_denied", message }));
 
+/**
+ * A bot's own project is its hidden internal one, and its delegated subagents run
+ * there too. Both carry `botRunId`, so neither falls back to the caller's project.
+ */
 export const resolveProjectId = (context: Caller, projectId: ProjectId | undefined) =>
   projectId !== undefined
     ? Effect.succeed(projectId)
-    : context.caller !== undefined
-      ? Effect.succeed(context.caller.projectId)
-      : Effect.fail(
+    : context.scope.thread?.botRunId !== undefined
+      ? Effect.fail(
           new OrchestratorMcpFailure({
             code: "target_required",
-            message: "Pass projectId: this MCP client is not running inside a T3 thread.",
+            message:
+              "Pass projectId: bots have no project of their own. t3_project_list shows them.",
           }),
-        );
+        )
+      : context.caller !== undefined
+        ? Effect.succeed(context.caller.projectId)
+        : Effect.fail(
+            new OrchestratorMcpFailure({
+              code: "target_required",
+              message: "Pass projectId: this MCP client is not running inside a T3 thread.",
+            }),
+          );
 
 const resolveThreadId = (context: Caller, threadId: ThreadId | undefined) =>
   threadId !== undefined

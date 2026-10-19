@@ -43,6 +43,15 @@ const ITEMS: ReadonlyArray<SettingsSearchItem> = [
 ];
 
 describe("searchSettings", () => {
+  it.each(["memory-compaction-model", "memory-compaction-concurrency"])(
+    "opens %s in Bots settings",
+    (id) => {
+      expect(SETTINGS_SEARCH_ITEMS.find((item) => item.id === id)).toMatchObject({
+        to: "/settings/bots",
+        scope: "environment-defaults",
+      });
+    },
+  );
   it("matches titles, sections, and remembered setting details", () => {
     expect(searchSettings("word", ITEMS).map((item) => item.id)).toEqual(["word-wrap"]);
     expect(searchSettings("network", ITEMS).map((item) => item.id)).toEqual(["network-access"]);
