@@ -1,3 +1,6 @@
+import { CheckIcon, TriangleAlertIcon } from "lucide-react";
+import { DesktopUpdateStatusIcon } from "./DesktopUpdateStatusIcon";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { useAtomValue } from "@effect/atom-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 
@@ -60,12 +63,15 @@ export function SidebarUpdateCapsule({
   local,
   icon,
   onRestart,
+  presentation = "capsule",
 }: {
+  readonly presentation?: "capsule" | "icon";
   readonly run: UpdateEverythingRun;
   readonly local: UpdateRunLocalState;
   readonly icon: ReactNode;
   readonly onRestart?: () => Promise<void>;
 }) {
+  const compact = presentation === "icon";
   const machines = useUpdateRunMachineViews(run);
   const hasActiveMachine = machines.some(
     ({ status }) => status !== "done" && status !== "failed" && status !== "waiting",
@@ -74,7 +80,12 @@ export function SidebarUpdateCapsule({
   const view = describeUpdateCapsule(run, machines, local, now);
   const updateServer = useServerUpdate();
   const failed = machines.some(({ status }) => status === "failed");
-  const settled = !hasActiveMachine && run.localVersion === null;
+  const settled =
+    machines.every(({ status }) => status === "done" || status === "failed") &&
+    run.localVersion === null;
+  const statusLabel = view.slow
+    ? `${view.label} ${view.slow.status} ${view.slow.elapsed}`
+    : view.label;
 
   const actionLabel =
     view.action === "later" ? "Later" : view.action === "retry" ? "Retry" : "Dismiss";
@@ -86,46 +97,87 @@ export function SidebarUpdateCapsule({
 
   return (
     <Popover>
-      <div
-        className={cn(
-          "relative flex h-8 min-w-0 flex-1 items-center rounded-full bg-sidebar-control-surface text-sidebar-foreground",
-          view.tone === "slow" && "ring-1 ring-warning/40 ring-inset",
-          view.tone === "failed" && "ring-1 ring-destructive/40 ring-inset",
-        )}
-      >
-        <PopoverTrigger
-          render={
+      {compact ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label={statusLabel}
+                    className={cn(
+                      "grid size-8 shrink-0 cursor-pointer place-items-center rounded-full bg-sidebar-control-surface text-sidebar-foreground outline-hidden ring-ring hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset",
+                      view.tone === "failed" && "text-destructive",
+                      view.tone === "slow" && "text-warning",
+                    )}
+                  >
+                    {failed ? (
+                      <TriangleAlertIcon className="size-4" />
+                    ) : settled ? (
+                      <CheckIcon className="size-4" />
+                    ) : (
+                      <DesktopUpdateStatusIcon
+                        status="downloading"
+                        downloadPercent={
+                          machines.length === 0
+                            ? 0
+                            : (machines.filter(({ status }) => status === "done").length /
+                                machines.length) *
+                              100
+                        }
+                      />
+                    )}
+                  </button>
+                }
+              />
+            }
+          />
+          <TooltipPopup side="right">{statusLabel}</TooltipPopup>
+        </Tooltip>
+      ) : (
+        <div
+          className={cn(
+            "relative flex h-8 min-w-0 flex-1 items-center rounded-full bg-sidebar-control-surface text-sidebar-foreground",
+            view.tone === "slow" && "ring-1 ring-warning/40 ring-inset",
+            view.tone === "failed" && "ring-1 ring-destructive/40 ring-inset",
+          )}
+        >
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label={
+                  view.slow ? `${view.label} ${view.slow.status} ${view.slow.elapsed}` : view.label
+                }
+                className="absolute inset-0 cursor-pointer rounded-full outline-hidden ring-ring hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset"
+              />
+            }
+          />
+          <span className="pointer-events-none relative min-w-0 flex-1 truncate pl-3 text-xs">
+            <span className={cn(view.tone === "failed" && "text-destructive")}>{view.label}</span>
+            {view.slow ? (
+              <span className="text-warning tabular-nums"> {view.slow.elapsed}</span>
+            ) : null}
+          </span>
+          {view.action !== null ? (
             <button
               type="button"
-              aria-label={
-                view.slow ? `${view.label} ${view.slow.status} ${view.slow.elapsed}` : view.label
-              }
-              className="absolute inset-0 cursor-pointer rounded-full outline-hidden ring-ring hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset"
-            />
-          }
-        />
-        <span className="pointer-events-none relative min-w-0 flex-1 truncate pl-3 text-xs">
-          <span className={cn(view.tone === "failed" && "text-destructive")}>{view.label}</span>
-          {view.slow ? (
-            <span className="text-warning tabular-nums"> {view.slow.elapsed}</span>
-          ) : null}
-        </span>
-        {view.action !== null ? (
-          <button
-            type="button"
-            className="relative shrink-0 cursor-pointer pr-3 pl-1.5 text-xs underline decoration-muted-foreground/60 underline-offset-3 hover:decoration-current"
-            onClick={runAction}
-          >
-            {actionLabel}
-          </button>
-        ) : (
-          <span className="pointer-events-none relative grid size-8 shrink-0 place-items-center">
-            {icon}
-          </span>
-        )}
-      </div>
+              className="relative shrink-0 cursor-pointer pr-3 pl-1.5 text-xs underline decoration-muted-foreground/60 underline-offset-3 hover:decoration-current"
+              onClick={runAction}
+            >
+              {actionLabel}
+            </button>
+          ) : (
+            <span className="pointer-events-none relative grid size-8 shrink-0 place-items-center">
+              {icon}
+            </span>
+          )}
+        </div>
+      )}
       <PopoverPopup side="top" align="end" padding="compact" width="sm">
         <div className="flex flex-col gap-1 text-xs">
+          {compact ? <div className="mb-1 font-medium">{view.label}</div> : null}
           {run.localVersion !== null ? (
             <div className="flex items-center justify-between gap-3">
               <span>This app</span>
@@ -162,11 +214,11 @@ export function SidebarUpdateCapsule({
               ) : null}
             </div>
           ))}
-          {settled && failed ? (
+          {(compact ? view.action !== null || settled : settled && failed) ? (
             <div className="mt-1 flex justify-end gap-1">
-              {view.action === "retry" ? (
+              {view.action === "retry" || view.action === "later" ? (
                 <Button size="xs" variant="outline" onClick={runAction}>
-                  Retry
+                  {actionLabel}
                 </Button>
               ) : null}
               <Button size="xs" variant="ghost" onClick={dismissSettledUpdateRunMachines}>
