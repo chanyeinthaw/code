@@ -2477,3 +2477,47 @@ code {
     }
   }
 }
+
+@utility alternate-navigation-rail {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--sidebar);
+
+  &[data-thread-sidebar-open="true"] {
+    background-image: var(--surface-grain);
+    background-repeat: repeat;
+    background-size: var(--surface-grain-size);
+    background-position: 3rem 0;
+  }
+
+  &[data-thread-sidebar-open="false"] {
+    background-color: var(--background);
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: var(--workspace-topbar-height) 0 0;
+    z-index: -1;
+    border-top-right-radius: var(--radius-xl);
+    background-color: var(--color-white);
+  }
+
+  @variant dark {
+    &::before {
+      background-color: var(--alternate-rail-dark-surface);
+      box-shadow:
+        inset -0.5px 0.5px 1px color-mix(in srgb, var(--color-black) 12%, transparent),
+        inset 0.5px -0.5px 1px color-mix(in srgb, var(--color-white) 16%, transparent);
+    }
+  }
+}
+
+@utility alternate-thread-details-card {
+  background-color: var(--color-white);
+  border: 1px solid color-mix(in srgb, var(--contrast-foreground) 10%, transparent);
+
+  @variant dark {
+    background-color: var(--color-black);
+  }
+}
