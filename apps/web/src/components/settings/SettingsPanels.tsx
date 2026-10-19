@@ -1,3 +1,4 @@
+import { setAlternateLayoutEnabled } from "../alternate-layout/alternateLayoutSettings";
 import { SettingsGroup } from "./SettingsGroup";
 import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
 import { useScopedSettingsWriteAllowed } from "./useScopedSettings";
@@ -5,7 +6,7 @@ import { Spinner } from "~/components/ui/spinner";
 import { NotificationSettings } from "./NotificationSettings";
 import { PRIVACY_POLICY_URL } from "../../legalLinks";
 import { ArchiveIcon, ArchiveX, CheckIcon, ChevronRightIcon, SettingsIcon } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
@@ -567,6 +568,9 @@ export function useSettingsRestore(onRestored?: () => void) {
     ...(settings.sidebarProjectSortOrder !== DEFAULT_UNIFIED_SETTINGS.sidebarProjectSortOrder
       ? ["Project order"]
       : []),
+    ...(settings.alternateLayoutEnabled !== DEFAULT_UNIFIED_SETTINGS.alternateLayoutEnabled
+      ? ["Alternate layout"]
+      : []),
     ...(settings.sidebarWorkingShelfEnabled !== DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled
       ? ["Working section"]
       : []),
@@ -779,6 +783,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       pullRequestLinksOpenInApp: DEFAULT_UNIFIED_SETTINGS.pullRequestLinksOpenInApp,
       enableAgentBrowserAccess: DEFAULT_UNIFIED_SETTINGS.enableAgentBrowserAccess,
     });
+    await setAlternateLayoutEnabled(DEFAULT_UNIFIED_SETTINGS.alternateLayoutEnabled);
     onRestored?.();
   };
 
@@ -2040,6 +2045,7 @@ function LegacyFeaturesSection() {
 }
 
 export function GeneralSettingsPanel() {
+  const router = useRouter();
   const modifierLabel = isMacPlatform(navigator.platform) ? "⌘" : "Ctrl";
   const sendShortcutOptions = [
     { value: "enter", label: "Enter" },
@@ -2242,6 +2248,26 @@ export function GeneralSettingsPanel() {
                 updateSettings({ snoozeLimitedThreads: Boolean(checked) })
               }
               aria-label="Snooze limited threads"
+            />
+          }
+        />
+
+        <SettingsRow
+          {...searchableSetting("alternate-layout")}
+          description="Use a narrow navigation rail beside a collapsible thread sidebar."
+          resetAction={
+            settings.alternateLayoutEnabled || router.options.basepath === "/layout" ? (
+              <SettingResetButton
+                label="alternate layout"
+                onClick={() => void setAlternateLayoutEnabled(false)}
+              />
+            ) : null
+          }
+          control={
+            <Switch
+              checked={settings.alternateLayoutEnabled || router.options.basepath === "/layout"}
+              onCheckedChange={(checked) => void setAlternateLayoutEnabled(Boolean(checked))}
+              aria-label="Alternate layout (beta)"
             />
           }
         />

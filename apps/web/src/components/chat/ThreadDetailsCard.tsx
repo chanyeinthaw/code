@@ -1,3 +1,5 @@
+import { useRouter } from "@tanstack/react-router";
+import { useClientSettings } from "../../hooks/useSettings";
 import { useLayoutEffect, useState, type ReactNode, type RefObject } from "react";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { ScrollArea } from "../ui/scroll-area";
@@ -26,6 +28,9 @@ export function ThreadDetailsCard({
   onPresentationChange: (presentation: ThreadPanelPresentation) => void;
   children: (density: "full" | "compact" | "essential") => ReactNode;
 }) {
+  const router = useRouter();
+  const alternateLayoutEnabled = useClientSettings((settings) => settings.alternateLayoutEnabled);
+  const neutralSurface = alternateLayoutEnabled || router.options.basepath === "/layout";
   const canvas = useChatCanvas();
   const preferredPlacement = canvas
     ? resolveThreadDetailsCardLayout({
@@ -118,7 +123,8 @@ export function ThreadDetailsCard({
   const card = (
     <div
       className={cn(
-        "dropdown-glass isolate contain-paint grid max-h-full grid-rows-[minmax(0,1fr)] overflow-hidden rounded-3xl",
+        "isolate contain-paint grid max-h-full grid-rows-[minmax(0,1fr)] overflow-hidden rounded-3xl",
+        neutralSurface ? "alternate-thread-details-card" : "dropdown-glass",
         mode === "popover" &&
           "max-h-[min(calc(100dvh-6.5rem),calc(var(--available-height,100dvh)-1rem))]",
       )}

@@ -184,11 +184,11 @@ async function installLocalUpdate(
   }
 }
 
-export function SidebarUpdatePill() {
-  return <SidebarUpdateControl />;
+export function SidebarUpdatePill({ availableOnly = false }: { availableOnly?: boolean }) {
+  return <SidebarUpdateControl availableOnly={availableOnly} />;
 }
 
-function SidebarUpdateControl() {
+function SidebarUpdateControl({ availableOnly }: { availableOnly: boolean }) {
   const state = useDesktopUpdateState();
   const [isActionPending, setIsActionPending] = useState(false);
   const [isConfirmingEverything, setIsConfirmingEverything] = useState(false);
@@ -381,6 +381,7 @@ function SidebarUpdateControl() {
   };
 
   if (!isElectron && !runsEverything && !isRunningEverything) return null;
+  if (availableOnly && !showUpdateDetails) return null;
 
   const statusIcon = (
     <DesktopUpdateStatusIcon

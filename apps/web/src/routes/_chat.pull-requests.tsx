@@ -1,3 +1,4 @@
+import { AlternatePageBrand } from "../components/alternate-layout/AlternatePageBrand";
 import {
   applyPullRequestDraftFilterChange,
   parsePullRequestQuery,
@@ -2392,6 +2393,7 @@ function PullRequestsColumn({
         className="relative bg-background"
       >
         {titlebarControls}
+        <AlternatePageBrand />
         {condensed ? (
           <WorkspaceBreadcrumb ariaLabel="Pull request scope" className="overflow-hidden">
             <WorkspaceBreadcrumbItem current className={cn(searchExpanded && "sr-only")}>

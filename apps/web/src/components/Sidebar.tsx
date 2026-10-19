@@ -1,6 +1,11 @@
+import { SidebarThreadUndoNotice } from "./sidebar/SidebarThreadUndoNotice";
 import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import { ThreadHoverCard, ThreadHoverCardPopup } from "./ThreadHoverCard";
+import {
+  FloatingThreadFilters,
+  type FloatingThreadFilter,
+} from "./alternate-layout/FloatingThreadFilters";
 import { CollapsibleSectionHeader } from "./ui/collapsible-section-header";
 import { ThreadTerminalStatusButton } from "./ThreadStatusIndicators";
 import { ThreadContextDragGhost } from "./chat/ThreadContextDragGhost";
@@ -448,6 +453,7 @@ function useSidebarThreads(input: {
   readonly serverConfigs: ReadonlyMap<EnvironmentId, EnvironmentServerConfig>;
   readonly optimisticDrop: SidebarOptimisticDrop | null;
   readonly routeThreadKey: string | null;
+  readonly alternate?: boolean;
 }) {
   const { projectScopeKey, scopedProjectKeys, serverConfigs, optimisticDrop, routeThreadKey } =
     input;
@@ -512,15 +518,18 @@ function useSidebarThreads(input: {
     }
     return visible;
   })();
-  const renderedSettledThreads = settledShelfExpanded
-    ? visibleSettledThreads
-    : routeThreadOnly(visibleSettledThreads, routeThreadKey);
-  const visibleSnoozedThreads = snoozedShelfExpanded
-    ? snoozedThreads
-    : routeThreadOnly(snoozedThreads, routeThreadKey);
-  const visibleWorkingThreads = workingShelfExpanded
-    ? workingThreads
-    : routeThreadOnly(workingThreads, routeThreadKey);
+  const renderedSettledThreads =
+    input.alternate || settledShelfExpanded
+      ? visibleSettledThreads
+      : routeThreadOnly(visibleSettledThreads, routeThreadKey);
+  const visibleSnoozedThreads =
+    input.alternate || snoozedShelfExpanded
+      ? snoozedThreads
+      : routeThreadOnly(snoozedThreads, routeThreadKey);
+  const visibleWorkingThreads =
+    input.alternate || workingShelfExpanded
+      ? workingThreads
+      : routeThreadOnly(workingThreads, routeThreadKey);
   const orderedThreads = [
     ...pinnedThreads,
     ...activeThreads,
@@ -2687,7 +2696,13 @@ const SidebarSearchResultRow = memo(function SidebarSearchResultRow(props: {
   );
 });
 
-export default function Sidebar() {
+export default function Sidebar({
+  presentation = "default",
+}: {
+  presentation?: "default" | "alternate";
+}) {
+  const alternate = presentation === "alternate";
+  const [alternateFilterState, setAlternateFilter] = useState<FloatingThreadFilter>("all");
   const {
     projects,
     serverConfigs,
@@ -3003,14 +3018,36 @@ export default function Sidebar() {
     serverConfigs,
     optimisticDrop,
     routeThreadKey,
+    alternate,
   });
+
+  const alternateFilter =
+    !workingShelfEnabled && alternateFilterState === "working" ? "all" : alternateFilterState;
+  const matchesAlternateFilter = (thread: EnvironmentThreadShell) =>
+    !alternate ||
+    (alternateFilter === "all"
+      ? (!workingShelfEnabled || !isSidebarThreadWorking(thread)) &&
+        (sectionByThreadKey.get(threadShellKey(thread)) === "pinned" ||
+          sectionByThreadKey.get(threadShellKey(thread)) === "active")
+      : alternateFilter === "working"
+        ? isSidebarThreadWorking(thread)
+        : sectionByThreadKey.get(threadShellKey(thread)) === alternateFilter);
+  const alternateCounts = {
+    all: [...pinnedThreads, ...activeThreads].filter(
+      (thread) => !workingShelfEnabled || !isSidebarThreadWorking(thread),
+    ).length,
+    working: [...pinnedThreads, ...activeThreads, ...workingThreads].filter(isSidebarThreadWorking)
+      .length,
+    snoozed: snoozedThreads.length,
+    settled: settledThreads.length,
+  };
 
   const isSearchingThreads = threadSearchQuery.trim().length > 0;
   const threadSearchMatchByKey = new Map(
     threadSearch.matches.map((match) => [threadSearchMatchKey(match), match] as const),
   );
   const threadSearchResults = searchSidebarThreads(
-    searchableThreads,
+    alternate ? searchableThreads.filter(matchesAlternateFilter) : searchableThreads,
     threadSearchQuery,
     new Set(threadSearchMatchByKey.keys()),
   );
@@ -3542,6 +3579,23 @@ export default function Sidebar() {
     ) {
       return [];
     }
+    if (alternate) {
+      const filteredRows = (list: readonly EnvironmentThreadShell[], section: SidebarSection) =>
+        rowsOf(list.filter(matchesAlternateFilter), section);
+      if (alternateFilter === "all" || alternateFilter === "working") {
+        return [
+          { kind: "marker", marker: "pinned-header" },
+          ...filteredRows(pinnedThreads, "pinned"),
+          { kind: "marker", marker: "pinned-divider" },
+          { kind: "marker", marker: "active-placeholder" },
+          ...filteredRows(activeThreads, "active"),
+          ...filteredRows(workingThreads, "working"),
+        ];
+      }
+      return alternateFilter === "snoozed"
+        ? rowsOf(snoozedThreads, "snoozed")
+        : rowsOf(renderedSettledThreads, "settled");
+    }
     const items: SidebarListItem[] = [{ kind: "marker", marker: "pinned-header" }];
     const pinnedRows = rowsOf(pinnedThreads, "pinned");
     items.push(...pinnedRows);
@@ -3633,7 +3687,7 @@ export default function Sidebar() {
     boundaryLabelHeight: SIDEBAR_DRAG_LABEL_HEIGHT,
     settledOrder: draggedSettledOrder,
     ...(draggedActiveOrder === undefined ? {} : { activeOrder: draggedActiveOrder }),
-    settledExpanded: settledShelfExpanded,
+    settledExpanded: alternate || settledShelfExpanded,
     settledVisibleCount,
     routeThreadKey,
     snoozedThreadCount: snoozedThreads.length,
@@ -3649,7 +3703,7 @@ export default function Sidebar() {
     return createSidebarCollisionDetection(
       (id) => {
         const target = resolveSidebarDropTarget(sidebarListItems, draggedThreadKey, id);
-        if (target === null) return false;
+        if (target === null || (alternate && target.section === "settled")) return false;
         return (
           planSidebarThreadDrop({
             activeKey: draggedThreadKey,
@@ -3684,7 +3738,15 @@ export default function Sidebar() {
         ? null
         : resolveSidebarDropTarget(sidebarListItems, activeKey, String(event.over.id));
     const activeThread = threadByKey.get(activeKey);
-    if (activeSection === undefined || target === null || activeThread === undefined) return;
+    if (
+      activeSection === undefined ||
+      target === null ||
+      (alternate &&
+        ((activeSection !== "pinned" && activeSection !== "active") ||
+          target.section === "settled")) ||
+      activeThread === undefined
+    )
+      return;
     const threadRef = scopeThreadRef(activeThread.environmentId, activeThread.id);
     const plan = planSidebarThreadDrop({
       activeKey,
@@ -4531,9 +4593,9 @@ export default function Sidebar() {
   return (
     <>
       <ThreadContextDragGhost />
-      <SidebarChromeHeader isElectron={isElectron} />
+      {!alternate ? <SidebarChromeHeader isElectron={isElectron} /> : null}
       <SidebarContent
-        className="min-h-full"
+        className={alternate ? undefined : "min-h-full"}
         fixedHeader={
           <SidebarGroup className="z-[1]">
             <SidebarThreadHeader
@@ -4801,6 +4863,7 @@ export default function Sidebar() {
                             sortableId={threadKey}
                             contextDrag={isContextDrag}
                             sortableDisabled={
+                              (alternate && section !== "pinned" && section !== "active") ||
                               renamingThreadKey === threadKey ||
                               !draggableThreadKeys.has(threadKey) ||
                               optimisticDrop !== null
@@ -4894,17 +4957,19 @@ export default function Sidebar() {
                         );
                       };
                       const from = isContextDrag ? null : (dragState?.activeSection ?? null);
-                      const items: ReactNode[] = [
-                        <SidebarDraftBlock
-                          key="draft-sessions"
-                          projectByKey={projectByKey}
-                          projectDisplayNameByKey={projectDisplayNameByKey}
-                          scopedProjectKeys={scopedProjectKeys}
-                          routeDraftId={routeDraftIdForRows}
-                          onNavigateToDraft={navigateToDraft}
-                          onDraftContextMenu={handleDraftContextMenu}
-                        />,
-                      ];
+                      const items: ReactNode[] = [];
+                      if (!alternate || alternateFilter === "all")
+                        items.push(
+                          <SidebarDraftBlock
+                            key="draft-sessions"
+                            projectByKey={projectByKey}
+                            projectDisplayNameByKey={projectDisplayNameByKey}
+                            scopedProjectKeys={scopedProjectKeys}
+                            routeDraftId={routeDraftIdForRows}
+                            onNavigateToDraft={navigateToDraft}
+                            onDraftContextMenu={handleDraftContextMenu}
+                          />,
+                        );
                       for (const item of sidebarListItems) {
                         if (item.kind === "thread") {
                           items.push(renderThreadRow(threadByKey.get(item.key)!, item.section));
@@ -5031,7 +5096,8 @@ export default function Sidebar() {
                       }
                       return items;
                     })()}
-                    {settledShelfExpanded && hiddenSettledCount > 0 ? (
+                    {(alternate ? alternateFilter === "settled" : settledShelfExpanded) &&
+                    hiddenSettledCount > 0 ? (
                       <li className="list-none">
                         <button
                           type="button"
@@ -5078,7 +5144,20 @@ export default function Sidebar() {
           ) : null}
         </SidebarGroup>
       </SidebarContent>
-      <SidebarChromeFooter />
+      {alternate ? (
+        <SidebarGroup>
+          <div className="flex flex-col gap-2">
+            <SidebarThreadUndoNotice />
+            <FloatingThreadFilters
+              workingEnabled={workingShelfEnabled}
+              value={alternateFilter}
+              onChange={setAlternateFilter}
+              counts={alternateCounts}
+            />
+          </div>
+        </SidebarGroup>
+      ) : null}
+      {!alternate ? <SidebarChromeFooter /> : null}
     </>
   );
 }
