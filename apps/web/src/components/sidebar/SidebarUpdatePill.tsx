@@ -185,11 +185,23 @@ async function installLocalUpdate(
   }
 }
 
-export function SidebarUpdatePill() {
-  return <SidebarUpdateControl />;
+export function SidebarUpdatePill({
+  availableOnly = false,
+  presentation = "capsule",
+}: {
+  availableOnly?: boolean;
+  presentation?: "capsule" | "icon";
+}) {
+  return <SidebarUpdateControl availableOnly={availableOnly} presentation={presentation} />;
 }
 
-function SidebarUpdateControl() {
+function SidebarUpdateControl({
+  availableOnly,
+  presentation,
+}: {
+  availableOnly: boolean;
+  presentation: "capsule" | "icon";
+}) {
   const state = useDesktopUpdateState();
   const [isActionPending, setIsActionPending] = useState(false);
   const [isConfirmingEverything, setIsConfirmingEverything] = useState(false);
@@ -384,6 +396,7 @@ function SidebarUpdateControl() {
   };
 
   if (!isElectron && !runsEverything && !isRunningEverything) return null;
+  if (availableOnly && !showUpdateDetails) return null;
 
   const statusIcon = (
     <DesktopUpdateStatusIcon
@@ -414,8 +427,11 @@ function SidebarUpdateControl() {
           ? { status: "downloading", percent: state.downloadPercent }
           : { status: "waiting" };
     return (
-      <SidebarMenuItem className="ml-auto flex min-w-0 flex-1">
+      <SidebarMenuItem
+        className={presentation === "icon" ? "shrink-0" : "ml-auto flex min-w-0 flex-1"}
+      >
         <SidebarUpdateCapsule
+          presentation={presentation}
           run={run}
           local={local}
           icon={statusIcon}

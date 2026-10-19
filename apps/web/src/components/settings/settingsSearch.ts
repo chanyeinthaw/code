@@ -323,6 +323,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["usage quota rate limit reset recover continue"],
   },
   {
+    id: "alternate-layout",
+    title: "Alternate layout",
+    to: "/settings/general",
+    searchTerms: ["threads navigation sidebar layout"],
+  },
+  {
     id: "working-shelf",
     title: "Working section (beta)",
     to: "/settings/general",
