@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
+import type { BotId, EnvironmentId, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
 
 const COMPOSER_THREAD_RESULT_LIMIT = 5;
 
@@ -6,6 +6,8 @@ export interface ComposerThreadCandidate {
   readonly environmentId: EnvironmentId;
   readonly id: ThreadId;
   readonly title: string;
+  readonly botId?: BotId | undefined;
+  readonly deletedAt?: string | null | undefined;
   readonly updatedAt: string;
   readonly archivedAt: string | null;
 }
@@ -16,6 +18,7 @@ export interface ComposerThreadItem {
   readonly thread: ScopedThreadRef;
   readonly label: string;
   readonly description: string;
+  readonly isBot?: boolean;
 }
 
 /**
@@ -29,22 +32,28 @@ export function matchComposerThreadItems(input: {
   query: string;
 }): ComposerThreadItem[] {
   const query = input.query.trim().toLowerCase();
-  if (query.length === 0) return [];
   return input.shells
     .filter(
       (shell) =>
         shell.environmentId === input.environmentId &&
         shell.id !== input.excludeThreadId &&
         shell.archivedAt === null &&
+        shell.deletedAt == null &&
+        (query.length > 0 || shell.botId !== undefined) &&
         shell.title.toLowerCase().includes(query),
     )
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .sort(
+      (left, right) =>
+        Number(right.botId !== undefined) - Number(left.botId !== undefined) ||
+        right.updatedAt.localeCompare(left.updatedAt),
+    )
     .slice(0, COMPOSER_THREAD_RESULT_LIMIT)
     .map((shell) => ({
       id: `thread:${shell.environmentId}:${shell.id}`,
       type: "thread",
       thread: { environmentId: shell.environmentId, threadId: shell.id },
       label: shell.title,
-      description: "Thread",
+      description: shell.botId === undefined ? "Thread" : "Bot",
+      ...(shell.botId === undefined ? {} : { isBot: true }),
     }));
 }

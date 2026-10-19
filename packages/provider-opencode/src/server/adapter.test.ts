@@ -144,6 +144,7 @@ const makeOpenCodeRuntimeHarness = Effect.fn("makeOpenCodeRuntimeHarness")(funct
   suffix: string,
   nativeSessionId: string,
   client: object,
+  policyOverride: Partial<ProviderAdapter.ProviderAdapterV2RuntimePolicy> = {},
 ) {
   const instanceId = ProviderInstanceId.make(`opencode-${suffix}`);
   const threadId = ThreadId.make(`thread-opencode-${suffix}`);
@@ -152,14 +153,19 @@ const makeOpenCodeRuntimeHarness = Effect.fn("makeOpenCodeRuntimeHarness")(funct
     model: "anthropic/claude-sonnet",
     options: [],
   };
-  const policy = runtimePolicy("full-access", { cwd: "/workspace" });
+  const policy = runtimePolicy("full-access", { cwd: "/workspace", ...policyOverride });
   const adapter = yield* makeOpenCodeAdapterV2({
     instanceId,
     settings: OPEN_CODE_TEST_SETTINGS,
     environment: {},
   }).pipe(
     Effect.provideService(OpenCodeRuntime.OpenCodeRuntime, {
-      connectToOpenCodeServer: () => Effect.succeed({ url: "http://test.invalid", external: true }),
+      connectToOpenCodeServer: () =>
+        Effect.succeed({
+          url: "http://test.invalid",
+          external: policy.botChat === undefined,
+          exitCode: null,
+        }),
       createOpenCodeSdkClient: () => client,
     } as unknown as OpenCodeRuntime.OpenCodeRuntime["Service"]),
     Effect.provideService(ProviderHost.ProviderHost, {
@@ -2364,4 +2370,48 @@ it.effect.each([false, true])(
       Effect.provide(Layer.merge(IdAllocator.layer, McpProviderSessions.layer)),
       Effect.scoped,
     ),
+);
+
+it.effect(
+  "disables the complete OpenCode tool inventory for memory while leaving MCP selection alone",
+  () =>
+    Effect.gen(function* () {
+      const nativeEvents = asyncEventStream();
+      const prompts: Array<{ readonly system?: string; readonly tools?: Record<string, boolean> }> =
+        [];
+      const harness = yield* makeOpenCodeRuntimeHarness(
+        "memory-tools",
+        "root",
+        {
+          event: { subscribe: async () => ({ stream: nativeEvents.stream }) },
+          tool: {
+            ids: async () => ({ data: ["bash", "read", "apply_patch", "lsp", "future_builtin"] }),
+          },
+          session: {
+            create: async () => ({ data: { id: "root", time: { created: 1, updated: 1 } } }),
+            promptAsync: async (input: (typeof prompts)[number]) => {
+              prompts.push(input);
+              return { data: true };
+            },
+            abort: async () => ({ data: true }),
+            children: async () => ({ data: [] }),
+          },
+        },
+        {
+          botChat: {
+            systemPrompt: "Frozen memory instructions",
+            runId: RunId.make("memory-turn"),
+          },
+        },
+      );
+      yield* harness.startTurn();
+      assert.include(prompts[0]?.system ?? "", "Frozen memory instructions");
+      assert.deepEqual(prompts[0]?.tools, {
+        bash: false,
+        read: false,
+        apply_patch: false,
+        lsp: false,
+        future_builtin: false,
+      });
+    }).pipe(Effect.provide(Layer.merge(IdAllocator.layer, McpProviderSessions.layer))),
 );

@@ -43,12 +43,18 @@ interface FakeCodexInput {
   forbidArg?: string;
   stdinMustContain?: string;
   stdinMustNotContain?: string;
+  version?: string;
+  catalogExitCode?: number;
+  requireBotPolicy?: boolean;
   mcpServers?: ReadonlyArray<{ name: string; enabled: boolean }> | number;
 }
 
 function makeFakeCodexBinary(dir: string, input: FakeCodexInput) {
   const check = JSON.stringify({
     requireImage: input.requireImage ?? false,
+    version: input.version ?? "0.163.0",
+    catalogExitCode: input.catalogExitCode ?? 0,
+    requireBotPolicy: input.requireBotPolicy ?? false,
     requireServiceTier: input.requireServiceTier ?? null,
     requireReasoningEffort: input.requireReasoningEffort ?? null,
     forbidReasoningEffort: input.forbidReasoningEffort ?? false,
@@ -70,6 +76,12 @@ function makeFakeCodexBinary(dir: string, input: FakeCodexInput) {
         'import * as NodeFS from "node:fs";',
         `const check = ${check};`,
         "const args = process.argv.slice(2);",
+        'if (args.includes("--version")) { console.log("codex-cli " + check.version); process.exit(0); }',
+        'if (args[0] === "debug" && args[1] === "models") {',
+        "  if (check.catalogExitCode !== 0) process.exit(check.catalogExitCode);",
+        '  console.log(JSON.stringify({ models: [{ slug: "gpt-5.4-mini", tool_mode: "code_mode_only", use_responses_lite: true, experimental_supported_tools: ["apply_patch"] }] }));',
+        "  process.exit(0);",
+        "}",
         'const isMcpList = args.includes("mcp") && args.includes("list");',
         ...(input.lifecycle === undefined
           ? []
@@ -103,6 +115,17 @@ function makeFakeCodexBinary(dir: string, input: FakeCodexInput) {
         "    index += 1;",
         "    outputPath = args[index] ?? null;",
         "  }",
+        "}",
+        "if (check.requireBotPolicy) {",
+        '  const configs = args.flatMap((arg, index) => arg === "--config" ? [args[index + 1]] : []);',
+        `  for (const flag of ${JSON.stringify(["features.shell_tool=false", "features.unified_exec=false", "features.code_mode=false", "features.multi_agent=false", "tools.enabled_tools=[]", 'web_search="disabled"'])}) {`,
+        '    if (!configs.includes(flag)) throw new Error("Missing memory policy: " + flag);',
+        "  }",
+        '  const catalog = configs.find((arg) => arg.startsWith("model_catalog_json="));',
+        '  if (!catalog) throw new Error("Missing memory catalog");',
+        '  const path = JSON.parse(catalog.slice("model_catalog_json=".length));',
+        '  const models = JSON.parse(NodeFS.readFileSync(path, "utf8")).models;',
+        '  if (models.some((model) => model.tool_mode !== "direct" || model.use_responses_lite || model.experimental_supported_tools.length)) throw new Error("Unsafe memory catalog");',
         "}",
         "const chunks = [];",
         "for await (const chunk of process.stdin) chunks.push(chunk);",
@@ -254,6 +277,80 @@ it.layer(layerCodexTextGenerationTest)("CodexTextGeneration", (it) => {
           ]),
         }),
     ),
+  );
+
+  it.effect("compacts memory with coding tools, plugins, and all native MCP servers disabled", () =>
+    withFakeCodexEnv(
+      {
+        output: "Retained context",
+        requireBotPolicy: true,
+        forbidArg: "--output-schema",
+        stdinMustNotContain: "Return JSON",
+        mcpServers: [{ name: "native.server", enabled: true }],
+        requireArg: '--config mcp_servers={"native.server"={enabled=false}}',
+      },
+      (generation) =>
+        Effect.gen(function* () {
+          if (!generation.generateMemorySummary)
+            return yield* Effect.die("Missing summary operation");
+          const result = yield* generation.generateMemorySummary({
+            cwd: process.cwd(),
+            instructions: "Summarize",
+            context: "Context",
+            task: "Compact",
+            modelSelection: DEFAULT_TEST_MODEL_SELECTION,
+          });
+          expect(result).toBe("Retained context");
+        }),
+    ),
+  );
+
+  it.effect("rejects older Codex versions for memory compaction", () =>
+    withFakeCodexEnv(
+      { version: "0.159.0", output: JSON.stringify({ summary: "Must not run" }) },
+      (generation) =>
+        Effect.gen(function* () {
+          if (!generation.generateMemorySummary)
+            return yield* Effect.die("Missing summary operation");
+          const result = yield* generation
+            .generateMemorySummary({
+              cwd: process.cwd(),
+              instructions: "Summarize",
+              context: "Context",
+              task: "Compact",
+              modelSelection: DEFAULT_TEST_MODEL_SELECTION,
+            })
+            .pipe(Effect.result);
+          expect(result._tag).toBe("Failure");
+          if (result._tag === "Failure") expect(result.failure.detail).toContain("0.160.0");
+        }),
+    ),
+  );
+
+  it.effect.each([{ mcpServers: 2 }, { catalogExitCode: 2 }])(
+    "continues compaction with its no-tools prompt when tool setup fails: %j",
+    (input) =>
+      withFakeCodexEnv(
+        {
+          ...input,
+          output: "Retained context",
+          stdinMustContain: "Call no tools.",
+          requireArg: "--config features.shell_tool=false",
+        },
+        (generation) =>
+          Effect.gen(function* () {
+            if (!generation.generateMemorySummary)
+              return yield* Effect.die("Missing summary operation");
+            const summary = yield* generation.generateMemorySummary({
+              cwd: process.cwd(),
+              instructions: "Summarize. Call no tools.",
+              context: "Context",
+              task: "Compact",
+              modelSelection: DEFAULT_TEST_MODEL_SELECTION,
+            });
+            expect(summary).toBe("Retained context");
+          }),
+      ),
   );
 
   it.effect("generates titles with the user's MCP servers and plugins off", () =>
