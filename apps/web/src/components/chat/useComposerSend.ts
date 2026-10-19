@@ -196,6 +196,8 @@ interface ComposerSendInput {
   readonly activeEnvironmentUnavailable: boolean;
   readonly isSendBusy: boolean;
   readonly sendQueuesBehindSetup: boolean;
+  readonly sendDuringPreparation: boolean;
+  readonly bufferBotSteers: boolean;
   readonly isDraftHeroState: boolean;
   readonly panelAnimationsActive: boolean;
   readonly panelAnimationDurationMs: number;
@@ -283,6 +285,8 @@ export function useComposerSend(input: ComposerSendInput) {
     activeEnvironmentUnavailable,
     isSendBusy,
     sendQueuesBehindSetup,
+    sendDuringPreparation,
+    bufferBotSteers,
     isDraftHeroState,
     panelAnimationsActive,
     panelAnimationDurationMs,
@@ -421,7 +425,7 @@ export function useComposerSend(input: ComposerSendInput) {
     if (
       !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope) ||
       !activeThread ||
-      (isSendBusy && !sendQueuesBehindSetup) ||
+      (isSendBusy && !sendDuringPreparation) ||
       isConnecting ||
       isRevertingCheckpoint ||
       !clientSettingsHydrated ||
@@ -778,6 +782,7 @@ export function useComposerSend(input: ComposerSendInput) {
     } = planComposerTurn({
       messageText: messageTextForSend,
       sendQueuesBehindSetup,
+      bufferBotSteers,
       isServerThread,
       activeMessageCount,
       sendEnvMode,
@@ -1023,7 +1028,7 @@ export function useComposerSend(input: ComposerSendInput) {
         return;
       }
     }
-    if (sendQueuesBehindSetup) {
+    if (sendDuringPreparation) {
       setSetupQueueSendThreadKey(activeThreadKey);
     } else {
       beginLocalDispatch({
@@ -1083,7 +1088,7 @@ export function useComposerSend(input: ComposerSendInput) {
         streaming: false,
         ...(shouldQueueBehindActiveRun
           ? { inputIntent: "queued_turn" as const }
-          : phase === "running" && dispatchMode === "steer"
+          : (phase === "running" || bufferBotSteers) && dispatchMode === "steer"
             ? { inputIntent: "steer" as const }
             : {}),
       },
@@ -1375,7 +1380,7 @@ export function useComposerSend(input: ComposerSendInput) {
       setDockedDraftHeroThreadKey((currentThreadKey) =>
         currentThreadKey === activeThreadKey ? null : currentThreadKey,
       );
-      if (!sendQueuesBehindSetup) resetLocalDispatch();
+      if (!sendDuringPreparation) resetLocalDispatch();
     }
   };
 

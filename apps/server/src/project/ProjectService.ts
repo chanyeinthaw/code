@@ -17,6 +17,7 @@ import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
+import * as BotChat from "../bots/BotChat.ts";
 import * as EventSink from "../orchestration-v2/EventSink.ts";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as LegacyV1ThreadImporter from "../orchestration-v2/legacy/LegacyV1ThreadImporter.ts";
@@ -142,6 +143,7 @@ export class ProjectService extends Context.Service<
 
 export const make = Effect.gen(function* () {
   const projects = yield* ProjectStore.ProjectStoreV2;
+  const bots = yield* Effect.serviceOption(BotChat.BotChat);
   const projectEnrichment = yield* ProjectEnrichmentService.ProjectEnrichmentService;
   const workspacePaths = yield* WorkspacePaths.WorkspacePaths;
   const threadProjections = yield* ProjectionStore.ProjectionStoreV2;
@@ -158,6 +160,7 @@ export const make = Effect.gen(function* () {
     enrichment: ProjectEnrichmentService.ProjectEnrichment | null,
   ): Project => ({
     id: row.projectId,
+    isBot: row.isBot,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
     repositoryIdentity: enrichment?.repositoryIdentity ?? null,
@@ -351,6 +354,25 @@ export const make = Effect.gen(function* () {
       if (Option.isNone(existing)) {
         return yield* new ProjectNotFoundError({ projectId: input.projectId });
       }
+      if (existing.value.isBot && input.title !== undefined && Option.isNone(bots))
+        return yield* new ProjectOperationError({
+          operation: "dispatch-project-command",
+          projectId: input.projectId,
+          cause: "Rename bot projects through a running Sora server.",
+        });
+      const bot =
+        existing.value.isBot && Option.isSome(bots)
+          ? yield* bots.value.forProject(input.projectId).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new ProjectOperationError({
+                    operation: "read-project",
+                    projectId: input.projectId,
+                    cause,
+                  }),
+              ),
+            )
+          : undefined;
       const previousRoot = existing.value.workspaceRoot;
       const workspaceRoot =
         input.workspaceRoot === undefined
@@ -359,11 +381,23 @@ export const make = Effect.gen(function* () {
               projectId: input.projectId,
               workspaceRoot: input.workspaceRoot,
             });
+      if (bot && input.title !== undefined && Option.isSome(bots)) {
+        yield* bots.value.rename(bot.id, input.title).pipe(
+          Effect.mapError(
+            (cause) =>
+              new ProjectOperationError({
+                operation: "dispatch-project-command",
+                projectId: input.projectId,
+                cause,
+              }),
+          ),
+        );
+      }
       yield* commit({
         type: "project.meta.update",
         commandId: input.commandId,
         projectId: input.projectId,
-        ...(input.title === undefined ? {} : { title: input.title }),
+        ...(input.title === undefined || bot ? {} : { title: input.title }),
         ...(workspaceRoot === previousRoot ? {} : { workspaceRoot }),
         ...(input.defaultModelSelection === undefined
           ? {}
@@ -501,6 +535,35 @@ export const make = Effect.gen(function* () {
       }
 
       const isFirstDelete = existing.value.deletedAt === null;
+      if (isFirstDelete && existing.value.isBot && Option.isNone(bots))
+        return yield* new ProjectOperationError({
+          operation: "delete-thread",
+          projectId,
+          cause: "Remove bot projects through a running Sora server.",
+        });
+      if (isFirstDelete && existing.value.isBot && Option.isSome(bots)) {
+        const bot = yield* bots.value
+          .forProject(projectId)
+          .pipe(
+            Effect.mapError(
+              (cause) => new ProjectOperationError({ operation: "read-project", projectId, cause }),
+            ),
+          );
+        if (bot) {
+          if (input.force !== true) return yield* new ProjectNotEmptyError({ projectId });
+          yield* bots.value
+            .remove(bot.id, input.commandId)
+            .pipe(
+              Effect.mapError(
+                (cause) =>
+                  new ProjectOperationError({ operation: "delete-thread", projectId, cause }),
+              ),
+            );
+          yield* clearProjectSettingsOverrides(projectId);
+          yield* projectEnrichment.invalidate([existing.value.workspaceRoot]);
+          return yield* readCommitted(projectId);
+        }
+      }
       if (isFirstDelete) {
         yield* deleteChildThreads(input);
       }
@@ -578,3 +641,12 @@ export const make = Effect.gen(function* () {
 export const layer = Layer.effect(ProjectService, make).pipe(
   Layer.provide(ThreadCommandExecutor.layer),
 );
+
+// Keep this acquisition distinct from the offline layer in the shared memo map.
+export const layerWithBots = Layer.effect(
+  ProjectService,
+  Effect.gen(function* () {
+    yield* BotChat.BotChat;
+    return yield* make;
+  }),
+).pipe(Layer.provide(ThreadCommandExecutor.layer));

@@ -22,7 +22,7 @@ if (argv.includes("--dangerously-skip-permissions")) {
 if (!argv.includes("--disable-slash-commands")) {
   fail("text generation must disable skills", 8);
 }
-if (!argv.includes("--strict-mcp-config")) {
+if (!argv.includes("--strict-mcp-config") && process.env.T3_FAKE_CLAUDE_MANAGED_MCP !== "1") {
   fail("text generation must not load configured MCP servers", 9);
 }
 const settingsIndex = argv.indexOf("--settings");

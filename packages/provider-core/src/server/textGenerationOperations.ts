@@ -169,7 +169,20 @@ export function fromRunner(name: string, run: Runner): ProviderTextGeneration {
     });
   });
 
+  const generateMemorySummary: NonNullable<ProviderTextGeneration["generateMemorySummary"]> =
+    Effect.fn(`${name}.generateMemorySummary`)(function* (input) {
+      const summary = yield* run({
+        operation: "generateMemorySummary",
+        cwd: input.cwd,
+        modelSelection: input.modelSelection,
+        prompt: `${input.instructions}\n\n${input.context}\n\n${input.task}`,
+        outputSchema: Schema.String,
+      });
+      return summary.trim();
+    });
+
   return {
+    generateMemorySummary,
     generateCommitMessage,
     generatePrContent,
     generateBranchName,

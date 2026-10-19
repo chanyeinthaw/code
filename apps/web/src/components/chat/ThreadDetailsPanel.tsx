@@ -1,3 +1,4 @@
+import { useBotThreadContext } from "../../state/bots";
 import type {
   EditorId,
   EnvironmentId,
@@ -74,6 +75,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
     props.activeProjectScripts ? props.gitCwd : null,
   );
   const activeThreadRef = { environmentId: props.environmentId, threadId: props.threadId };
+  const botId = useBotThreadContext(activeThreadRef)?.botId;
   const branchToolbarProps = {
     showGitControls: props.isGitRepo,
     environmentId: props.environmentId,
@@ -116,7 +118,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
             showHeading={false}
           >
             <div className="flex flex-col">
-              {density === "full" ? (
+              {!botId && density === "full" ? (
                 <BranchToolbar
                   layout="panel"
                   panelSection="workspace"
@@ -130,7 +132,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
                 />
               ) : null}
 
-              {density !== "essential" && props.showOpenInPicker ? (
+              {!botId && density !== "essential" && props.showOpenInPicker ? (
                 <OpenInPicker
                   keybindings={props.keybindings}
                   environmentId={props.environmentId}
@@ -157,7 +159,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
             </div>
           </ThreadDetailsSection>
 
-          {props.gitCwd ? (
+          {!botId && props.gitCwd ? (
             <ThreadDetailsSection
               headingId="thread-details-version-control-heading"
               title="Version Control"
@@ -182,11 +184,11 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
             </ThreadDetailsSection>
           ) : null}
 
-          {density === "full" && !props.draftId ? (
+          {!botId && density === "full" && !props.draftId ? (
             <ThreadAutomationsPanel environmentId={props.environmentId} threadId={props.threadId} />
           ) : null}
 
-          {density === "full" && !props.draftId ? (
+          {(botId || density === "full") && !props.draftId ? (
             <ThreadRelationshipsPanel
               environmentId={props.environmentId}
               threadId={props.threadId}

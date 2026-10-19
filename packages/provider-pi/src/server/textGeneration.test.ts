@@ -8,6 +8,7 @@ import * as Schema from "effect/Schema";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
+import * as ChildProcess from "effect/process/ChildProcess";
 
 import { makePiTextGeneration } from "./textGeneration.ts";
 
@@ -42,8 +43,10 @@ const makeFakePi = (reply: string, setModelError?: string) =>
           }
         }
       });
-    const spawner = ChildProcessSpawner.make(() =>
-      Effect.succeed(
+    const launches: Array<ReadonlyArray<string>> = [];
+    const spawner = ChildProcessSpawner.make((command) => {
+      if (ChildProcess.isStandardCommand(command)) launches.push(command.args);
+      return Effect.succeed(
         ChildProcessSpawner.makeHandle({
           // Outside the valid pid range, so PiRpc's process-group kill never lands.
           pid: ChildProcessSpawner.ProcessId(999_999_999),
@@ -58,9 +61,9 @@ const makeFakePi = (reply: string, setModelError?: string) =>
           getInputFd: () => Sink.drain,
           getOutputFd: () => Stream.empty,
         }),
-      ),
-    );
-    return { spawner, received };
+      );
+    });
+    return { spawner, received, launches };
   });
 
 it.effect("names the model and the disabled extensions when Pi cannot load it", () =>
@@ -87,4 +90,33 @@ it.effect("names the model and the disabled extensions when Pi cannot load it", 
     assert.include(error.detail, "--no-extensions");
     assert.isUndefined(pi.received.find((record) => record["type"] === "prompt"));
   }),
+);
+
+it.effect("compacts bot memory without context files, skills, or prompt templates", () =>
+  Effect.gen(function* () {
+    const pi = yield* makeFakePi("Retained context");
+    const generation = yield* makePiTextGeneration({
+      enabled: true,
+      binaryPath: "pi",
+      launchArgs: "",
+      customModels: [],
+    }).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, pi.spawner));
+    if (!generation.generateMemorySummary) return yield* Effect.die("Missing summary operation");
+    const summary = yield* generation.generateMemorySummary({
+      cwd: "/bots",
+      instructions: "Summarize",
+      context: "Context",
+      task: "Compact",
+      modelSelection: createModelSelection(ProviderInstanceId.make("pi"), "demo/demo-model"),
+    });
+    assert.equal(summary, "Retained context");
+    for (const flag of [
+      "--no-context-files",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-extensions",
+      "--no-tools",
+    ])
+      assert.include(pi.launches[0] ?? [], flag);
+  }).pipe(Effect.scoped),
 );

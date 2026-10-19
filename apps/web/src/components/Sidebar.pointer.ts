@@ -57,6 +57,8 @@ export class SidebarPointerSensor {
     this.document.removeEventListener("pointerdown", this.clearClickSuppression, { capture: true });
   };
   private suppressClick = (event: Event) => {
+    // Link rows must also suppress native navigation when React never receives the click.
+    event.preventDefault();
     event.stopPropagation();
     this.clearClickSuppression();
   };

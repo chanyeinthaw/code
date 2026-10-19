@@ -1,3 +1,4 @@
+import { useBotThreadShells } from "../../state/bots";
 import { useComposerMenuState } from "../chat/useComposerMenuState";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
 import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
@@ -69,7 +70,7 @@ export function ProjectSettingsPanel({
   checkoutKey?: string | null;
   unavailable?: ReactNode;
 }) {
-  const groups = useSettingsProjectGroups();
+  const groups = useSettingsProjectGroups(projectKey);
   const navigate = useNavigate({ from: "/settings" });
   const pathname = useLocation({ select: (location) => location.pathname });
 
@@ -178,7 +179,9 @@ function ProjectDetail({
     group.memberProjects.find(
       (member) => environmentById.get(member.environmentId)?.serverConfig != null,
     ) ?? group.memberProjects[0]!;
-  const threads = useThreadShells();
+  const ordinaryThreads = useThreadShells();
+  const botThreads = useBotThreadShells();
+  const threads = [...ordinaryThreads, ...botThreads];
   const updateProject = useOrchestrationCommand(projectEnvironment.update, {
     reportFailure: false,
   });
@@ -310,6 +313,7 @@ function ProjectDetail({
   };
 
   const hasMultipleCheckouts = group.memberProjects.length > 1;
+  const isBotProject = group.memberProjects.some((member) => member.isBot);
 
   const removeMembers = async (members: ReadonlyArray<SidebarProjectGroupMember>) => {
     if (checkProjectAccess(members, "Failed to remove project")) return;
@@ -560,11 +564,13 @@ function ProjectDetail({
                   : "Remove project"
             }
             description={
-              hasOtherMembers
-                ? "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched."
-                : group.memberProjects.length > 1
-                  ? `Deletes all ${group.memberProjects.length} checkout entries and their threads on every machine. Files on disk are not touched.`
-                  : "Deletes the project entry and its threads. Files on disk are not touched."
+              isBotProject
+                ? "Deletes the bot, its memory, conversations, and project entry. Files on disk are not touched."
+                : hasOtherMembers
+                  ? "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched."
+                  : group.memberProjects.length > 1
+                    ? `Deletes all ${group.memberProjects.length} checkout entries and their threads on every machine. Files on disk are not touched.`
+                    : "Deletes the project entry and its threads. Files on disk are not touched."
             }
             control={
               <Button
