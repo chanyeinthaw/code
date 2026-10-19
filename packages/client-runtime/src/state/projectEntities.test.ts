@@ -133,3 +133,47 @@ describe("project scratch identity", () => {
     }
   });
 });
+
+it("hides memory projects from pickers while keeping direct project lookup", () => {
+  const { registry, projects, snapshotAtom } = makeHarness();
+  try {
+    const source = registry.get(snapshotAtom(environmentId));
+    registry.set(snapshotAtom(environmentId), {
+      ...source,
+      projects: source.projects.map((project) =>
+        project.id === v2Project.id ? { ...project, isMemory: true } : project,
+      ),
+    });
+    expect(
+      registry
+        .get(projects.projectsAtom)
+        .filter((project) => project.environmentId === environmentId)
+        .map((project) => project.id),
+    ).toEqual([ProjectId.make("ordinary")]);
+    expect(
+      registry.get(projects.projectAtom({ environmentId, projectId: v2Project.id }))?.isMemory,
+    ).toBe(true);
+  } finally {
+    registry.dispose();
+  }
+});
+
+it("excludes pre-flag agent workspaces from ordinary project fallbacks", () => {
+  const { registry, projects, snapshotAtom } = makeHarness();
+  try {
+    const source = registry.get(snapshotAtom(environmentId));
+    const legacyId = ProjectId.make("agent:8665b26d-7e56-464f-b935-4a909fe2eaed:workspace");
+    registry.set(snapshotAtom(environmentId), {
+      ...source,
+      projects: [{ ...v2Project, id: legacyId }, ...source.projects],
+    });
+    expect(registry.get(projects.projectsAtom).some((project) => project.id === legacyId)).toBe(
+      false,
+    );
+    expect(registry.get(projects.projectAtom({ environmentId, projectId: legacyId }))?.id).toBe(
+      legacyId,
+    );
+  } finally {
+    registry.dispose();
+  }
+});

@@ -27,6 +27,7 @@ import {
 import { codexModelFamily, getModelSelectionStringOptionValue } from "@t3tools/shared/model";
 import { getCodexServiceTierOptionValue } from "../codexModelOptions.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as CodexMemoryPolicy from "../provider/CodexMemoryPolicy.ts";
 
 const CODEX_TIMEOUT_MS = 180_000;
 const CODEX_MCP_LIST_TIMEOUT_MS = 10_000;
@@ -190,19 +191,12 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
         { concurrency: "unbounded" },
       );
       if (exitCode !== 0) {
-        yield* Effect.logWarning("codex mcp list failed; text generation keeps its MCP servers", {
-          reason: "exit",
-          exitCode,
+        return yield* new TextGenerationError({
+          operation: "listMcpServers",
+          detail: "Codex could not list MCP servers for tool isolation.",
         });
-        return [];
       }
-      const servers = yield* decodeCodexMcpServers(stdout).pipe(
-        Effect.tapError(() =>
-          Effect.logWarning("codex mcp list failed; text generation keeps its MCP servers", {
-            reason: "decode",
-          }),
-        ),
-      );
+      const servers = yield* decodeCodexMcpServers(stdout);
       return servers.filter((server) => server.enabled).map((server) => server.name);
     },
     Effect.scoped,
@@ -210,13 +204,15 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
     Effect.flatMap(
       Option.match({
         onNone: () =>
-          Effect.logWarning("codex mcp list failed; text generation keeps its MCP servers", {
-            reason: "timeout",
-          }).pipe(Effect.as<ReadonlyArray<string>>([])),
+          Effect.fail(
+            new TextGenerationError({
+              operation: "listMcpServers",
+              detail: "Codex MCP server discovery timed out.",
+            }),
+          ),
         onSome: (names) => Effect.succeed(names),
       }),
     ),
-    Effect.orElseSucceed((): ReadonlyArray<string> => []),
   );
 
   const runCodexJson = Effect.fn("runCodexJson")(function* <S extends Schema.Top>({
@@ -278,13 +274,63 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
           : {}),
       };
       const execLaunchArgs = codexExecLaunchArgs(launchArgs);
-      const mcpServersOff = yield* listEnabledMcpServers({
+      const compacting = operation === "generateMemorySummary";
+      const discoverMcp = listEnabledMcpServers({
         binary,
         cwd,
         env,
         // `codex mcp` rejects --strict-config; the overrides still apply.
         launchArgs: execLaunchArgs.filter((arg) => arg !== "--strict-config"),
-      }).pipe(Effect.map(codexMcpServersOff));
+      });
+      const mcpNames = yield* discoverMcp.pipe(
+        Effect.catch(() =>
+          Effect.logWarning("codex mcp list failed; text generation keeps its MCP servers").pipe(
+            Effect.as<ReadonlyArray<string>>([]),
+          ),
+        ),
+      );
+      const mcpServersOff = codexMcpServersOff(mcpNames);
+      const memoryArgs: string[] = [];
+      if (compacting) {
+        const makeProbe = Effect.fn("CodexTextGeneration.makeMemoryProbe")(function* (
+          args: ReadonlyArray<string>,
+        ) {
+          const spawn = yield* resolveSpawnCommand(binary, args, { env });
+          return ChildProcess.make(spawn.command, spawn.args, { env, cwd, shell: spawn.shell });
+        });
+        yield* CodexMemoryPolicy.verifyMemoryVersion(yield* makeProbe(["--version"])).pipe(
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, commandSpawner),
+          Effect.mapError(
+            (cause) =>
+              new TextGenerationError({
+                operation,
+                detail:
+                  cause._tag === "CodexMemoryCatalogError"
+                    ? cause.detail
+                    : "Failed to verify the Codex version.",
+                cause,
+              }),
+          ),
+        );
+        const catalogPath = yield* CodexMemoryPolicy.writeMemoryCatalog(
+          yield* makeProbe(["debug", "models", ...execLaunchArgs]),
+        ).pipe(
+          Effect.provideService(FileSystem.FileSystem, fileSystem),
+          Effect.provideService(Path.Path, path),
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, commandSpawner),
+          Effect.catch(() =>
+            Effect.logWarning("Codex compaction continues without its memory model catalog").pipe(
+              Effect.as(undefined),
+            ),
+          ),
+        );
+        for (const [key, value] of Object.entries({
+          ...CodexMemoryPolicy.memoryThreadConfig,
+          ...(catalogPath === undefined ? {} : { model_catalog_json: catalogPath }),
+        })) {
+          memoryArgs.push("--config", `${key}=${yield* encodeJsonForOperation(operation, value)}`);
+        }
+      }
       const spawnCommand = yield* resolveSpawnCommand(
         binary,
         [
@@ -294,6 +340,7 @@ export const makeCodexTextGeneration = Effect.fn("makeCodexTextGeneration")(func
           // otherwise start and could act on it, as Claude's --strict-mcp-config
           // prevents for Claude.
           ...CODEX_NO_PLUGIN_ARGS,
+          ...memoryArgs,
           ...(mcpServersOff ? ["--config", mcpServersOff] : []),
           "--ephemeral",
           "--skip-git-repo-check",

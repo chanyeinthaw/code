@@ -53,6 +53,7 @@ import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
+import * as Sink from "effect/Sink";
 import { TestClock } from "effect/testing";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
@@ -75,6 +76,7 @@ const encodeUnknownJson = Schema.encodeUnknownSync(Schema.fromJsonString(Schema.
 const replayTranscriptJson = Schema.fromJsonString(CodexReplay.CodexAppServerReplayTranscript);
 const encodeReplayTranscriptJson = Schema.encodeEffect(replayTranscriptJson);
 const decodeReplayTranscriptJson = Schema.decodeUnknownEffect(replayTranscriptJson);
+const decodeMemoryCatalogPath = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.String));
 const encodeStringJson = Schema.encodeEffect(Schema.fromJsonString(Schema.String));
 
 describe("Codex context usage compatibility", () => {
@@ -738,6 +740,48 @@ describe("CodexAdapterV2 runtime policy", () => {
 });
 
 describe("CodexAdapterV2 process spawning", () => {
+  it.effect("memory turns preserve composer options without ordinary coding instructions", () =>
+    Effect.gen(function* () {
+      const policy = {
+        ...CODEX_TEST_RUNTIME_POLICY,
+        memoryChat: { systemPrompt: "Frozen memory instructions", runId: RunId.make("memory-run") },
+      };
+      const params = CodexAdapterV2.codexThreadRuntimeParams({
+        mcpSession: undefined,
+        modelSelection: { model: "custom-codex" },
+        runtimePolicy: policy,
+      });
+      assert.include(params.baseInstructions ?? "", "Frozen memory instructions");
+      assert.include(params.baseInstructions ?? "", "through the Codex harness, as custom-codex");
+      assert.equal(params.developerInstructions, "");
+      assert.deepEqual(params.environments, []);
+      assert.equal(params.config["tools.update_plan.enabled"], false);
+      const turn = yield* CodexAdapterV2.buildCodexTurnStartParams({
+        nativeThreadId: "memory-native",
+        codexInput: [],
+        runtimePolicy: policy,
+        modelSelection: {
+          instanceId: ProviderInstanceId.make("custom-home"),
+          model: "custom-codex",
+          options: [
+            { id: "reasoningEffort", value: "high" },
+            { id: "serviceTier", value: "priority" },
+          ],
+        },
+        hasT3Mcp: true,
+      });
+      assert.equal(turn.model, "custom-codex");
+      assert.equal(turn.effort, "high");
+      assert.equal(turn.serviceTier, "priority");
+      assert.equal(turn.collaborationMode, undefined);
+      assert.include(turn.additionalContext?.t3_code_runtime?.value ?? "", "high reasoning effort");
+      assert.include(
+        turn.additionalContext?.t3_code_orchestration_01?.value ?? "",
+        "delegate_task",
+      );
+    }),
+  );
+
   it.effect("resolves Windows command shims through the shared spawn policy", () =>
     Effect.gen(function* () {
       const command = yield* CodexAdapterV2.makeCodexAppServerSpawnCommand({
@@ -838,7 +882,105 @@ describe("CodexAdapterV2 process spawning", () => {
         ["app-server", "--strict-config", "-c", "model_reasoning_summary=detailed"],
         ["app-server", "--enable", "env-feature"],
       ]);
-    }).pipe(Effect.provideService(HostProcess.Platform, "linux")),
+    }).pipe(
+      Effect.provide(NodeServices.layer),
+      Effect.provideService(HostProcess.Platform, "linux"),
+    ),
+  );
+
+  it.effect("isolates memory catalogs for separately configured Codex homes", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const probes: Array<{ home: string | undefined; args: ReadonlyArray<string> }> = [];
+      const catalogs: Array<{ path: string; text: string }> = [];
+      const spawner = ChildProcessSpawner.make((command) =>
+        Effect.gen(function* () {
+          if (!ChildProcess.isStandardCommand(command))
+            return yield* Effect.die("Expected standard command");
+          const home = command.options.env?.CODEX_HOME;
+          if (command.args[0] === "debug" || command.args[0] === "--version") {
+            if (command.args[0] === "debug") probes.push({ home, args: command.args });
+            const text =
+              command.args[0] === "--version"
+                ? "codex-cli 0.163.0"
+                : encodeUnknownJson({
+                    models: [
+                      {
+                        slug: home,
+                        tool_mode: "code_mode_only",
+                        experimental_supported_tools: ["apply_patch"],
+                      },
+                    ],
+                  });
+            return ChildProcessSpawner.makeHandle({
+              pid: ChildProcessSpawner.ProcessId(1),
+              stdout: Stream.make(new TextEncoder().encode(text)),
+              exitCode: Effect.succeed(ChildProcessSpawner.ExitCode(0)),
+              isRunning: Effect.succeed(false),
+              kill: () => Effect.void,
+              unref: Effect.succeed(Effect.void),
+              stdin: Sink.drain,
+              stderr: Stream.empty,
+              all: Stream.empty,
+              getInputFd: () => Sink.drain,
+              getOutputFd: () => Stream.empty,
+            });
+          }
+          const override = command.args.find((arg) => arg.startsWith("model_catalog_json="));
+          if (override === undefined) return yield* Effect.die("Missing memory catalog override");
+          const catalogPath = yield* decodeMemoryCatalogPath(
+            override.slice("model_catalog_json=".length),
+          ).pipe(Effect.orDie);
+          catalogs.push({ path: catalogPath, text: yield* fs.readFileString(catalogPath) });
+          return yield* PlatformError.systemError({
+            _tag: "NotFound",
+            module: "ChildProcess",
+            method: "spawn",
+          });
+        }),
+      );
+      const factory = yield* CodexAdapterV2.CodexAppServerClientFactory.pipe(
+        Effect.provide(CodexAdapterV2.layerAppServerClientFactory),
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        Effect.provideService(
+          ProviderEventLoggers.ProviderEventLoggers,
+          ProviderEventLoggers.NoOpProviderEventLoggers,
+        ),
+      );
+      for (const home of ["/codex/profile-one", "/codex/profile-two"]) {
+        yield* factory
+          .open({
+            instanceId: ProviderInstanceId.make(home.endsWith("one") ? "codex-one" : "codex-two"),
+            threadId: ThreadId.make("memory-thread"),
+            providerSessionId: ProviderSessionId.make("memory-session"),
+            settings: {
+              ...DEFAULT_CODEX_SETTINGS,
+              homePath: home,
+              launchArgs: '-c model_provider="custom"',
+            },
+            environment: { CODEX_HOME: "/unrelated-home" },
+            runtimePolicy: {
+              ...CODEX_TEST_RUNTIME_POLICY,
+              memoryChat: { systemPrompt: "Memory", runId: RunId.make("memory-run") },
+            },
+          })
+          .pipe(Effect.scoped, Effect.exit);
+      }
+      assert.deepEqual(
+        probes.map((probe) => probe.home),
+        ["/codex/profile-one", "/codex/profile-two"],
+      );
+      assert.isTrue(probes.every((probe) => probe.args.includes("model_provider=custom")));
+      assert.lengthOf(catalogs, 2);
+      assert.notEqual(catalogs[0]?.path, catalogs[1]?.path);
+      assert.include(catalogs[0]?.text ?? "", "/codex/profile-one");
+      assert.notInclude(catalogs[0]?.text ?? "", "/codex/profile-two");
+      for (const catalog of catalogs) {
+        assert.include(catalog.text, '"tool_mode":"direct"');
+        assert.notInclude(catalog.text, '"apply_patch"');
+        assert.isFalse(yield* fs.exists(catalog.path));
+      }
+    }).pipe(Effect.provide(NodeServices.layer), Effect.scoped),
   );
 
   it.effect("expands ~ in the configured binary path before spawning", () =>

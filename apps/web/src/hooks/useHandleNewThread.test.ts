@@ -5,6 +5,7 @@ const testState = vi.hoisted(() => {
   let completeProjectFileRead: (value: null) => void = () => undefined;
   let projectFileRead = Promise.resolve<null>(null);
   let projectRemoved = false;
+  let projectIsMemory = false;
   let targetSettings = {
     defaultThreadEnvMode: "local" as "local" | "worktree",
     newWorktreesStartFromOrigin: false,
@@ -43,6 +44,12 @@ const testState = vi.hoisted(() => {
     get projectFileRead() {
       return projectFileRead;
     },
+    get projectIsMemory() {
+      return projectIsMemory;
+    },
+    markMemoryProject() {
+      projectIsMemory = true;
+    },
     get projectRemoved() {
       return projectRemoved;
     },
@@ -61,6 +68,7 @@ const testState = vi.hoisted(() => {
     ) {
       storedDraft = nextStoredDraft;
       projectRemoved = false;
+      projectIsMemory = false;
       targetSettings = {
         defaultThreadEnvMode: workspaceDefaults.envMode,
         newWorktreesStartFromOrigin: workspaceDefaults.startFromOrigin,
@@ -172,6 +180,9 @@ vi.mock("../logicalProject", () => ({
 }));
 vi.mock("../state/entities", () => {
   const project = {
+    get isMemory() {
+      return testState.projectIsMemory;
+    },
     id: "project-remote",
     environmentId: "environment-ssh",
     workspaceRoot: "/remote/project",
@@ -319,4 +330,16 @@ describe.each([
       );
     },
   );
+});
+
+it("does not create an ordinary draft in a hidden memory project", async () => {
+  testState.reset(null);
+  testState.markMemoryProject();
+  const opened = await useNewThreadHandler()({
+    environmentId: "environment-ssh",
+    projectId: "project-remote",
+  } as never);
+  expect(opened).toBeNull();
+  expect(testState.router.navigate).not.toHaveBeenCalled();
+  expect(testState.draftStore.setLogicalProjectDraftThreadId).not.toHaveBeenCalled();
 });

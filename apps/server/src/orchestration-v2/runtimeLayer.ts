@@ -1,3 +1,9 @@
+import * as MemoryTransferFiles from "../memory/MemoryTransferFiles.ts";
+import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as MemoryOwnership from "../memory/MemoryOwnership.ts";
+import * as MemoryChat from "../memory/MemoryChat.ts";
+import * as MemoryStorage from "../memory/MemoryStorage.ts";
+import * as MemoryCompaction from "../memory/MemoryCompaction.ts";
 import * as UsageLimitRecoveryWorker from "./UsageLimitRecoveryWorker.ts";
 import * as Scheduler from "../scheduling/Scheduler.ts";
 import * as Layer from "effect/Layer";
@@ -161,12 +167,32 @@ const layerRunExecutionServiceProvided = RunExecutionService.layer.pipe(
   ),
 );
 
+const layerMemoryChatProvided = MemoryChat.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      MemoryStorage.layer,
+      layerProviderSessionManagerProvided,
+      MemoryCompaction.layer,
+      MemoryTransferFiles.layer,
+      MemoryOwnership.layer.pipe(Layer.provide(MemoryStorage.layer)),
+      ProjectStore.layer,
+      ServerEnvironment.layerIdentity,
+      layerEventSinkProvided,
+      ProjectionStore.layer,
+      OrchestrationEventStore.layer,
+      IdAllocator.layer,
+    ),
+  ),
+);
+
 const layerProviderTurnStartServiceProvided = ProviderTurnStartService.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
+      layerMemoryChatProvided,
       layerContextHandoffServiceProvided,
       layerEventSinkProvided,
       IdAllocator.layer,
+      ThreadCommandExecutor.layer,
       ProjectionStore.layer,
       layerProviderSessionManagerProvided,
       layerProviderAuthServiceProvided,
@@ -213,6 +239,7 @@ const layerRunFinalizationServiceProvided = RunFinalizationService.layer.pipe(
 const layerOrchestratorProvided = Orchestrator.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
+      MemoryStorage.layer,
       layerCheckpointServiceProvided,
       CommandPolicy.layer,
       layerStores,
@@ -360,6 +387,7 @@ export const layer = Layer.mergeAll(
 );
 
 export const layerProduction = Layer.mergeAll(
+  layerMemoryChatProvided,
   layer.pipe(Layer.provide(layerProjectService)),
   layerProjectService,
   layerManagedProjectFoldersProvided,

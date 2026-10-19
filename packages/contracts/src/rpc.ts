@@ -1,3 +1,7 @@
+import { ModelSelection } from "./modelSelection.ts";
+import { RuntimeMode } from "./providerPolicy.ts";
+import { ThreadId, MemoryId, EnvironmentId } from "./baseSchemas.ts";
+import { MemoryIdentity, MemoryChatError } from "./memoryChat.ts";
 import {
   OrchestrationV2SearchThreadError,
   OrchestrationV2SearchThreadInput,
@@ -378,6 +382,17 @@ import { VcsError } from "./vcs.ts";
 import { Project, ProjectMutation, ProjectMutationError } from "./project.ts";
 
 export const WS_METHODS = {
+  memoriesList: "memories.list",
+  memoriesCreate: "memories.create",
+  memoriesReset: "memories.reset",
+  memoriesDelete: "memories.delete",
+  memoriesTransferBegin: "memories.transferBegin",
+  memoriesTransferRead: "memories.transferRead",
+  memoriesTransferWrite: "memories.transferWrite",
+  memoriesTransferStage: "memories.transferStage",
+  memoriesTransferRelease: "memories.transferRelease",
+  memoriesTransferActivate: "memories.transferActivate",
+  memoriesTransferCancel: "memories.transferCancel",
   projectsList: "projects.list",
   projectsAdd: "projects.add",
   projectsRemove: "projects.remove",
@@ -1784,6 +1799,83 @@ const WsSubscribeServerLifecycleRpc = Rpc.make(WS_METHODS.subscribeServerLifecyc
   stream: true,
 });
 
+const WsMemoriesListRpc = Rpc.make(WS_METHODS.memoriesList, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(MemoryIdentity),
+  error: Schema.Union([MemoryChatError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesCreateRpc = Rpc.make(WS_METHODS.memoriesCreate, {
+  payload: Schema.Struct({
+    threadId: ThreadId,
+    name: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(255)),
+    modelSelection: ModelSelection,
+    runtimeMode: RuntimeMode,
+    reuseExisting: Schema.optionalKey(Schema.Boolean),
+  }),
+  success: MemoryIdentity,
+  error: Schema.Union([MemoryChatError, EnvironmentAuthorizationError]),
+});
+
+const WsMemoriesResetRpc = Rpc.make(WS_METHODS.memoriesReset, {
+  payload: Schema.Struct({ memoryId: MemoryId }),
+  success: MemoryIdentity,
+  error: Schema.Union([MemoryChatError, EnvironmentAuthorizationError]),
+});
+const WsMemoriesDeleteRpc = Rpc.make(WS_METHODS.memoriesDelete, {
+  payload: Schema.Struct({ memoryId: MemoryId }),
+  success: Schema.Void,
+  error: Schema.Union([MemoryChatError, EnvironmentAuthorizationError]),
+});
+
+const MemoryTransferKey = Schema.Struct({ memoryId: MemoryId, transferId: Schema.String });
+const memoryRpcError = Schema.Union([MemoryChatError, EnvironmentAuthorizationError]);
+const WsMemoriesTransferBeginRpc = Rpc.make(WS_METHODS.memoriesTransferBegin, {
+  payload: Schema.Struct({ memoryId: MemoryId, destinationEnvironmentId: EnvironmentId }),
+  success: Schema.Struct({
+    transferId: Schema.String,
+    length: NonNegativeInt,
+    chunkSize: NonNegativeInt,
+  }),
+  error: memoryRpcError,
+});
+const WsMemoriesTransferReadRpc = Rpc.make(WS_METHODS.memoriesTransferRead, {
+  payload: Schema.Struct({ ...MemoryTransferKey.fields, offset: NonNegativeInt }),
+  success: Schema.Struct({ data: Schema.String, nextOffset: NonNegativeInt }),
+  error: memoryRpcError,
+});
+const WsMemoriesTransferWriteRpc = Rpc.make(WS_METHODS.memoriesTransferWrite, {
+  payload: Schema.Struct({
+    transferId: Schema.String,
+    offset: NonNegativeInt,
+    data: Schema.String.check(Schema.isMaxLength(262144)),
+  }),
+  success: Schema.Void,
+  error: memoryRpcError,
+});
+const WsMemoriesTransferStageRpc = Rpc.make(WS_METHODS.memoriesTransferStage, {
+  payload: Schema.Struct({
+    transferId: Schema.String,
+    length: NonNegativeInt,
+  }),
+  success: MemoryIdentity,
+  error: memoryRpcError,
+});
+const WsMemoriesTransferReleaseRpc = Rpc.make(WS_METHODS.memoriesTransferRelease, {
+  payload: MemoryTransferKey,
+  success: Schema.Struct({ secret: Schema.String }),
+  error: memoryRpcError,
+});
+const WsMemoriesTransferActivateRpc = Rpc.make(WS_METHODS.memoriesTransferActivate, {
+  payload: Schema.Struct({ ...MemoryTransferKey.fields, secret: Schema.String }),
+  success: MemoryIdentity,
+  error: memoryRpcError,
+});
+const WsMemoriesTransferCancelRpc = Rpc.make(WS_METHODS.memoriesTransferCancel, {
+  payload: MemoryTransferKey,
+  success: MemoryIdentity,
+  error: memoryRpcError,
+});
+
 const WsScheduledTasksListRpc = Rpc.make(WS_METHODS.scheduledTasksList, {
   payload: ScheduledTaskListInput,
   success: ScheduledTaskListResult,
@@ -1878,6 +1970,20 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   "t3/contracts/RpcScopeAuthorization",
   { error: EnvironmentAuthorizationError },
 ) {}
+
+export const WsMemoryRpcGroup = RpcGroup.make(
+  WsMemoriesListRpc,
+  WsMemoriesCreateRpc,
+  WsMemoriesResetRpc,
+  WsMemoriesDeleteRpc,
+  WsMemoriesTransferBeginRpc,
+  WsMemoriesTransferReadRpc,
+  WsMemoriesTransferWriteRpc,
+  WsMemoriesTransferStageRpc,
+  WsMemoriesTransferReleaseRpc,
+  WsMemoriesTransferActivateRpc,
+  WsMemoriesTransferCancelRpc,
+).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = RpcGroup.make(
   WsServerProbeRpc,
@@ -2078,4 +2184,6 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
   WsOrchestrationV2SubscribeCommandOutputRpc,
-).middleware(RpcScopeAuthorization);
+)
+  .middleware(RpcScopeAuthorization)
+  .merge(WsMemoryRpcGroup);
