@@ -64,4 +64,20 @@ describe("selectThreadRelationshipShells", () => {
       ),
     ).toEqual(["current", "parent"]);
   });
+
+  it("keeps the threads the current thread launched and the one that launched it", () => {
+    const launched = (id: string, by: string) =>
+      ({ ...shell(id), launchedByThreadId: by }) as OrchestrationV2ThreadShell;
+    const threads = [
+      launched("current", "launcher"),
+      shell("launcher"),
+      launched("launched", "current"),
+      launched("sibling", "launcher"),
+    ];
+    expect(
+      selectThreadRelationshipShells(threadId, null as Projection, threads).map(
+        (thread) => thread.id,
+      ),
+    ).toEqual(["current", "launcher", "launched"]);
+  });
 });

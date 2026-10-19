@@ -177,6 +177,9 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
       fastModeDescriptor?.type === "boolean" ? fastModeDescriptor.currentValue : undefined;
     const settings = {
       disableAllHooks: true,
+      ...(operation === "generateMemorySummary"
+        ? { autoMemoryEnabled: false, disableBundledSkills: true }
+        : {}),
       ...(typeof thinking === "boolean" ? { alwaysThinkingEnabled: thinking } : {}),
       ...(fastMode ? { fastMode: true } : {}),
       ...(ultracode ? { ultracode: true } : {}),
@@ -223,6 +226,9 @@ export const makeClaudeTextGeneration = Effect.fn("makeClaudeTextGeneration")(fu
               ]
             : ["--tools", ""]),
           "--disable-slash-commands",
+          ...(operation === "generateMemorySummary"
+            ? ["--safe-mode", "--setting-sources", ""]
+            : []),
           // Claude refuses this flag next to a managed-mcp.json, which already keeps the
           // user's own MCP servers out.
           ...(managedMcpConfig ? [] : ["--strict-mcp-config"]),

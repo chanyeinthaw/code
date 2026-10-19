@@ -1,6 +1,12 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { ChartNoAxesColumnIcon, MessagesSquareIcon, SettingsIcon } from "lucide-react";
-import { type ComponentProps, type ReactNode } from "react";
+import { useLastActiveBot, useBots } from "../../state/bots";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { ChartNoAxesColumnIcon, MessagesSquareIcon, BotIcon, SettingsIcon } from "lucide-react";
+import { useEffect, type ComponentProps, type ReactNode } from "react";
+import * as Schema from "effect/Schema";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { useProjects, useThreadShells } from "../../state/entities";
+import { useComposerDraftStore } from "../../composerDraftStore";
+import { resolveThreadsNavigationHref } from "./threadNavigation";
 import { isElectron } from "../../env";
 import { useWindowFullscreen } from "../../hooks/useWindowFullscreen";
 import { isMacPlatform } from "../../lib/utils";
@@ -8,20 +14,23 @@ import { isMacPlatform } from "../../lib/utils";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { usePullRequestsSupported } from "../../state/environments";
-import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { AlternateSidebarFrame } from "./AlternateSidebarFrame";
 import { AlternateSidebarHeader } from "./AlternateSidebarHeader";
 import { SidebarProviderUpdatePill } from "../sidebar/SidebarProviderUpdatePill";
 import Sidebar from "../Sidebar";
+import { BotSidebar } from "../bots/BotSidebar";
 import { Button } from "../ui/button";
 import { SidebarFooter, SidebarMenu, SidebarTrigger, useSidebarVisibility } from "../ui/sidebar";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "../sidebar/SidebarUpdatePill";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
+const lastThreadHrefSchema = Schema.NullOr(Schema.String);
+
 export function AlternateSidebarLayout({ children }: { children: ReactNode }) {
   return (
     <AlternateSidebarFrame
       navigationRail={<AlternateNavigationRail />}
+      botSidebar={<BotSidebar />}
       threadSidebar={
         <>
           <AlternateSidebarHeader />
@@ -81,7 +90,36 @@ function AlternateNavigationRail() {
   });
   const settingsOpen = pathname === "/settings" || pathname.startsWith("/settings/");
   const isUtilityPage = pathname === "/usage" || pathname === "/pull-requests";
-  const navigateToMainApp = useNavigateToMainApp();
+  const navigate = useNavigate();
+  const lastActiveBot = useLastActiveBot();
+  const botOpen = pathname === "/bots" || pathname.startsWith("/bots/");
+  const bots = useBots();
+  const showSidebarControl = !botOpen || bots.length > 1;
+  const href = useLocation({ select: (location) => location.href });
+  const projects = useProjects();
+  const threads = useThreadShells();
+  const drafts = useComposerDraftStore((store) => store.draftThreadsByThreadKey);
+  const [lastThreadHref, setLastThreadHref] = useLocalStorage(
+    "alternate-last-thread-href",
+    null,
+    lastThreadHrefSchema,
+  );
+  const threadHref = resolveThreadsNavigationHref({
+    rememberedHref: lastThreadHref,
+    projects,
+    threads,
+    drafts,
+  });
+  const currentThreadHref = resolveThreadsNavigationHref({
+    rememberedHref: href,
+    projects,
+    threads,
+    drafts,
+  });
+  useEffect(() => {
+    if (currentThreadHref !== "/" && currentThreadHref === href && lastThreadHref !== href)
+      setLastThreadHref(href);
+  }, [href, currentThreadHref, lastThreadHref, setLastThreadHref]);
   const pullRequestsSupported = usePullRequestsSupported();
   return (
     <nav
@@ -92,26 +130,45 @@ function AlternateNavigationRail() {
       className="alternate-navigation-rail z-40 flex w-12 shrink-0 flex-col items-center gap-2 pb-2 [-webkit-app-region:no-drag]"
     >
       <div className="flex h-[var(--workspace-topbar-height)] w-full shrink-0 items-center justify-center">
-        {!reserveTrafficLights && !settingsOpen && !isUtilityPage ? (
+        {!reserveTrafficLights && !settingsOpen && !isUtilityPage && showSidebarControl ? (
           <Tooltip>
             <TooltipTrigger
               render={
                 <SidebarTrigger
-                  aria-label={sidebarVisible ? "Collapse thread sidebar" : "Expand thread sidebar"}
+                  aria-label={sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
                 />
               }
             />
             <TooltipPopup side="right">
-              {sidebarVisible ? "Collapse thread sidebar" : "Expand thread sidebar"}
+              {sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
             </TooltipPopup>
           </Tooltip>
         ) : null}
       </div>
       <NavigationButton
+        label="Bots"
+        render={
+          lastActiveBot ? (
+            <Link
+              to="/bots/$environmentId/$threadId"
+              params={{
+                environmentId: lastActiveBot.ownerEnvironmentId,
+                threadId: lastActiveBot.threadId,
+              }}
+            />
+          ) : (
+            <Link to="/bots" />
+          )
+        }
+        aria-current={botOpen ? "page" : undefined}
+      >
+        <BotIcon />
+      </NavigationButton>
+      <NavigationButton
         label="Threads"
-        onClick={() => void navigateToMainApp()}
+        onClick={() => void navigate({ href: threadHref })}
         aria-current={
-          !settingsOpen && pathname !== "/usage" && pathname !== "/pull-requests"
+          !botOpen && !settingsOpen && pathname !== "/usage" && pathname !== "/pull-requests"
             ? "page"
             : undefined
         }

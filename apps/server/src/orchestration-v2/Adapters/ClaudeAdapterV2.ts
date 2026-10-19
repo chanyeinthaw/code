@@ -1,3 +1,4 @@
+import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import { claudeTaskOutputRoot, tailClaudeTaskOutput } from "./ClaudeTaskOutputTail.ts";
 import {
@@ -1276,6 +1277,8 @@ export function makeClaudeQueryOptions(input: {
   readonly attachmentsDir?: string;
   readonly settings?: ClaudeSettings;
   readonly sdkSettings?: string | ClaudeSdkSettings;
+  readonly botPrompt?: string;
+  readonly mcpSession?: McpProviderSession.McpProviderSessionConfig | undefined;
   readonly environment?: NodeJS.ProcessEnv;
   readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
   readonly tools?: ClaudeAgentSdkQueryTools;
@@ -1299,10 +1302,13 @@ export function makeClaudeQueryOptions(input: {
   // Claude Code overwrites its CLI append text with the SDK's initialize
   // appendSystemPrompt, so launch-argument text has to travel in that value.
   // The CLI puts file text before inline text and trims one trailing newline.
-  const launchAppendSystemPrompt = [
-    input.appendSystemPromptFileText?.replace(/\r?\n$/, ""),
-    launchArgAppendSystemPrompt,
-  ].filter((text): text is string => typeof text === "string" && text.length > 0);
+  const launchAppendSystemPrompt =
+    input.botPrompt !== undefined
+      ? []
+      : [
+          input.appendSystemPromptFileText?.replace(/\r?\n$/, ""),
+          launchArgAppendSystemPrompt,
+        ].filter((text): text is string => typeof text === "string" && text.length > 0);
   const requestThinkingSummaries =
     compiledSelection.settings.alwaysThinkingEnabled !== false &&
     extraArgs["thinking-display"] !== "omitted";
@@ -1379,12 +1385,30 @@ export function makeClaudeQueryOptions(input: {
       type: "preset" as const,
       preset: "claude_code" as const,
       append: [
-        buildRuntimeInstructions({ harness: "Claude Code" }) +
-          (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS),
+        input.botPrompt === undefined
+          ? buildRuntimeInstructions({ harness: "Claude Code" }) +
+            (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS)
+          : buildBotSystemPrompt({
+              botPrompt: input.botPrompt,
+              runtime: {
+                harness: "Claude Code",
+                model: input.modelSelection.model,
+                reasoningEffort: compiledSelection.effort,
+              },
+              mcpSession: input.mcpSession,
+            }),
         ...launchAppendSystemPrompt,
       ].join("\n\n"),
     },
-    ...(Object.keys(extraArgs).length === 0 ? {} : { extraArgs }),
+    ...(input.botPrompt === undefined
+      ? Object.keys(extraArgs).length === 0
+        ? {}
+        : { extraArgs }
+      : {
+          settingSources: [],
+          skills: [],
+          extraArgs: { ...extraArgs, "safe-mode": null, "disable-slash-commands": null },
+        }),
   };
   const additionalDirectories = [
     ...(input.cwd === null ? [] : [input.cwd]),
@@ -1484,7 +1508,12 @@ export function claudeMcpQueryOverrides(input: {
     return input.allowedTools === undefined ? {} : { allowedTools: input.allowedTools };
   }
   const mcpAllowedTools = input.readOnlySandbox
-    ? CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS
+    ? [
+        ...CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS,
+        ...(session.botRunId === undefined
+          ? []
+          : ["mcp__t3-code__zoom", "mcp__t3-code__date", "mcp__t3-code__t3_attachment_read"]),
+      ]
     : [CLAUDE_T3_MCP_TOOL_WILDCARD];
   return {
     allowedTools: Array.from(new Set([...(input.allowedTools ?? []), ...mcpAllowedTools])),
@@ -9154,8 +9183,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           nativeThreadId: string,
         ) {
           const queryPolicy = yield* queryPolicyForTurn(turnInput);
+          const mcpSession = yield* mcpSessions.read(turnInput.threadId);
           const mcpOverrides = claudeMcpQueryOverrides({
-            mcpSession: yield* mcpSessions.read(turnInput.threadId),
+            mcpSession,
             readOnlySandbox:
               sandboxPolicyKindForClaudeRuntimePolicy(turnInput.runtimePolicy) === "readOnly",
             ...(queryPolicy.allowedTools === undefined
@@ -9237,12 +9267,15 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           }
 
           // Read before closing the live process so a bad path leaves it running.
-          const appendSystemPromptFileText = yield* readClaudeAppendSystemPromptFile({
-            settings: adapterOptions.settings,
-            cwd: turnInput.runtimePolicy.cwd,
-            fileSystem,
-            path,
-          });
+          const appendSystemPromptFileText =
+            turnInput.runtimePolicy.botChat === undefined
+              ? yield* readClaudeAppendSystemPromptFile({
+                  settings: adapterOptions.settings,
+                  cwd: turnInput.runtimePolicy.cwd,
+                  fileSystem,
+                  path,
+                })
+              : undefined;
           const closedExistingNativeThreadId = existing !== null ? existing.nativeThreadId : null;
           if (existing !== null) {
             yield* existing.query.close.pipe(Effect.ignore);
@@ -9265,6 +9298,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           const queryOptions = makeClaudeQueryOptions({
             modelSelection: turnInput.modelSelection,
             nativeThreadId,
+            ...(turnInput.runtimePolicy.botChat === undefined
+              ? {}
+              : { botPrompt: turnInput.runtimePolicy.botChat.systemPrompt, mcpSession }),
             resume: shouldResume,
             ...(resumeSessionAt === undefined ? {} : { resumeSessionAt }),
             cwd: turnInput.runtimePolicy.cwd,
@@ -9277,7 +9313,10 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
                 ? yield* resolveSubagentPromptCacheTtl(turnInput.runtimePolicy.cwd)
                 : undefined,
             ),
-            tools: queryPolicy.tools ?? CLAUDE_CODE_PRESET_TOOLS,
+            tools:
+              turnInput.runtimePolicy.botChat === undefined
+                ? (queryPolicy.tools ?? CLAUDE_CODE_PRESET_TOOLS)
+                : [],
             ...(mcpOverrides.allowedTools === undefined
               ? {}
               : { allowedTools: mcpOverrides.allowedTools }),

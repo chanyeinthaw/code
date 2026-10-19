@@ -169,7 +169,20 @@ export function fromRunner(name: string, run: Runner): ProviderTextGeneration {
     });
   });
 
+  const generateMemorySummary: NonNullable<ProviderTextGeneration["generateMemorySummary"]> =
+    Effect.fn(`${name}.generateMemorySummary`)(function* (input) {
+      const result = yield* run({
+        operation: "generateMemorySummary",
+        cwd: input.cwd,
+        modelSelection: input.modelSelection,
+        prompt: `${input.instructions}\n\n${input.context}\n\n${input.task}\n\nReturn JSON with one string field named summary.`,
+        outputSchema: Schema.Struct({ summary: Schema.String }),
+      });
+      return result.summary;
+    });
+
   return {
+    generateMemorySummary,
     generateCommitMessage,
     generatePrContent,
     generateBranchName,
