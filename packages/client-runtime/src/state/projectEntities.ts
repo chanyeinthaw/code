@@ -6,6 +6,7 @@ import type {
   ScopedProjectRef,
   ServerConfig,
 } from "@t3tools/contracts";
+import { isMemoryProject } from "@t3tools/shared/memoryChat";
 import { Atom } from "effect/reactivity";
 
 import type { EnvironmentProject } from "./models.ts";
@@ -106,7 +107,7 @@ export function createEnvironmentProjectAtoms(input: {
   const projectsAtom = Atom.make((get) => {
     const next = get(projectRefsAtom).flatMap((ref) => {
       const project = get(projectAtomFamily(projectKey(ref)));
-      return project === null ? [] : [project];
+      return project === null || isMemoryProject(project) ? [] : [project];
     });
     if (arrayElementsEqual(previousProjects, next)) {
       return previousProjects;

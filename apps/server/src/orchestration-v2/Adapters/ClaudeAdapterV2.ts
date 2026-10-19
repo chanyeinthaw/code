@@ -1,3 +1,4 @@
+import { buildMemorySystemPrompt } from "@t3tools/provider-core/server/memoryInstructions";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import { claudeTaskOutputRoot, tailClaudeTaskOutput } from "./ClaudeTaskOutputTail.ts";
 import {
@@ -1249,6 +1250,8 @@ export function makeClaudeQueryOptions(input: {
   readonly attachmentsDir?: string;
   readonly settings?: ClaudeSettings;
   readonly sdkSettings?: string | ClaudeSdkSettings;
+  readonly memoryPrompt?: string;
+  readonly mcpSession?: McpProviderSession.McpProviderSessionConfig | undefined;
   readonly environment?: NodeJS.ProcessEnv;
   readonly mcpServers?: ClaudeQueryOptions["mcpServers"];
   readonly tools?: ClaudeAgentSdkQueryTools;
@@ -1352,8 +1355,18 @@ export function makeClaudeQueryOptions(input: {
       type: "preset" as const,
       preset: "claude_code" as const,
       append: [
-        buildRuntimeInstructions({ harness: "Claude Code" }) +
-          (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS),
+        input.memoryPrompt === undefined
+          ? buildRuntimeInstructions({ harness: "Claude Code" }) +
+            (input.mcpServers === undefined ? "" : T3_CODE_ORCHESTRATION_INSTRUCTIONS)
+          : buildMemorySystemPrompt({
+              memoryPrompt: input.memoryPrompt,
+              runtime: {
+                harness: "Claude Code",
+                model: input.modelSelection.model,
+                reasoningEffort: compiledSelection.effort,
+              },
+              mcpSession: input.mcpSession,
+            }),
         ...launchAppendSystemPrompt,
       ].join("\n\n"),
     },
@@ -1457,7 +1470,12 @@ export function claudeMcpQueryOverrides(input: {
     return input.allowedTools === undefined ? {} : { allowedTools: input.allowedTools };
   }
   const mcpAllowedTools = input.readOnlySandbox
-    ? CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS
+    ? [
+        ...CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS,
+        ...(session.memoryRunId === undefined
+          ? []
+          : ["mcp__t3-code__zoom", "mcp__t3-code__date", "mcp__t3-code__t3_attachment_read"]),
+      ]
     : [CLAUDE_T3_MCP_TOOL_WILDCARD];
   return {
     allowedTools: Array.from(new Set([...(input.allowedTools ?? []), ...mcpAllowedTools])),
@@ -9034,8 +9052,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           nativeThreadId: string,
         ) {
           const queryPolicy = yield* queryPolicyForTurn(turnInput);
+          const mcpSession = yield* mcpSessions.read(turnInput.threadId);
           const mcpOverrides = claudeMcpQueryOverrides({
-            mcpSession: yield* mcpSessions.read(turnInput.threadId),
+            mcpSession,
             readOnlySandbox:
               sandboxPolicyKindForClaudeRuntimePolicy(turnInput.runtimePolicy) === "readOnly",
             ...(queryPolicy.allowedTools === undefined
@@ -9145,13 +9164,19 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           const queryOptions = makeClaudeQueryOptions({
             modelSelection: turnInput.modelSelection,
             nativeThreadId,
+            ...(turnInput.runtimePolicy.memoryChat === undefined
+              ? {}
+              : { memoryPrompt: turnInput.runtimePolicy.memoryChat.systemPrompt, mcpSession }),
             resume: shouldResume,
             ...(resumeSessionAt === undefined ? {} : { resumeSessionAt }),
             cwd: turnInput.runtimePolicy.cwd,
             attachmentsDir,
             settings: adapterOptions.settings,
             environment: adapterOptions.environment,
-            tools: queryPolicy.tools ?? CLAUDE_CODE_PRESET_TOOLS,
+            tools:
+              turnInput.runtimePolicy.memoryChat === undefined
+                ? (queryPolicy.tools ?? CLAUDE_CODE_PRESET_TOOLS)
+                : [],
             ...(mcpOverrides.allowedTools === undefined
               ? {}
               : { allowedTools: mcpOverrides.allowedTools }),

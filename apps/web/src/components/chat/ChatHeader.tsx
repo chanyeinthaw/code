@@ -1,3 +1,5 @@
+import { MemoryHeader } from "../memory/MemoryHeader";
+import { useMemoryThreadContext } from "../../state/memories";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
@@ -83,6 +85,7 @@ export const ChatHeader = memo(function ChatHeader({
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
   const [collapseParentTitle, setCollapseParentTitle] = useState(false);
   const activeThreadRef = scopeThreadRef(activeThreadEnvironmentId, activeThreadId);
+  const memoryContext = useMemoryThreadContext(activeThreadRef);
   const canOperateThread = useEnvironmentScope(
     activeThreadEnvironmentId,
     AuthOrchestrationOperateScope,
@@ -264,6 +267,14 @@ export const ChatHeader = memo(function ChatHeader({
       setRenaming(null);
     }
   };
+  if (memoryContext)
+    return (
+      <MemoryHeader
+        memory={memoryContext}
+        environmentId={activeThreadEnvironmentId}
+        subagentTitle={memoryContext.isSubagent ? activeThreadTitle : undefined}
+      />
+    );
   return (
     <div
       ref={breadcrumbContainerRef}

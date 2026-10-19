@@ -2,6 +2,7 @@ import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import type {
   EnvironmentId,
   ModelSelection,
+  MemoryId,
   ProjectId,
   ScopedProjectRef,
 } from "@t3tools/contracts";
@@ -15,6 +16,7 @@ type ComposerModelSelectionState = Pick<
 interface ThreadContextLike {
   environmentId: EnvironmentId;
   projectId: ProjectId;
+  memoryIdentityId?: MemoryId | undefined;
 }
 
 interface NewThreadHandler {
@@ -70,7 +72,7 @@ export function hasExplicitComposerModelSelection(
 export function resolveThreadActionProjectRef(
   context: ChatThreadActionContext,
 ): ScopedProjectRef | null {
-  if (context.activeThread) {
+  if (context.activeThread && context.activeThread.memoryIdentityId === undefined) {
     return scopeProjectRef(context.activeThread.environmentId, context.activeThread.projectId);
   }
   if (context.activeDraftThread) {

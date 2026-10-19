@@ -150,7 +150,7 @@ function SettingsRouteLayout() {
   const pathname = useLocation({ select: (location) => location.pathname });
   return (
     <SettingsScopeProvider
-      search={rawSearch}
+      search={pathname === "/settings/memory" ? { machine: rawSearch.machine } : rawSearch}
       singleEnvironment={pathname === "/settings/providers"}
       onChange={(next) => {
         // Send every axis so the retain middleware sees an explicit target

@@ -165,6 +165,14 @@ describe("Pi MCP tool exposure", () => {
     ui: { notify: () => undefined },
   };
 
+  it("keeps the memory system prompt without coding orchestration instructions", async () => {
+    const bridge = await loadMcpBridge({ modern: true, memoryChat: true });
+    const start = bridge.handlers.get("before_agent_start");
+    if (start === undefined) throw new Error("Missing agent start hook");
+    const prompt = await start({ systemPrompt: "Frozen memory instructions" }, discoveryContext);
+    assert.equal(prompt.systemPrompt, "Frozen memory instructions");
+  });
+
   it.each(["session_start", "session_tree", "model_select", "before_agent_start"])(
     "declares optional T3 tools for OpenAI-compatible gateways at %s",
     async (hookName) => {

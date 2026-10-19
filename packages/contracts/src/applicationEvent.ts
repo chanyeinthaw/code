@@ -34,6 +34,7 @@ export const ApplicationEventMetadata = Schema.Struct({
 export type ApplicationEventMetadata = typeof ApplicationEventMetadata.Type;
 
 export const ApplicationProjectCreatedPayload = Schema.Struct({
+  isMemory: Schema.optional(Schema.Boolean),
   projectId: ProjectId,
   title: TrimmedNonEmptyString,
   workspaceRoot: TrimmedNonEmptyString,
@@ -49,6 +50,7 @@ export const ApplicationProjectCreatedPayload = Schema.Struct({
 export type ApplicationProjectCreatedPayload = typeof ApplicationProjectCreatedPayload.Type;
 
 export const ApplicationProjectMetaUpdatedPayload = Schema.Struct({
+  isMemory: Schema.optional(Schema.Boolean),
   projectId: ProjectId,
   title: Schema.optional(TrimmedNonEmptyString),
   workspaceRoot: Schema.optional(TrimmedNonEmptyString),

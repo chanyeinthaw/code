@@ -31,6 +31,7 @@ import {
   isOrchestrationV2WorkActive,
   isProviderNativeSubagentThread,
   NodeId,
+  type ScopedThreadRef,
   type EnvironmentId,
   type OrchestrationV2Subagent,
   type OrchestrationV2ThreadShell,
@@ -205,6 +206,27 @@ function currentSubagent<Agent extends RuntimeSubagent>(
     result: null,
     error: null,
   };
+}
+
+export function useHasThreadLineage(ref: ScopedThreadRef | null) {
+  const projection = useThreadProjection(ref)?.projection ?? null;
+  const shells = useThreadRelationshipShells(ref);
+  const archived = useArchivedThreadSnapshots(ref ? [ref.environmentId] : []);
+  if (!ref) return false;
+  const archivedShells =
+    archived.snapshots.find((entry) => entry.environmentId === ref.environmentId)?.snapshot
+      .threads ?? [];
+  const graph = deriveThreadRelationshipGraph({
+    threads: [...shells, ...archivedShells],
+    projection,
+  });
+  return (
+    immediateThreadRelationships(graph, ref.threadId).length > 0 ||
+    (projection?.subagents.some(
+      (agent) => agent.childThreadId === null && agent.status === "running",
+    ) ??
+      false)
+  );
 }
 
 export function ThreadRelationshipsPanel(props: {

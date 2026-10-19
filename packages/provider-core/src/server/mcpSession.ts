@@ -1,8 +1,9 @@
-import type { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentId, ProviderInstanceId, ThreadId, RunId } from "@t3tools/contracts";
 
 export interface McpProviderSessionConfig {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
+  readonly memoryRunId?: RunId;
   readonly providerSessionId: string;
   readonly providerInstanceId: ProviderInstanceId;
   readonly endpoint: string;

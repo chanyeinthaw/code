@@ -1,6 +1,7 @@
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
   EnvironmentId,
+  MemoryId,
   ProjectId,
   ProviderInstanceId,
   type ModelSelection,
@@ -113,6 +114,21 @@ describe("chatThreadActions", () => {
     );
 
     expect(projectRef).toEqual(scopeProjectRef(ENVIRONMENT_ID, PROJECT_ID));
+  });
+
+  it("uses an ordinary project for a new thread while viewing a memory", () => {
+    expect(
+      resolveThreadActionProjectRef(
+        createContext({
+          activeThread: {
+            environmentId: ENVIRONMENT_ID,
+            projectId: PROJECT_ID,
+            memoryIdentityId: MemoryId.make("personal"),
+          },
+          defaultProjectRef: scopeProjectRef(ENVIRONMENT_ID, FALLBACK_PROJECT_ID),
+        }),
+      ),
+    ).toEqual(scopeProjectRef(ENVIRONMENT_ID, FALLBACK_PROJECT_ID));
   });
 
   it("falls back to the active draft thread project when there is no active thread", () => {

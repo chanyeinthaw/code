@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import {
   type ModelSelection,
+  MemoryId,
   NodeId,
   RunId,
   RunAttemptId,
@@ -79,7 +80,7 @@ function makeParentThread(): OrchestrationV2AppThread {
 }
 
 it("keeps a subagent child awake when its parent thread is snoozed", () => {
-  const parentThread = makeParentThread();
+  const parentThread = { ...makeParentThread(), memoryIdentityId: MemoryId.make("parent-memory") };
   const childProviderThreadId = ProviderThreadId.make("provider-thread:subagent-awake-child");
   const parentNodeId = NodeId.make("node:subagent-parent");
   const childThread = makeSubagentChildThread({
@@ -106,6 +107,7 @@ it("keeps a subagent child awake when its parent thread is snoozed", () => {
   assert.deepEqual(childThread.modelSelection, childModelSelection);
   assert.equal(childThread.activeProviderThreadId, childProviderThreadId);
   assert.isUndefined(childThread.historyOrigin);
+  assert.isUndefined(childThread.memoryIdentityId);
   assert.deepEqual(childThread.lineage, {
     parentThreadId,
     relationshipToParent: "subagent",
