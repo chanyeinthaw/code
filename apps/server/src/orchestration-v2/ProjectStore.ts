@@ -30,6 +30,7 @@ export class ProjectStoreV2Error extends Schema.TaggedError<ProjectStoreV2Error>
 }
 
 export const ProjectRow = Schema.Struct({
+  isBot: Schema.optional(Schema.Boolean),
   projectId: ProjectId,
   title: Schema.String,
   workspaceRoot: Schema.String,
@@ -49,6 +50,7 @@ const ProjectDbRow = Schema.Struct({
   ...ProjectRow.fields,
   defaultModelSelection: Schema.NullOr(Schema.fromJsonString(ModelSelection)),
   autoPull: Schema.BooleanFromBit,
+  isBot: Schema.optional(Schema.BooleanFromBit),
   projectIcon: Schema.NullOr(Schema.fromJsonString(StoredProjectIcon)),
   scripts: Schema.fromJsonString(Schema.Array(ProjectScript)),
 });
@@ -56,6 +58,7 @@ const ProjectDbRow = Schema.Struct({
 function toShell(row: ProjectRow): OrchestrationProjectShell {
   return {
     id: row.projectId,
+    isBot: row.isBot,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
     repositoryIdentity: null,
@@ -111,6 +114,7 @@ export const make = Effect.gen(function* () {
     Result: ProjectDbRow,
     execute: (request) => sql`
       SELECT
+        is_bot AS "isBot",
         project_id AS "projectId",
         title,
         workspace_root AS "workspaceRoot",
@@ -141,6 +145,7 @@ export const make = Effect.gen(function* () {
       Effect.flatMap(
         (encoded) => sql`
           INSERT INTO projection_projects (
+            is_bot,
             project_id,
             title,
             workspace_root,
@@ -155,6 +160,7 @@ export const make = Effect.gen(function* () {
             deleted_at
           )
           VALUES (
+            ${encoded.isBot ?? 0},
             ${encoded.projectId},
             ${encoded.title},
             ${encoded.workspaceRoot},
@@ -170,6 +176,7 @@ export const make = Effect.gen(function* () {
           )
           ON CONFLICT (project_id)
           DO UPDATE SET
+            is_bot = excluded.is_bot,
             title = excluded.title,
             workspace_root = excluded.workspace_root,
             default_model_selection_json = excluded.default_model_selection_json,
@@ -217,6 +224,7 @@ export const make = Effect.gen(function* () {
       if (event.type === "project.created") {
         const payload = event.payload;
         return yield* upsertRow({
+          isBot: payload.isBot ?? false,
           projectId: payload.projectId,
           title: payload.title,
           workspaceRoot: payload.workspaceRoot,
@@ -244,6 +252,7 @@ export const make = Effect.gen(function* () {
       const payload = event.payload;
       yield* upsertRow({
         ...row,
+        ...(payload.isBot === undefined ? {} : { isBot: payload.isBot }),
         ...(payload.title === undefined ? {} : { title: payload.title }),
         ...(payload.workspaceRoot === undefined ? {} : { workspaceRoot: payload.workspaceRoot }),
         ...(payload.defaultModelSelection === undefined

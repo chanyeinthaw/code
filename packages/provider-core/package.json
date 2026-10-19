@@ -67,6 +67,10 @@
       "types": "./src/server/McpProviderSessions.ts",
       "import": "./src/server/McpProviderSessions.ts"
     },
+    "./server/botInstructions": {
+      "types": "./src/server/botInstructions.ts",
+      "import": "./src/server/botInstructions.ts"
+    },
     "./server/mcpSession": {
       "types": "./src/server/mcpSession.ts",
       "import": "./src/server/mcpSession.ts"

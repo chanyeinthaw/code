@@ -7,6 +7,7 @@ import "./index.css";
 import { prepareProviderAuthDelivery } from "./providerAuthDelivery";
 import { isElectron } from "./env";
 import { hasCloudPublicConfig } from "./cloud/publicConfig";
+import { prepareBotStartup } from "./components/bots/botStartup";
 import { getRouter } from "./router";
 import {
   syncDocumentElectronPlatformClasses,
@@ -55,7 +56,7 @@ const managedAuthShellModule =
 
 export const startup = Promise.all([
   managedAuthShellModule?.then((module) => module.default) ?? null,
-  router.load(),
+  prepareBotStartup(history).then(() => router.load()),
 ])
   .then(([ManagedAuthShell]) => {
     // A route chunk failure still resolves router.load(): the error is parked in

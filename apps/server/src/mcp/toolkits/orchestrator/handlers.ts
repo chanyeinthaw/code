@@ -1,5 +1,5 @@
 import { OrchestratorMcpFailure } from "@t3tools/contracts";
-import { OrchestratorToolkit } from "./tools.ts";
+import { CreateThreadsToolkit, OrchestratorToolkit } from "./tools.ts";
 import * as Effect from "effect/Effect";
 
 import { readCaller } from "../../threadAccess.ts";
@@ -94,13 +94,6 @@ const handlers = {
       return yield* service.requestSecret(scope, input);
     }),
   ),
-  create_threads: McpToolAccess.actsAsCaller((input) =>
-    Effect.gen(function* () {
-      const scope = yield* McpInvocationContext.McpInvocationContext;
-      const service = yield* OrchestratorMcpService.OrchestratorMcpService;
-      return yield* service.createThreads(scope, input);
-    }),
-  ),
   t3_thread_list: McpToolAccess.reads((input) =>
     Effect.gen(function* () {
       const scope = yield* McpInvocationContext.McpInvocationContext;
@@ -152,3 +145,13 @@ const handlers = {
 } satisfies McpToolAccess.Handlers<typeof OrchestratorToolkit.tools>;
 
 export const layer = McpToolAccess.toLayer(OrchestratorToolkit, handlers);
+
+export const layerCreateThreads = McpToolAccess.toLayer(CreateThreadsToolkit, {
+  create_threads: McpToolAccess.actsAsCaller((input) =>
+    Effect.gen(function* () {
+      const scope = yield* McpInvocationContext.McpInvocationContext;
+      const service = yield* OrchestratorMcpService.OrchestratorMcpService;
+      return yield* service.createThreads(scope, input);
+    }),
+  ),
+});
