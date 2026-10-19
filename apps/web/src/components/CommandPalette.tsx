@@ -1,3 +1,5 @@
+import { useBotThreadContext, useBots } from "../state/bots";
+
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
 
@@ -525,6 +527,11 @@ function OpenCommandPaletteDialog(props: {
     useHandleNewThread();
   const paletteRouteTarget = useThreadRouteTarget();
   const projects = useProjects();
+  const bots = useBots();
+  const isBotThread =
+    useBotThreadContext(
+      activeThread ? scopeThreadRef(activeThread.environmentId, activeThread.id) : null,
+    ) !== null;
   const referenceThreadRef =
     pathname === "/pull-requests"
       ? environments.some(
@@ -1190,7 +1197,7 @@ function OpenCommandPaletteDialog(props: {
       projectPickerEntries.find((entry) => entry.isPreferred)?.group.displayName ??
       (currentProjectId ? (projectTitleById.get(currentProjectId) ?? null) : null);
 
-    if (activeProjectTitle) {
+    if (activeProjectTitle && !isBotThread) {
       actionItems.push({
         kind: "action",
         value: "action:new-thread",
@@ -1588,7 +1595,39 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  const botItems: CommandPaletteActionItem[] = bots
+    .filter((bot) => bot.status === "active")
+    .map((bot) => ({
+      kind: "action",
+      value: `bot:${bot.id}`,
+      title: bot.name,
+      description: environments.find((item) => item.environmentId === bot.ownerEnvironmentId)
+        ?.label,
+      searchTerms: [bot.name, "bot"],
+      icon: <MessageSquareIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({
+          to: "/bots/$environmentId/$threadId",
+          params: { environmentId: bot.ownerEnvironmentId, threadId: bot.threadId },
+        });
+      },
+    }));
+  if (isBotThread) {
+    actionItems.unshift({
+      kind: "action",
+      value: "action:manage-bots",
+      title: "Manage bots",
+      searchTerms: ["manage", "bots", "bot", "transfer", "create"],
+      icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({ to: "/settings/bots" });
+      },
+    });
+  }
   const rootGroups = buildRootGroups({ actionItems, recentThreadItems });
+  if (isBotThread) {
+    rootGroups.unshift({ value: "bots", label: "Bots", items: botItems });
+  }
   const settingsSearchItems: CommandPaletteActionItem[] = searchSettings(
     deferredQuery,
     availableSettingsSearchItems,

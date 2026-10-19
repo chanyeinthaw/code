@@ -52,6 +52,15 @@ export const ProviderAdapterV2RuntimePolicy = Schema.Struct({
   approvalPolicy: Schema.optional(Schema.Unknown),
   sandboxPolicy: Schema.optional(Schema.Unknown),
   reasoningEffort: Schema.optional(Schema.String),
+  botChat: Schema.optional(
+    Schema.Struct({
+      systemPrompt: Schema.String,
+      runId: RunId,
+      // Lets the provider load its own global and workspace instructions and skills.
+      loadResources: Schema.Boolean,
+    }),
+  ),
+  memoryContext: Schema.optional(Schema.Struct({ threadId: ThreadId, runId: RunId })),
 });
 export type ProviderAdapterV2RuntimePolicy = typeof ProviderAdapterV2RuntimePolicy.Type;
 

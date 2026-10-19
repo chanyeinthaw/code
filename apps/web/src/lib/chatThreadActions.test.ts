@@ -1,6 +1,20 @@
-import { ProviderInstanceId, type ModelSelection } from "@t3tools/contracts";
+import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import {
+  EnvironmentId,
+  BotId,
+  ProjectId,
+  ProviderInstanceId,
+  type ModelSelection,
+} from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
-import { resolveNewThreadModelSelectionOverride } from "./chatThreadActions";
+import {
+  resolveThreadActionProjectRef,
+  resolveNewThreadModelSelectionOverride,
+} from "./chatThreadActions";
+
+const ENVIRONMENT_ID = EnvironmentId.make("environment-1");
+const PROJECT_ID = ProjectId.make("project-1");
+const FALLBACK_PROJECT_ID = ProjectId.make("project-2");
 
 const PROJECT_DEFAULT_SELECTION: ModelSelection = {
   instanceId: ProviderInstanceId.make("codex"),
@@ -32,5 +46,20 @@ describe("chatThreadActions", () => {
         destinationDraftId: "draft-b",
       }),
     ).toEqual(PROJECT_DEFAULT_SELECTION);
+  });
+
+  it("uses an ordinary project for a new thread while viewing a memory", () => {
+    expect(
+      resolveThreadActionProjectRef({
+        handleNewThread: async () => {},
+        activeDraftThread: null,
+        activeThread: {
+          environmentId: ENVIRONMENT_ID,
+          projectId: PROJECT_ID,
+          botId: BotId.make("personal"),
+        },
+        defaultProjectRef: scopeProjectRef(ENVIRONMENT_ID, FALLBACK_PROJECT_ID),
+      }),
+    ).toEqual(scopeProjectRef(ENVIRONMENT_ID, FALLBACK_PROJECT_ID));
   });
 });

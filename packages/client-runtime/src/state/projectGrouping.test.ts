@@ -120,6 +120,21 @@ function settings(
 }
 
 describe("buildProjectGroups", () => {
+  it("keeps bot projects separate from each other and their enclosing repository", () => {
+    const projects = [
+      makeProject("ordinary", "/repo"),
+      makeProject("atlas", "/repo/bots/atlas", { isBot: true, title: "Atlas" }),
+      makeProject("sora-bot", "/repo/bots/sora", { isBot: true, title: "sora" }),
+    ];
+    const groups = buildProjectGroups({ projects, settings: settings("repository") });
+    expect(groups).toHaveLength(3);
+    expect(
+      groups.find((group) =>
+        group.members.some((member) => member.project.id === ProjectId.make("sora-bot")),
+      )?.label,
+    ).toBe("sora");
+  });
+
   it.each(["repository", "repository_path", "separate"] as const)(
     "keeps scratch project ownership separate by default in %s mode",
     (mode) => {

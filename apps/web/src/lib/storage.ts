@@ -13,7 +13,7 @@ export interface DeferredStorage<TValue> {
   flush: () => void;
 }
 
-export function createMemoryStorage(): StateStorage {
+export function createBotStorage(): StateStorage {
   const store = new Map<string, string>();
   return {
     getItem: (name) => store.get(name) ?? null,
@@ -39,7 +39,7 @@ function isStateStorage(
 }
 
 export function resolveStorage(storage: Partial<StateStorage> | null | undefined): StateStorage {
-  return isStateStorage(storage) ? storage : createMemoryStorage();
+  return isStateStorage(storage) ? storage : createBotStorage();
 }
 
 export function createDeferredStorage<TValue>(

@@ -1,3 +1,4 @@
+import type { NavigationSection } from "./navigation.logic";
 import { ThreadUndoShortcut } from "../AppSidebarLayout";
 import { useAtomValue } from "@effect/atom-react";
 import * as Schema from "effect/Schema";
@@ -33,6 +34,7 @@ import { SidebarBrandWidthProbe } from "../sidebar/SidebarChrome";
 import { AlternateSidebarHeader } from "./AlternateSidebarHeader";
 import { MainAppLocationTracker } from "../sidebar/mainAppLocation";
 import { useProjects } from "../../state/entities";
+import { useBots } from "../../state/bots";
 import {
   clampThreadSidebarWidth,
   resolveInitialThreadSidebarWidth,
@@ -192,11 +194,15 @@ function ProjectProjectionRetention() {
 export function AlternateSidebarFrame({
   children,
   threadSidebar,
+  botSidebar,
   navigationRail,
+  section,
 }: {
   children: ReactNode;
   threadSidebar: ReactNode;
+  botSidebar: ReactNode;
   navigationRail: ReactNode;
+  section: NavigationSection;
 }) {
   const navigate = useNavigate();
   const { active: panelAnimationsActive, durationMs: panelAnimationDurationMs } =
@@ -208,6 +214,9 @@ export function AlternateSidebarFrame({
   const panelAnimationsSuppressed = usePanelNavigationSuppression(pathname);
   const routePanelAnimationsActive = panelAnimationsActive && !panelAnimationsSuppressed;
   const isOnSettings = pathname === "/settings" || pathname.startsWith("/settings/");
+  const isBot = section === "bots";
+  const bots = useBots();
+  const showThreadSidebar = isOnSettings || !isBot || bots.length > 1;
   const [threadSidebarOpen, setThreadSidebarOpen] = useState(true);
   const isMacosDesktop = isElectron && isMacPlatform(navigator.platform);
   const [sidebarWidth, setSidebarWidth] = useState(readInitialThreadSidebarWidth);
@@ -246,7 +255,9 @@ export function AlternateSidebarFrame({
       ? {
           "--workspace-titlebar-content-left":
             isMacosDesktop && !isWindowFullscreen
-              ? "calc(var(--workspace-controls-left) + var(--workspace-titlebar-control-size) + var(--workspace-titlebar-control-gap) - 3rem)"
+              ? !showThreadSidebar
+                ? "calc(var(--workspace-controls-left) - 3rem)"
+                : "calc(var(--workspace-controls-left) + var(--workspace-titlebar-control-size) + var(--workspace-titlebar-control-gap) - 3rem)"
               : "0.75rem",
         }
       : {}),
@@ -280,21 +291,22 @@ export function AlternateSidebarFrame({
       <SidebarProvider
         className="h-dvh! min-h-0!"
         data-panel-animations={routePanelAnimationsActive ? "true" : "false"}
-        open={isOnSettings || threadSidebarOpen}
+        open={isOnSettings || (showThreadSidebar && threadSidebarOpen)}
         onOpenChange={(open) => {
-          if (!isOnSettings) setThreadSidebarOpen(open);
+          if (!isOnSettings && showThreadSidebar) setThreadSidebarOpen(open);
         }}
         style={sidebarProviderStyle}
       >
         {navigationRail}
         <SidebarBrandWidthProbe onWidthChange={setBrandWidth} />
         <ProjectProjectionRetention />
-        <Sidebar
+        {showThreadSidebar ? (
+          <Sidebar
             side="left"
             collapsible="offcanvas"
             data-app-sidebar=""
             role="navigation"
-            aria-label={isOnSettings ? "Settings" : "Threads"}
+            aria-label={isOnSettings ? "Settings" : isBot ? "Bots" : "Threads"}
             className={
               navigationRail
                 ? "left-12 group-data-[collapsible=offcanvas]:invisible group-data-[collapsible=offcanvas]:left-[calc(3rem-var(--sidebar-width))]"
@@ -332,13 +344,16 @@ export function AlternateSidebarFrame({
                 <AlternateSidebarHeader />
                 <SettingsSidebarNav pathname={pathname} />
               </>
+            ) : isBot ? (
+              botSidebar
             ) : (
               threadSidebar
             )}
             {!isOnSettings ? <SidebarRail onDoubleClick={resetSidebarWidth} /> : null}
           </Sidebar>
+        ) : null}
         {children}
-        {!isOnSettings ? (
+        {!isOnSettings && showThreadSidebar ? (
           <SidebarControl showButton={!navigationRail || (isMacosDesktop && !isWindowFullscreen)} />
         ) : null}
         <NavigationHistoryShortcuts />
