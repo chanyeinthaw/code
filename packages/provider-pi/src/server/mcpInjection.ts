@@ -9,6 +9,7 @@ import {
   T3_MCP_BEARER_ENV,
   T3_MCP_URL_ENV,
   T3_PI_RUNTIME_MODE_ENV,
+  T3_PI_MEMORY_CHAT_ENV,
   T3_PI_MCP_EXTENSION_PATH_ENV,
 } from "./mcpExtensionSource.ts";
 
@@ -283,6 +284,7 @@ export function buildPiRpcLaunch(input: {
   // These values belong to the current T3 session. Never let a Pi child reuse
   // credentials inherited from the server or a parent provider process.
   delete environment[T3_MCP_URL_ENV];
+  delete environment[T3_PI_MEMORY_CHAT_ENV];
   delete environment[T3_MCP_BEARER_ENV];
   delete environment[T3_PI_MCP_EXTENSION_PATH_ENV];
 
@@ -290,6 +292,9 @@ export function buildPiRpcLaunch(input: {
     args,
     env: {
       ...environment,
+      ...(hasT3Mcp && input.mcpSession?.memoryRunId !== undefined
+        ? { [T3_PI_MEMORY_CHAT_ENV]: "1" }
+        : {}),
       ...(hasT3Extension && input.extensionPath !== undefined
         ? { [T3_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
         : {}),

@@ -1,3 +1,5 @@
+import { buildMemorySystemPrompt } from "@t3tools/provider-core/server/memoryInstructions";
+import * as CodexMemoryPolicy from "../../provider/CodexMemoryPolicy.ts";
 import { revertCodexThread } from "../../provider/CodexThreadRevert.ts";
 import { historyResponseItems } from "@t3tools/provider-core/server/handoffBudget";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
@@ -113,7 +115,11 @@ import {
   shouldPersistProviderEvent,
 } from "../../provider/EventNdjsonLogger.ts";
 import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
-import { codexAppServerArgs, resolveCodexLaunchArgs } from "../../provider/codexLaunchArgs.ts";
+import {
+  codexAppServerArgs,
+  codexExecLaunchArgs,
+  resolveCodexLaunchArgs,
+} from "../../provider/codexLaunchArgs.ts";
 import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
 import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
@@ -148,6 +154,8 @@ import {
 } from "@t3tools/provider-core/server/subagentProjection";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+
+const encodeMemoryCatalogPath = Schema.encodeEffect(Schema.fromJsonString(Schema.String));
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 export const CODEX_DRIVER_KIND = CODEX_PROVIDER;
@@ -745,7 +753,7 @@ export function buildCodexTurnStartParams(input: {
         ? undefined
         : getCodexServiceTierOptionValue(input.modelSelection);
     const developerInstructions =
-      input.hasT3Mcp !== true
+      input.runtimePolicy.memoryChat !== undefined || input.hasT3Mcp !== true
         ? undefined
         : buildCodexDeveloperInstructions(input.runtimePolicy.interactionMode);
     // An app's context is text an MCP server wrote, so it goes in as untrusted
@@ -772,7 +780,8 @@ export function buildCodexTurnStartParams(input: {
         ? undefined
         : { ...t3Context, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
-      input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
+      input.runtimePolicy.memoryChat !== undefined ||
+      (input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined)
         ? undefined
         : {
             mode: input.runtimePolicy.interactionMode === "plan" ? "plan" : "default",
@@ -1304,13 +1313,29 @@ export function codexThreadRuntimeParams(input: {
   readonly cwd?: string;
   readonly model?: string;
   readonly config: Readonly<Record<string, Schema.Json>>;
+  readonly baseInstructions?: string;
+  readonly developerInstructions?: string;
+  readonly environments?: ReadonlyArray<never>;
 } {
   const { mcpSession } = input;
+  const memory = input.runtimePolicy?.memoryChat;
   return {
+    ...(memory === undefined
+      ? {}
+      : {
+          baseInstructions: buildMemorySystemPrompt({
+            memoryPrompt: memory.systemPrompt,
+            runtime: { harness: "Codex", model: input.modelSelection?.model },
+            mcpSession,
+          }),
+          developerInstructions: "",
+          environments: [],
+        }),
     ...(input.runtimePolicy?.cwd == null ? {} : { cwd: input.runtimePolicy.cwd }),
     ...(input.modelSelection === undefined ? {} : { model: input.modelSelection.model }),
     config: {
       ...CODEX_THREAD_CONFIG,
+      ...(memory === undefined ? {} : CodexMemoryPolicy.memoryThreadConfig),
       ...(mcpSession === undefined
         ? {}
         : {
@@ -1498,11 +1523,16 @@ function isSensitiveCodexProtocolKey(key: string): boolean {
 export const layerAppServerClientFactory: Layer.Layer<
   CodexAppServerClientFactory,
   never,
-  ChildProcessSpawner.ChildProcessSpawner | ProviderEventLoggers.ProviderEventLoggers
+  | ChildProcessSpawner.ChildProcessSpawner
+  | ProviderEventLoggers.ProviderEventLoggers
+  | FileSystem.FileSystem
+  | Path.Path
 > = Layer.effect(
   CodexAppServerClientFactory,
   Effect.gen(function* () {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const { native: nativeEventLogger } = yield* ProviderEventLoggers.ProviderEventLoggers;
     const agentScope = yield* AgentScope;
 
@@ -1514,11 +1544,61 @@ export const layerAppServerClientFactory: Layer.Layer<
             ...codexAppServerEnvironment(input.environment),
             ...(input.settings.homePath ? { CODEX_HOME: input.settings.homePath } : {}),
           };
+          const launchArgs = resolveCodexLaunchArgs(input.settings.launchArgs, input.environment);
+          const memoryArgs =
+            input.runtimePolicy.memoryChat === undefined
+              ? []
+              : yield* Effect.scoped(
+                  Effect.gen(function* () {
+                    const probe = yield* makeCodexAppServerSpawnCommand({
+                      command: input.settings.binaryPath || "codex",
+                      args: ["debug", "models", ...codexExecLaunchArgs(launchArgs)],
+                      env: environment,
+                      cwd: input.runtimePolicy.cwd ?? undefined,
+                      threadId: input.threadId,
+                    }).pipe(Effect.provideService(AgentScope, agentScope));
+                    const version = yield* makeCodexAppServerSpawnCommand({
+                      command: input.settings.binaryPath || "codex",
+                      args: ["--version"],
+                      env: environment,
+                      threadId: input.threadId,
+                    }).pipe(Effect.provideService(AgentScope, agentScope));
+                    const catalogPath = yield* CodexMemoryPolicy.prepareMemoryCatalog({
+                      version,
+                      catalog: probe,
+                    }).pipe(
+                      Effect.provideService(FileSystem.FileSystem, fs),
+                      Effect.provideService(Path.Path, path),
+                      Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+                      Effect.provideService(Scope.Scope, scope),
+                    );
+                    return [
+                      "-c",
+                      `model_catalog_json=${yield* encodeMemoryCatalogPath(catalogPath)}`,
+                      "-c",
+                      "features.code_mode=false",
+                      "-c",
+                      "features.code_mode_host=false",
+                      "-c",
+                      "features.multi_agent=false",
+                      "-c",
+                      "features.multi_agent_v2=false",
+                    ];
+                  }),
+                ).pipe(
+                  Effect.timeout("30 seconds"),
+                  Effect.mapError(
+                    (cause) =>
+                      new ProviderAdapter.ProviderAdapterOpenSessionError({
+                        driver: CODEX_PROVIDER,
+                        providerSessionId: input.providerSessionId,
+                        cause,
+                      }),
+                  ),
+                );
           const command = yield* makeCodexAppServerSpawnCommand({
             command: input.settings.binaryPath || "codex",
-            args: codexAppServerArgs(
-              resolveCodexLaunchArgs(input.settings.launchArgs, input.environment),
-            ),
+            args: [...codexAppServerArgs(launchArgs), ...memoryArgs],
             env: environment,
             threadId: input.threadId,
           }).pipe(Effect.provideService(AgentScope, agentScope));

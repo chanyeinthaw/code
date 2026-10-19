@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./memoryChat": {
+      "types": "./src/memoryChat.ts",
+      "import": "./src/memoryChat.ts"
+    },
     "./githubMarkdownLinks": {
       "types": "./src/githubMarkdownLinks.ts",
       "import": "./src/githubMarkdownLinks.ts"

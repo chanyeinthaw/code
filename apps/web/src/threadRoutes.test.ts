@@ -51,6 +51,11 @@ describe("threadRoutes", () => {
 
     expect(isThreadRoutePathname("/env-1/thread-1", ref)).toBe(true);
     expect(isThreadRoutePathname("/env-1/thread-1/", ref)).toBe(true);
+    expect(isThreadRoutePathname("/memory/env-1/thread-1", ref)).toBe(true);
+    expect(isThreadRoutePathname("/memory/env-1/thread-1/", ref)).toBe(true);
+    expect(isThreadRoutePathname("/memory/env-1/thread-2", ref)).toBe(false);
+    expect(isThreadRoutePathname("/memory/env-2/thread-1", ref)).toBe(false);
+    expect(isThreadRoutePathname("/memory/env-1/thread-1/extra", ref)).toBe(false);
     // A pending navigation away from the thread already shows these locations.
     expect(isThreadRoutePathname("/new", ref)).toBe(false);
     expect(isThreadRoutePathname("/env-1/thread-2", ref)).toBe(false);

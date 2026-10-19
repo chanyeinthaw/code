@@ -1,3 +1,5 @@
+import { memoryInput } from "../memory/MemoryInput.ts";
+import { MEMORY_CHAT_PROVIDER_DRIVERS } from "@t3tools/contracts";
 import { AgentScope } from "@t3tools/shared/AgentScope";
 import * as KeyedLock from "@t3tools/shared/KeyedLock";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
@@ -12,6 +14,7 @@ import {
   ProviderSessionId,
   ThreadId,
   type ProviderThreadId,
+  type RunId,
 } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
@@ -435,6 +438,7 @@ export const layerWithOptions = (
       const prepareMcpSession = (
         threadId: ThreadId,
         providerInstanceId: ProviderInstanceId,
+        memoryRunId?: RunId,
       ): Effect.Effect<PreparedMcpCredential> =>
         options.configureMcp === false
           ? mcpSessions
@@ -477,6 +481,7 @@ export const layerWithOptions = (
                     resolved !== undefined &&
                     resolved.thread.threadId === threadId &&
                     resolved.thread.providerInstanceId === providerInstanceId &&
+                    resolved.thread.memoryRunId === memoryRunId &&
                     resolved.capabilities.has("preview") === browserToolsAvailable &&
                     resolved.capabilities.has("device") === deviceToolsAvailable
                   ) {
@@ -490,6 +495,7 @@ export const layerWithOptions = (
                   providerInstanceId,
                   browserToolsAvailable,
                   capabilities,
+                  ...(memoryRunId === undefined ? {} : { memoryRunId }),
                 });
                 yield* mcpSessions.set(credential.config);
                 reserveMcpCredential(threadId, credential.config.providerSessionId);
@@ -1705,6 +1711,7 @@ export const layerWithOptions = (
         eventSubscribers: Ref.Ref<
           ReadonlyMap<number, Queue.Queue<ProviderSessionEventSignal, Cause.Done>>
         >,
+        memoryChat: boolean,
       ): ProviderAdapter.ProviderAdapterV2SessionRuntime => {
         const providerSessionId = runtime.providerSessionId;
         const subscribeEvents = makeEventSubscription(eventSubscribers);
@@ -1863,7 +1870,21 @@ export const layerWithOptions = (
             ),
           steerTurn: (input) =>
             observeActivity(providerSessionId, touchActivity(providerSessionId)).pipe(
-              Effect.andThen(runtime.steerTurn(input).pipe(turnMetrics("steer"))),
+              Effect.andThen(
+                runtime
+                  .steerTurn(
+                    memoryChat
+                      ? {
+                          ...input,
+                          message: {
+                            ...input.message,
+                            ...memoryInput(input.message.text, input.message.attachments),
+                          },
+                        }
+                      : input,
+                  )
+                  .pipe(turnMetrics("steer")),
+              ),
             ),
           interruptTurn: (input) =>
             observeActivity(providerSessionId, touchActivity(providerSessionId)).pipe(
@@ -2112,9 +2133,20 @@ export const layerWithOptions = (
                     }),
                 ),
               );
+              if (
+                input.runtimePolicy.memoryChat !== undefined &&
+                !MEMORY_CHAT_PROVIDER_DRIVERS.has(adapter.driver)
+              )
+                return yield* new ProviderSessionOpenError({
+                  instanceId: input.modelSelection.instanceId,
+                  providerSessionId: input.providerSessionId,
+                  cause:
+                    "This provider does not support memory chat's system prompt and built-in tool policy.",
+                });
               const prepared = yield* prepareMcpSession(
                 input.threadId,
                 input.modelSelection.instanceId,
+                input.runtimePolicy.memoryChat?.runId,
               );
               const mcpCredentialId = prepared.mcpCredentialId;
               let reservationDropped = mcpCredentialId === undefined;
@@ -2182,7 +2214,11 @@ export const layerWithOptions = (
               const eventSubscribers = yield* Ref.make<
                 ReadonlyMap<number, Queue.Queue<ProviderSessionEventSignal, Cause.Done>>
               >(new Map());
-              const exposedRuntime = decorateRuntime(runtime, eventSubscribers);
+              const exposedRuntime = decorateRuntime(
+                runtime,
+                eventSubscribers,
+                input.runtimePolicy.memoryChat !== undefined,
+              );
               const now = yield* Clock.currentTimeMillis;
               const entry: LiveSessionEntry = {
                 attachedThreadIds: new Set([input.threadId]),

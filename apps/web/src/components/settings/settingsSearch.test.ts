@@ -45,6 +45,15 @@ const ITEMS: ReadonlyArray<SettingsSearchItem> = [
 ];
 
 describe("searchSettings", () => {
+  it.each(["memory-compaction-model", "memory-compaction-concurrency"])(
+    "opens %s in Memory settings",
+    (id) => {
+      expect(SETTINGS_SEARCH_ITEMS.find((item) => item.id === id)).toMatchObject({
+        to: "/settings/memory",
+        scope: "environment-defaults",
+      });
+    },
+  );
   it.each(["OTel", "OTLP", "telemetry export", "Grafana"])(
     "finds environment telemetry settings for %s",
     (query) => {

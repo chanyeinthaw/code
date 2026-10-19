@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
-import { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ProviderInstanceId, RunId, ThreadId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import { HttpServer } from "effect/http";
 import * as NetAddress from "effect/net/NetAddress";
@@ -176,5 +176,32 @@ it.effect("does not keep credentials of other threads alive", () =>
     timestamp += 2;
 
     expect(yield* registry.resolve(token)).toBeUndefined();
+  }),
+);
+
+it.effect("binds each memory credential to its turn and the memory-only endpoint", () =>
+  Effect.gen(function* () {
+    const registry = yield* makeRegistry(() => 1_000);
+    const threadId = ThreadId.make("memory-thread");
+    const first = yield* registry.issue({
+      threadId,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      memoryRunId: RunId.make("turn-one"),
+    });
+    const second = yield* registry.issue({
+      threadId,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      memoryRunId: RunId.make("turn-two"),
+    });
+    expect(first.config.endpoint).toBe("http://127.0.0.1:43123/memory-mcp");
+    expect(first.config.authorizationHeader).not.toBe(second.config.authorizationHeader);
+    const resolve = (header: string) => registry.resolve(header.replace(/^Bearer\s+/, ""));
+    expect((yield* resolve(first.config.authorizationHeader))?.thread.memoryRunId).toBe("turn-one");
+    expect((yield* resolve(second.config.authorizationHeader))?.thread.memoryRunId).toBe(
+      "turn-two",
+    );
+    yield* registry.revokeThread(threadId);
+    expect(yield* resolve(first.config.authorizationHeader)).toBeUndefined();
+    expect(yield* resolve(second.config.authorizationHeader)).toBeUndefined();
   }),
 );

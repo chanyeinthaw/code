@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import ChatView from "./ChatView";
+import { MemoryThreadRouteBoundary } from "./memory/MemoryThreadRouteBoundary";
 import { resolveDraftPromotionNavigationTarget, threadHasStarted } from "./ChatView.logic";
 import { waitForDraftHeroTransition } from "./chat/draftHeroTransition";
 import { SidebarInset } from "./ui/sidebar";
@@ -175,8 +176,10 @@ export function ThreadRouteView({ target }: { target: ThreadRouteTarget }) {
   }
 
   return (
-    <SidebarInset className="h-svh min-h-0 overflow-hidden overscroll-y-none md:h-dvh">
-      {view}
-    </SidebarInset>
+    <MemoryThreadRouteBoundary threadRef={target.kind === "server" ? target.threadRef : null}>
+      <SidebarInset className="h-svh min-h-0 overflow-hidden overscroll-y-none md:h-dvh">
+        {view}
+      </SidebarInset>
+    </MemoryThreadRouteBoundary>
   );
 }

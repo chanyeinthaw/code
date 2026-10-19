@@ -2,6 +2,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import {
   CommandId,
+  MemoryId,
   EnvironmentId,
   NodeId,
   type OrchestrationV2ThreadShell,
@@ -1156,11 +1157,20 @@ describe("OrchestratorMcpService provider resolution", () => {
     }),
   );
 
-  it.effect(
-    "delegates to an Antigravity instance whose adapter resolves through the registry",
-    () =>
+  it.effect.each([false, true])(
+    "delegates to an Antigravity instance with memory coordinator=%s",
+    (memoryCoordinator) =>
       Effect.gen(function* () {
         let delegated = false;
+        const memoryParent = (tasks: Parameters<typeof parentProjection>[0]) => {
+          const projection = parentProjection(tasks);
+          return memoryCoordinator
+            ? {
+                ...projection,
+                thread: { ...projection.thread, memoryIdentityId: MemoryId.make("coordinator") },
+              }
+            : projection;
+        };
         const task = {
           id: taskId,
           threadId: parentThreadId,
@@ -1190,7 +1200,7 @@ describe("OrchestratorMcpService provider resolution", () => {
             getThreadRecords: (threadId) =>
               Effect.succeed(
                 threadId === parentThreadId
-                  ? parentProjection(delegated ? [task] : [])
+                  ? memoryParent(delegated ? [task] : [])
                   : childProjection,
               ),
             dispatch: (command) =>

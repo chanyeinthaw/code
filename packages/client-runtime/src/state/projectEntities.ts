@@ -106,7 +106,7 @@ export function createEnvironmentProjectAtoms(input: {
   const projectsAtom = Atom.make((get) => {
     const next = get(projectRefsAtom).flatMap((ref) => {
       const project = get(projectAtomFamily(projectKey(ref)));
-      return project === null ? [] : [project];
+      return project === null || project.isMemory ? [] : [project];
     });
     if (arrayElementsEqual(previousProjects, next)) {
       return previousProjects;

@@ -1147,3 +1147,27 @@ describe("synchronized model preferences", () => {
     });
   });
 });
+
+describe("memory compaction model settings", () => {
+  it("replaces old options when choosing a model and allows restoring inheritance", () => {
+    const configured = {
+      ...DEFAULT_SERVER_SETTINGS,
+      memoryCompactionModelSelection: createModelSelection(
+        ProviderInstanceId.make("codex"),
+        "old",
+        [{ id: "reasoningEffort", value: "high" }],
+      ),
+    };
+    const changed = applyServerSettingsPatch(configured, {
+      memoryCompactionModelSelection: { model: "new" },
+    });
+    expect(changed.memoryCompactionModelSelection).toEqual({ instanceId: "codex", model: "new" });
+    expect(
+      applyServerSettingsPatch(changed, { memoryCompactionModelSelection: null })
+        .memoryCompactionModelSelection,
+    ).toBeNull();
+    expect(applyServerSettingsPatch(configured, {}).memoryCompactionModelSelection).toEqual(
+      configured.memoryCompactionModelSelection,
+    );
+  });
+});

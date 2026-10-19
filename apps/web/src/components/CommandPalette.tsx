@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemoryThreadContext, useMemories } from "../state/memories";
+
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
 
@@ -747,6 +749,11 @@ function OpenCommandPaletteDialog(props: {
     useHandleNewThread();
   const paletteRouteTarget = useThreadRouteTarget();
   const projects = useProjects();
+  const memories = useMemories();
+  const isMemoryThread =
+    useMemoryThreadContext(
+      activeThread ? scopeThreadRef(activeThread.environmentId, activeThread.id) : null,
+    ) !== null;
   const referenceThreadRef =
     pathname === "/pull-requests"
       ? environments.some(
@@ -1584,7 +1591,7 @@ function OpenCommandPaletteDialog(props: {
       projectPickerEntries.find((entry) => entry.isPreferred)?.group.displayName ??
       (currentProjectId ? (projectTitleById.get(currentProjectId) ?? null) : null);
 
-    if (activeProjectTitle) {
+    if (activeProjectTitle && !isMemoryThread) {
       actionItems.push({
         kind: "action",
         value: "action:new-thread",
@@ -2087,7 +2094,39 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
+  const memoryItems: CommandPaletteActionItem[] = memories
+    .filter((memory) => memory.status === "active")
+    .map((memory) => ({
+      kind: "action",
+      value: `memory:${memory.id}`,
+      title: memory.name,
+      description: environments.find((item) => item.environmentId === memory.ownerEnvironmentId)
+        ?.label,
+      searchTerms: [memory.name, "memory"],
+      icon: <MessageSquareIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({
+          to: "/memory/$environmentId/$threadId",
+          params: { environmentId: memory.ownerEnvironmentId, threadId: memory.threadId },
+        });
+      },
+    }));
+  if (isMemoryThread) {
+    actionItems.unshift({
+      kind: "action",
+      value: "action:manage-memories",
+      title: "Manage memories",
+      searchTerms: ["manage", "memories", "memory", "transfer", "create"],
+      icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({ to: "/settings/memory" });
+      },
+    });
+  }
   const rootGroups = buildRootGroups({ actionItems, recentThreadItems });
+  if (isMemoryThread) {
+    rootGroups.unshift({ value: "memories", label: "Memories", items: memoryItems });
+  }
   const settingsSearchItems: CommandPaletteActionItem[] = searchSettings(
     deferredQuery,
     availableSettingsSearchItems,

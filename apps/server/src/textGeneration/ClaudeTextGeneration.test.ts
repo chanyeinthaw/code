@@ -62,6 +62,7 @@ function withFakeClaudeEnv<A, E, R>(
     configDirMustBe?: string;
     cwdMustNotBe?: string;
     claudeConfig?: Partial<ClaudeSettings>;
+    managedMcp?: boolean;
   },
   effectFn: (textGeneration: TextGeneration.TextGeneration["Service"]) => Effect.Effect<A, E, R>,
 ) {
@@ -71,6 +72,7 @@ function withFakeClaudeEnv<A, E, R>(
     const binDir = yield* makeFakeClaudeBinary(tempDir);
     const pathDelimiter = (yield* HostProcess.isWindows) ? ";" : ":";
     const previousPath = process.env.PATH;
+    const previousManagedMcp = process.env.T3_FAKE_CLAUDE_MANAGED_MCP;
     const previousOutput = process.env.T3_FAKE_CLAUDE_OUTPUT;
     const previousExitCode = process.env.T3_FAKE_CLAUDE_EXIT_CODE;
     const previousStderr = process.env.T3_FAKE_CLAUDE_STDERR;
@@ -84,6 +86,7 @@ function withFakeClaudeEnv<A, E, R>(
       Effect.sync(() => {
         process.env.PATH = `${binDir}${pathDelimiter}${previousPath ?? ""}`;
         process.env.T3_FAKE_CLAUDE_OUTPUT = input.output;
+        process.env.T3_FAKE_CLAUDE_MANAGED_MCP = input.managedMcp ? "1" : "0";
 
         if (input.exitCode !== undefined) {
           process.env.T3_FAKE_CLAUDE_EXIT_CODE = String(input.exitCode);
@@ -130,6 +133,8 @@ function withFakeClaudeEnv<A, E, R>(
       () =>
         Effect.sync(() => {
           process.env.PATH = previousPath;
+          if (previousManagedMcp === undefined) delete process.env.T3_FAKE_CLAUDE_MANAGED_MCP;
+          else process.env.T3_FAKE_CLAUDE_MANAGED_MCP = previousManagedMcp;
 
           if (previousOutput === undefined) {
             delete process.env.T3_FAKE_CLAUDE_OUTPUT;
@@ -192,6 +197,57 @@ function withFakeClaudeEnv<A, E, R>(
 }
 
 it.layer(layerClaudeTextGenerationTest)("ClaudeTextGeneration", (it) => {
+  it.effect("compacts memory with an empty tool set and no native MCP", () =>
+    withFakeClaudeEnv(
+      { output: JSON.stringify({ structured_output: { summary: "Retained context" } }) },
+      (generation) =>
+        Effect.gen(function* () {
+          if (!generation.generateMemorySummary)
+            return yield* Effect.die("Missing summary operation");
+          const result = yield* generation.generateMemorySummary({
+            cwd: process.cwd(),
+            instructions: "Summarize",
+            context: "Context",
+            task: "Compact",
+            modelSelection: { instanceId: ProviderInstanceId.make("claude"), model: "sonnet" },
+          });
+          expect(result).toBe("Retained context");
+        }),
+    ),
+  );
+
+  it.effect("continues compaction with its no-tools prompt when Claude has managed MCP", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* withFakeClaudeEnv(
+        {
+          output: JSON.stringify({ structured_output: { summary: "Retained context" } }),
+          managedMcp: true,
+          argsMustNotContain: "--strict-mcp-config",
+          stdinMustContain: "Call no tools.",
+        },
+        (generation) =>
+          Effect.gen(function* () {
+            if (!generation.generateMemorySummary)
+              return yield* Effect.die("Missing summary operation");
+            const result = yield* generation.generateMemorySummary({
+              cwd: process.cwd(),
+              instructions: "Summarize. Call no tools.",
+              context: "Context",
+              task: "Compact",
+              modelSelection: { instanceId: ProviderInstanceId.make("claude"), model: "sonnet" },
+            });
+            expect(result).toBe("Retained context");
+          }),
+      ).pipe(
+        Effect.provideService(FileSystem.FileSystem, {
+          ...fs,
+          exists: (path) =>
+            path.endsWith("managed-mcp.json") ? Effect.succeed(true) : fs.exists(path),
+        }),
+      );
+    }),
+  );
   it.effect("forwards Claude thinking settings without passing unsupported effort", () =>
     withFakeClaudeEnv(
       {

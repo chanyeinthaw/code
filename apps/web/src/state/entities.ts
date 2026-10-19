@@ -379,6 +379,8 @@ export function selectThreadRelationshipShells(
   );
 }
 
+const EMPTY_RELATIONSHIP_SHELLS_ATOM = Atom.make<ReadonlyArray<OrchestrationV2ThreadShell>>([]);
+
 const relationshipShellsAtomFamily = Atom.family((key: string) => {
   const ref = parseThreadKey(key);
   let previous: ReadonlyArray<OrchestrationV2ThreadShell> = [];
@@ -395,7 +397,9 @@ const relationshipShellsAtomFamily = Atom.family((key: string) => {
 });
 
 export function useThreadRelationshipShells(
-  ref: ScopedThreadRef,
+  ref: ScopedThreadRef | null,
 ): ReadonlyArray<OrchestrationV2ThreadShell> {
-  return useAtomValue(relationshipShellsAtomFamily(threadKey(ref)));
+  return useAtomValue(
+    ref ? relationshipShellsAtomFamily(threadKey(ref)) : EMPTY_RELATIONSHIP_SHELLS_ATOM,
+  );
 }

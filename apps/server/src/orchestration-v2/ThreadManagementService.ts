@@ -756,7 +756,11 @@ const make = Effect.gen(function* () {
           threadId: input.threadId,
         });
       }
-      const steerableRun = latestSteerableRun(target);
+      const steerableRun =
+        latestSteerableRun(target) ??
+        (input.mode === "steer" && target.thread.memoryIdentityId !== undefined
+          ? target.runs.findLast((run) => run.status === "preparing" || run.status === "starting")
+          : undefined);
       let dispatchMode: Extract<
         OrchestrationV2Command,
         { readonly type: "message.dispatch" }

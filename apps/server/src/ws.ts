@@ -1,3 +1,5 @@
+import { WsMemoryRpcGroup } from "@t3tools/contracts";
+import * as MemoryChat from "./memory/MemoryChat.ts";
 import { OrchestrationDispatchCommandError } from "@t3tools/contracts";
 import * as Crypto from "effect/Crypto";
 import * as Orchestrator from "./orchestration-v2/Orchestrator.ts";
@@ -544,6 +546,46 @@ const PROVIDER_STATUS_DEBOUNCE_MS = 200;
 
 // Middleware added later wraps middleware added earlier, so instrumentation wraps authorization.
 const ServerWsRpcGroup = WsRpcGroup.middleware(RpcInstrumentation);
+const ServerMemoryRpcGroup = WsMemoryRpcGroup.middleware(RpcInstrumentation);
+const ServerMainRpcGroup = ServerWsRpcGroup.omit(
+  WS_METHODS.memoriesList,
+  WS_METHODS.memoriesCreate,
+  WS_METHODS.memoriesReset,
+  WS_METHODS.memoriesDelete,
+  WS_METHODS.memoriesTransferBegin,
+  WS_METHODS.memoriesTransferRead,
+  WS_METHODS.memoriesTransferWrite,
+  WS_METHODS.memoriesTransferStage,
+  WS_METHODS.memoriesTransferRelease,
+  WS_METHODS.memoriesTransferActivate,
+  WS_METHODS.memoriesTransferCancel,
+);
+const layerMemoryRpc = ServerMemoryRpcGroup.toLayer(
+  Effect.gen(function* () {
+    const memories = yield* MemoryChat.MemoryChat;
+    return ServerMemoryRpcGroup.of({
+      [WS_METHODS.memoriesList]: () => memories.list(),
+      [WS_METHODS.memoriesCreate]: (input) => memories.create(input),
+      [WS_METHODS.memoriesReset]: (input) => memories.reset(input.memoryId),
+      [WS_METHODS.memoriesDelete]: (input) => memories.remove(input.memoryId),
+      [WS_METHODS.memoriesTransferBegin]: (input) =>
+        memories.beginTransfer(input.memoryId, input.destinationEnvironmentId),
+      [WS_METHODS.memoriesTransferRead]: (input) =>
+        memories.readTransferChunk(input.memoryId, input.transferId, input.offset),
+      [WS_METHODS.memoriesTransferWrite]: (input) =>
+        memories.writeTransferChunk(input.transferId, input.offset, input.data),
+      [WS_METHODS.memoriesTransferStage]: (input) =>
+        memories.stageTransfer(input.transferId, input.length),
+      [WS_METHODS.memoriesTransferRelease]: (input) =>
+        memories.releaseTransfer(input.memoryId, input.transferId),
+      [WS_METHODS.memoriesTransferActivate]: (input) =>
+        memories.activateTransfer(input.memoryId, input.transferId, input.secret),
+      [WS_METHODS.memoriesTransferCancel]: (input) =>
+        memories.cancelTransfer(input.memoryId, input.transferId),
+    });
+  }),
+);
+
 // Replaying each intervening event costs a shell refetch; past this gap a
 // single O(active-threads) snapshot is cheaper and bounded.
 const SHELL_RESUME_MAX_GAP = 1_000;
@@ -1165,7 +1207,7 @@ const layerWsRpc = (
   previewAutomationBroker: PreviewAutomationBroker.PreviewAutomationBroker["Service"],
   serverBrowser: ServerBrowser.ServerBrowser["Service"],
 ) =>
-  ServerWsRpcGroup.toLayer(
+  ServerMainRpcGroup.toLayer(
     Effect.gen(function* () {
       const currentSessionId = currentSession.sessionId;
       const sql = yield* SqlClient.SqlClient;
@@ -1788,7 +1830,7 @@ const layerWsRpc = (
         return result;
       });
 
-      const handlers = ServerWsRpcGroup.of({
+      const handlers = ServerMainRpcGroup.of({
         [ORCHESTRATION_V2_WS_METHODS.dispatchCommand]: (command) =>
           Effect.annotateCurrentSpan({
             "orchestration_v2.command_id": command.commandId,
@@ -2027,6 +2069,7 @@ const layerWsRpc = (
               Effect.as(commandOutputHub.subscribe(input)),
             ),
           ),
+
         [WS_METHODS.scheduledTasksList]: (_input) =>
           scheduledTasks.list().pipe(Effect.map(withVisibleWebhookUrls)),
         [WS_METHODS.scheduledTasksSubscribe]: (_input) =>
@@ -3075,7 +3118,7 @@ const layerWsRpc = (
       });
       return handlers;
     }),
-  );
+  ).pipe(Layer.merge(layerMemoryRpc));
 
 // RpcServer's default sends a socket-level Defect frame instead, and the client
 // ends every pending request on the socket with it.
