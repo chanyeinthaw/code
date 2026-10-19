@@ -9,6 +9,7 @@ import {
   T3_MCP_BEARER_ENV,
   T3_MCP_URL_ENV,
   T3_PI_RUNTIME_MODE_ENV,
+  T3_PI_MEMORY_CHAT_ENV,
   T3_PI_MCP_EXTENSION_PATH_ENV,
 } from "./mcpExtensionSource.ts";
 
@@ -197,6 +198,46 @@ function withoutExplicitExtensions(args: ReadonlyArray<string>): ReadonlyArray<s
   return filtered;
 }
 
+function withoutPiFlags(args: ReadonlyArray<string>, flags: ReadonlySet<string>) {
+  const filtered: string[] = [];
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (flags.has(arg)) {
+      index++;
+      continue;
+    }
+    if (flags.has(arg.split("=", 1)[0]!)) continue;
+    filtered.push(arg);
+  }
+  return filtered;
+}
+
+const PI_SYSTEM_PROMPT_FLAGS = new Set(["--system-prompt", "--append-system-prompt"]);
+
+export function withoutPiPromptResources(args: ReadonlyArray<string>): ReadonlyArray<string> {
+  return withoutPiFlags(args, new Set(["--skill", "--prompt-template", ...PI_SYSTEM_PROMPT_FLAGS]));
+}
+
+/**
+ * Launch arguments for a root bot reply. The bot's own prompt always replaces the system prompt;
+ * context files, skills, and prompt templates load only when the bot opts in.
+ */
+export function piBotLaunchArgs(
+  args: ReadonlyArray<string>,
+  bot: { readonly loadResources: boolean; readonly systemPrompt: string },
+): ReadonlyArray<string> {
+  return [
+    ...(bot.loadResources
+      ? withoutPiFlags(args, PI_SYSTEM_PROMPT_FLAGS)
+      : withoutPiPromptResources(args)),
+    "--no-builtin-tools",
+    ...(bot.loadResources ? [] : ["--no-context-files", "--no-skills", "--no-prompt-templates"]),
+    "--system-prompt",
+    bot.systemPrompt,
+  ];
+}
+
 function withoutToolSelectionArgs(args: ReadonlyArray<string>): ReadonlyArray<string> {
   const filtered: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
@@ -288,6 +329,7 @@ export function buildPiRpcLaunch(input: {
   // These values belong to the current T3 session. Never let a Pi child reuse
   // credentials inherited from the server or a parent provider process.
   delete environment[T3_MCP_URL_ENV];
+  delete environment[T3_PI_MEMORY_CHAT_ENV];
   delete environment[T3_MCP_BEARER_ENV];
   delete environment[T3_PI_MCP_EXTENSION_PATH_ENV];
 
@@ -295,6 +337,11 @@ export function buildPiRpcLaunch(input: {
     args,
     env: {
       ...environment,
+      ...(hasT3Mcp &&
+      input.mcpSession?.botRunId !== undefined &&
+      input.mcpSession.botThreadId === undefined
+        ? { [T3_PI_MEMORY_CHAT_ENV]: "1" }
+        : {}),
       ...(hasT3Extension && input.extensionPath !== undefined
         ? { [T3_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
         : {}),

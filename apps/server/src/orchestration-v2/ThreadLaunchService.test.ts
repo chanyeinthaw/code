@@ -1660,6 +1660,33 @@ it.effect("schedules an accepted preparing message exactly once across concurren
   }),
 );
 
+it.effect("records the launching thread on the launched thread and its shell", () => {
+  const harness = makeHarness();
+  return Effect.gen(function* () {
+    const launches = yield* ThreadLaunch.ThreadLaunchService;
+    const threads = yield* ThreadManagement.ThreadManagementService;
+    const launcher = ThreadId.make("thread:launch:launcher");
+    const input = {
+      ...launchInput({
+        command: "command:launch:launched-by",
+        thread: "thread:launch:launched-by",
+      }),
+      launchedByThreadId: launcher,
+    };
+
+    const launched = yield* launches.launch(input);
+
+    assert.equal(launched.projection.thread.launchedByThreadId, launcher);
+    assert.deepEqual(launched.projection.thread.lineage, {
+      parentThreadId: null,
+      relationshipToParent: null,
+      rootThreadId: launched.threadId,
+    });
+    const shell = yield* threads.getThreadShell(launched.threadId);
+    assert.equal(shell?.launchedByThreadId, launcher);
+  }).pipe(Effect.provide(harness.layer));
+});
+
 it.effect("creates a strong provider-thread mapping for an imported native session", () => {
   const harness = makeHarness();
   return Effect.gen(function* () {

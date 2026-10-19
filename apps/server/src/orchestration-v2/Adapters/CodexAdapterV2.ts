@@ -1,3 +1,5 @@
+import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
+import * as CodexBotPolicy from "../../provider/CodexBotPolicy.ts";
 import { revertCodexThread } from "../../provider/CodexThreadRevert.ts";
 import { historyResponseItems } from "@t3tools/provider-core/server/handoffBudget";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
@@ -115,7 +117,11 @@ import {
   shouldPersistProviderEvent,
 } from "../../provider/EventNdjsonLogger.ts";
 import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
-import { codexAppServerArgs, resolveCodexLaunchArgs } from "../../provider/codexLaunchArgs.ts";
+import {
+  codexAppServerArgs,
+  codexExecLaunchArgs,
+  resolveCodexLaunchArgs,
+} from "../../provider/codexLaunchArgs.ts";
 import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
 import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
 import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
@@ -150,6 +156,8 @@ import {
 } from "@t3tools/provider-core/server/subagentProjection";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+
+const encodeBotCatalogPath = Schema.encodeEffect(Schema.fromJsonString(Schema.String));
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 export const CODEX_DRIVER_KIND = CODEX_PROVIDER;
@@ -748,7 +756,7 @@ export const buildCodexTurnStartParams = Effect.fn("CodexAdapterV2.buildCodexTur
         ? undefined
         : getCodexServiceTierOptionValue(input.modelSelection);
     const developerInstructions =
-      input.hasT3Mcp !== true
+      input.runtimePolicy.botChat !== undefined || input.hasT3Mcp !== true
         ? undefined
         : buildCodexDeveloperInstructions(input.runtimePolicy.interactionMode);
     // An app's context is text an MCP server wrote, so it goes in as untrusted
@@ -775,7 +783,8 @@ export const buildCodexTurnStartParams = Effect.fn("CodexAdapterV2.buildCodexTur
         ? undefined
         : { ...t3Context, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
-      input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
+      input.runtimePolicy.botChat !== undefined ||
+      (input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined)
         ? undefined
         : {
             mode: input.runtimePolicy.interactionMode === "plan" ? "plan" : "default",
@@ -1346,7 +1355,7 @@ export const CODEX_THREAD_CONFIG = {
 // that limit so the server's own wait timeout ends a long call.
 const CODEX_T3_MCP_TOOL_TIMEOUT_SEC = 65 * 60;
 
-function codexThreadRuntimeParams(input: {
+export function codexThreadRuntimeParams(input: {
   readonly mcpSession: McpProviderSession.McpProviderSessionConfig | undefined;
   readonly modelSelection?: { readonly model: string };
   readonly runtimePolicy?: ProviderAdapter.ProviderAdapterV2RuntimePolicy;
@@ -1354,13 +1363,29 @@ function codexThreadRuntimeParams(input: {
   readonly cwd?: string;
   readonly model?: string;
   readonly config: Readonly<Record<string, Schema.Json>>;
+  readonly baseInstructions?: string;
+  readonly developerInstructions?: string;
+  readonly environments?: ReadonlyArray<never>;
 } {
   const { mcpSession } = input;
+  const bot = input.runtimePolicy?.botChat;
   return {
+    ...(bot === undefined
+      ? {}
+      : {
+          baseInstructions: buildBotSystemPrompt({
+            botPrompt: bot.systemPrompt,
+            runtime: { harness: "Codex", model: input.modelSelection?.model },
+            mcpSession,
+          }),
+          developerInstructions: "",
+          environments: [],
+        }),
     ...(input.runtimePolicy?.cwd == null ? {} : { cwd: input.runtimePolicy.cwd }),
     ...(input.modelSelection === undefined ? {} : { model: input.modelSelection.model }),
     config: {
       ...CODEX_THREAD_CONFIG,
+      ...(bot === undefined ? {} : CodexBotPolicy.botRootThreadConfig(bot.loadResources)),
       ...(mcpSession === undefined
         ? {}
         : {
@@ -1547,13 +1572,20 @@ function isSensitiveCodexProtocolKey(key: string): boolean {
 export const layerAppServerClientFactory: Layer.Layer<
   CodexAppServerClientFactory,
   never,
-  ChildProcessSpawner.ChildProcessSpawner | ProviderEventLoggers.ProviderEventLoggers
+  | ChildProcessSpawner.ChildProcessSpawner
+  | ProviderEventLoggers.ProviderEventLoggers
+  | FileSystem.FileSystem
+  | Path.Path
+  | ServerConfig
 > = Layer.effect(
   CodexAppServerClientFactory,
   Effect.gen(function* () {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const { native: nativeEventLogger } = yield* ProviderEventLoggers.ProviderEventLoggers;
     const agentScope = yield* AgentScope;
+    const serverConfig = yield* ServerConfig;
 
     return CodexAppServerClientFactory.of({
       open: Effect.fn("CodexAdapterV2.open")(function* (input) {
@@ -1562,12 +1594,81 @@ export const layerAppServerClientFactory: Layer.Layer<
           ...codexAppServerEnvironment(input.environment),
           ...(input.settings.homePath ? { CODEX_HOME: input.settings.homePath } : {}),
         };
+        const launchArgs = resolveCodexLaunchArgs(input.settings.launchArgs, input.environment);
+        const bot = input.runtimePolicy.botChat;
+        const botArgs =
+          bot === undefined
+            ? []
+            : yield* Effect.scoped(
+                Effect.gen(function* () {
+                  const probe = yield* makeCodexAppServerSpawnCommand({
+                    command: input.settings.binaryPath || "codex",
+                    args: ["debug", "models", ...codexExecLaunchArgs(launchArgs)],
+                    env: environment,
+                    cwd: input.runtimePolicy.cwd ?? undefined,
+                    threadId: input.threadId,
+                  }).pipe(Effect.provideService(AgentScope, agentScope));
+                  const version = yield* makeCodexAppServerSpawnCommand({
+                    command: input.settings.binaryPath || "codex",
+                    args: ["--version"],
+                    env: environment,
+                    threadId: input.threadId,
+                  }).pipe(Effect.provideService(AgentScope, agentScope));
+                  const catalogPath = yield* CodexBotPolicy.prepareBotCatalog({
+                    version,
+                    catalog: probe,
+                  }).pipe(
+                    Effect.provideService(FileSystem.FileSystem, fs),
+                    Effect.provideService(Path.Path, path),
+                    Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+                    Effect.provideService(Scope.Scope, scope),
+                  );
+                  // Codex discovers global resources before thread/start applies overrides.
+                  return [
+                    "-c",
+                    `model_catalog_json=${yield* encodeBotCatalogPath(catalogPath)}`,
+                    ...Object.entries(
+                      CodexBotPolicy.botRootThreadConfig(bot.loadResources),
+                    ).flatMap(([key, value]) => ["-c", `${key}=${JSON.stringify(value)}`]),
+                  ];
+                }),
+              ).pipe(
+                Effect.timeout("30 seconds"),
+                Effect.mapError(
+                  (cause) =>
+                    new ProviderAdapter.ProviderAdapterOpenSessionError({
+                      driver: CODEX_PROVIDER,
+                      providerSessionId: input.providerSessionId,
+                      cause,
+                    }),
+                ),
+              );
         const command = yield* makeCodexAppServerSpawnCommand({
           command: input.settings.binaryPath || "codex",
-          args: codexAppServerArgs(
-            resolveCodexLaunchArgs(input.settings.launchArgs, input.environment),
-          ),
-          env: environment,
+          args: [...codexAppServerArgs(launchArgs), ...botArgs],
+          // Global AGENTS.md and skills live in the profile, so only a bot that loads resources
+          // runs in it.
+          env:
+            bot === undefined || bot.loadResources
+              ? environment
+              : {
+                  ...environment,
+                  CODEX_HOME: yield* CodexBotPolicy.isolatedBotHome(
+                    environment.CODEX_HOME,
+                    serverConfig.stateDir,
+                  ).pipe(
+                    Effect.provideService(FileSystem.FileSystem, fs),
+                    Effect.provideService(Path.Path, path),
+                    Effect.mapError(
+                      (cause) =>
+                        new ProviderAdapter.ProviderAdapterOpenSessionError({
+                          driver: CODEX_PROVIDER,
+                          providerSessionId: input.providerSessionId,
+                          cause,
+                        }),
+                    ),
+                  ),
+                },
           threadId: input.threadId,
         }).pipe(Effect.provideService(AgentScope, agentScope));
         const handle = yield* spawner.spawn(command).pipe(
