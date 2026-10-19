@@ -1,5 +1,6 @@
 import {
   AuthOrchestrationOperateScope,
+  BotId,
   EnvironmentId,
   ThreadId,
   type ContextMenuItem,
@@ -19,6 +20,13 @@ function deferred<T>() {
 
 const state = vi.hoisted(() => ({
   granted: new Set<string>(),
+  botContext: null as {
+    botId: BotId;
+    threadId: ThreadId;
+    title: string;
+    isSubagent: boolean;
+  } | null,
+  navigation: [] as object[],
   effects: [] as string[],
   completed: deferred<void>(),
   show: vi.fn<
@@ -34,13 +42,21 @@ function recordEffect(action: string) {
   state.completed.resolve();
 }
 
+vi.mock("../state/bots", () => ({ useBotThreadContext: () => state.botContext }));
+
 vi.mock("../components/CustomSnoozeDialog", () => ({ requestCustomSnooze: vi.fn() }));
 vi.mock("react", () => ({
   useCallback: (callback: unknown) => callback,
   useMemo: (factory: () => unknown) => factory(),
 }));
 vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => ({ navigate: async () => recordEffect("project-settings") }),
+  useRouter: () => ({
+    state: { location: { href: "/bots/secondary/thread" } },
+    navigate: async (options: object) => {
+      state.navigation.push(options);
+      recordEffect("project-settings");
+    },
+  }),
 }));
 vi.mock("../state/session", () => ({
   readEnvironmentScope: (environmentId: string, scope: string) =>
@@ -161,6 +177,8 @@ const createMenu = () =>
 beforeEach(() => {
   state.granted = new Set(["primary"]);
   state.effects = [];
+  state.botContext = null;
+  state.navigation = [];
   state.completed = deferred<void>();
   state.show.mockReset().mockResolvedValue(null);
 });
@@ -179,4 +197,25 @@ describe("thread menu permissions", () => {
       expect(state.effects).toEqual([]);
     },
   );
+});
+
+describe("bot settings entry point", () => {
+  it.each([false, true])("opens the durable bot settings for subagent=%s", async (isSubagent) => {
+    state.botContext = {
+      botId: BotId.make("bot"),
+      threadId: ThreadId.make("root"),
+      title: "Bot",
+      isSubagent,
+    };
+    state.show.mockResolvedValue("project-settings");
+    createMenu().openMenu(position);
+    await state.completed.promise;
+    expect(state.navigation).toEqual([
+      {
+        to: "/bots/settings/$environmentId/$botId",
+        params: { environmentId: "secondary", botId: "bot" },
+        state: { botSettingsReturnHref: "/bots/secondary/thread" },
+      },
+    ]);
+  });
 });

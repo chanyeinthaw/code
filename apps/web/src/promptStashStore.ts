@@ -6,7 +6,7 @@ import {
   PersistedComposerFileAttachment,
   PersistedComposerImageAttachment,
 } from "./composerDraftStore";
-import { createMemoryStorage, type StateStorage } from "./lib/storage";
+import { createBotStorage, type StateStorage } from "./lib/storage";
 
 export const PROMPT_STASH_STORAGE_KEY = "t3code:prompt-stash:v2";
 const LEGACY_PROMPT_STASH_STORAGE_KEY = "t3code:prompt-stash:v1";
@@ -98,7 +98,7 @@ function resolveBaseStorage(): { storage: StateStorage; durable: boolean } {
       return { storage: localStorage, durable: true };
     }
   } catch {}
-  return { storage: createMemoryStorage(), durable: false };
+  return { storage: createBotStorage(), durable: false };
 }
 
 const { storage: baseStashStorage, durable: storageIsDurable } = resolveBaseStorage();

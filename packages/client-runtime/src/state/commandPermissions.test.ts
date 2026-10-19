@@ -346,3 +346,30 @@ it.effect("rejects protected unary and streamed RPCs outside a guarded command",
     expect(writes).toBe(0);
   }),
 );
+
+it.effect.each([
+  WS_METHODS.botsCreate,
+  WS_METHODS.botsRename,
+  WS_METHODS.botsReset,
+  WS_METHODS.botsDelete,
+  WS_METHODS.botsTransferBegin,
+  WS_METHODS.botsTransferWrite,
+  WS_METHODS.botsTransferStage,
+  WS_METHODS.botsTransferRelease,
+  WS_METHODS.botsTransferActivate,
+  WS_METHODS.botsTransferCancel,
+])("requires the destination orchestration grant for %s", (method) =>
+  Effect.scoped(
+    Effect.gen(function* () {
+      const registry = yield* setup;
+      const command = createCommandPermissions(runtime, method);
+      registry.set(sessions(env), AsyncResult.success(grant(false)));
+      registry.set(sessions(other), AsyncResult.success(grant(true)));
+      expect(registry.get(command.permissionAtom(env))).toBe(false);
+      expect((yield* Effect.result(command.authorize(registry, env)))._tag).toBe("Failure");
+      registry.set(sessions(env), AsyncResult.success(grant(true)));
+      expect(registry.get(command.permissionAtom(env))).toBe(true);
+      expect((yield* Effect.result(command.authorize(registry, env)))._tag).toBe("Success");
+    }),
+  ),
+);

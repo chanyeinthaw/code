@@ -1,3 +1,4 @@
+import * as BotStorage from "../bots/BotStorage.ts";
 import type {
   OrchestrationV2SearchThreadInput,
   OrchestrationV2SearchThreadResult,
@@ -897,6 +898,7 @@ function lastDeliveredRunForProviderThread(
 }
 
 const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(function* () {
+  const botStorage = yield* BotStorage.BotStorage;
   const checkpointService = yield* CheckpointServiceV2;
   const commandPolicy = yield* CommandPolicyV2;
   const contextHandoffService = yield* ContextHandoffServiceV2;
@@ -1544,15 +1546,21 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
             }),
         ),
       );
-      const activeProviderThread = projection.providerThreads.find(
-        (candidate) => candidate.id === projection.thread.activeProviderThreadId,
-      );
+      const activeProviderThread =
+        projection.thread.botId === undefined
+          ? projection.providerThreads.find(
+              (candidate) => candidate.id === projection.thread.activeProviderThreadId,
+            )
+          : undefined;
       const followsCurrent = followsCurrentConversation(queuedMessage);
-      const targetProviderThread = followsCurrent
-        ? activeProviderThread?.providerInstanceId === queuedRun.providerInstanceId
-          ? activeProviderThread
-          : rootProviderThreadsForProvider(projection, queuedRun.providerInstanceId)[0]
-        : storedProviderThread;
+      const targetProviderThread =
+        projection.thread.botId !== undefined
+          ? undefined
+          : followsCurrent
+            ? activeProviderThread?.providerInstanceId === queuedRun.providerInstanceId
+              ? activeProviderThread
+              : rootProviderThreadsForProvider(projection, queuedRun.providerInstanceId)[0]
+            : storedProviderThread;
       const queuedProviderThread: OrchestrationV2ProviderThread = targetProviderThread ?? {
         id: idAllocator.derive.providerThread({
           driver: targetAdapter.driver,
@@ -1583,7 +1591,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         activeProviderThread !== undefined &&
         activeProviderThread.providerInstanceId !== queuedRun.providerInstanceId;
       const switchPlan =
-        selectionChanged || switchFromActiveProvider
+        projection.thread.botId === undefined && (selectionChanged || switchFromActiveProvider)
           ? yield* providerSwitchService
               .plan({
                 projection: switchFromActiveProvider
@@ -1642,6 +1650,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         queuedProviderThread.id,
       );
       const coveredRuns =
+        projection.thread.botId !== undefined ||
         canResumeAcrossInstances ||
         latestHandoffRun === undefined ||
         latestHandoffRun.providerInstanceId === queuedRun.providerInstanceId
@@ -1781,28 +1790,41 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
             ),
           ));
       const providerSessionId =
-        (!canResumeAcrossInstances &&
-        queuedProviderThread.providerSessionId !== null &&
-        !switchPlan?.releaseProviderSessionIds.includes(queuedProviderThread.providerSessionId)
-          ? queuedProviderThread.providerSessionId
-          : null) ??
-        (yield* providerAdapters.get(queuedRun.providerInstanceId).pipe(
-          Effect.flatMap((adapter) =>
-            providerSessionIdFor({
-              adapter,
-              providerInstanceId: queuedRun.providerInstanceId,
-              threadId,
-            }),
-          ),
-          Effect.mapError(
-            (cause) =>
-              new OrchestratorDispatchError({
-                commandId,
-                commandType: "message.dispatch",
-                cause,
-              }),
-          ),
-        ));
+        projection.thread.botId !== undefined
+          ? yield* idAllocator.allocate
+              .providerSession({ providerInstanceId: queuedRun.providerInstanceId, threadId })
+              .pipe(
+                Effect.mapError(
+                  (cause) =>
+                    new OrchestratorDispatchError({
+                      commandId,
+                      commandType: "message.dispatch",
+                      cause,
+                    }),
+                ),
+              )
+          : ((!canResumeAcrossInstances &&
+            queuedProviderThread.providerSessionId !== null &&
+            !switchPlan?.releaseProviderSessionIds.includes(queuedProviderThread.providerSessionId)
+              ? queuedProviderThread.providerSessionId
+              : null) ??
+            (yield* providerAdapters.get(queuedRun.providerInstanceId).pipe(
+              Effect.flatMap((adapter) =>
+                providerSessionIdFor({
+                  adapter,
+                  providerInstanceId: queuedRun.providerInstanceId,
+                  threadId,
+                }),
+              ),
+              Effect.mapError(
+                (cause) =>
+                  new OrchestratorDispatchError({
+                    commandId,
+                    commandType: "message.dispatch",
+                    cause,
+                  }),
+              ),
+            )));
       const providerThread: OrchestrationV2ProviderThread = {
         ...deliveryProviderThread,
         providerSessionId,
@@ -2464,6 +2486,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         relationshipToParent: null,
         rootThreadId: command.threadId,
       },
+      ...(command.launchedByThreadId === undefined
+        ? {}
+        : { launchedByThreadId: command.launchedByThreadId }),
       forkedFrom: null,
       createdAt: now,
       updatedAt: now,
@@ -2935,7 +2960,8 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           .pipe(mapDispatchError(command))
       : null;
     const providerSwitchPlan =
-      command.type === "thread.model-selection.set" || command.type === "provider.switch"
+      thread.botId === undefined &&
+      (command.type === "thread.model-selection.set" || command.type === "provider.switch")
         ? yield* Effect.gen(function* () {
             yield* providerAdapters.get(command.modelSelection.instanceId).pipe(
               Effect.mapError(
@@ -3234,7 +3260,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                       : []),
                   ],
                 }),
-            ...(command.regenerateTitle === true
+            ...(command.regenerateTitle === true && thread.botId === undefined
               ? { titleRegeneration: { requestId: command.commandId, startedAt: now } }
               : command.regenerateTitle === false || command.title !== undefined
                 ? { titleRegeneration: null }
@@ -3456,7 +3482,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           return thread.titleRegeneration?.requestId === command.requestId
             ? {
                 ...thread,
-                ...(command.title === undefined ? {} : { title: command.title }),
+                ...(command.title === undefined || thread.botId !== undefined
+                  ? {}
+                  : { title: command.title }),
                 titleRegeneration: null,
                 updatedAt: now,
               }
@@ -3553,7 +3581,11 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       payload: updatedThread,
     });
 
-    if (command.type === "thread.metadata.update" && command.regenerateTitle === true) {
+    if (
+      command.type === "thread.metadata.update" &&
+      command.regenerateTitle === true &&
+      thread.botId === undefined
+    ) {
       yield* Ref.update(effects, (existing) => [
         ...existing,
         pendingThreadTitleGenerationEffect(command.commandId, command.threadId, {
@@ -4155,101 +4187,14 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         cause: `Target run ${targetRun.id} has no root node.`,
       });
     }
-    if (targetRun.status !== "running") {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: `Target run ${targetRun.id} is ${targetRun.status} and cannot be steered.`,
-      });
-    }
-    // The run reads as running until its provider stops, but a steer accepted
-    // after Stop never reaches the agent.
-    if (yield* stopReachedRun(input.command, input.command.threadId, targetRun.id)) {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: `Target run ${targetRun.id} is stopping and cannot be steered.`,
-      });
-    }
-    const providerThread = input.projection.providerThreads.find(
-      (candidate) => candidate.id === targetRun.providerThreadId,
-    );
-    if (providerThread === undefined || providerThread.providerSessionId === null) {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: `Provider thread ${targetRun.providerThreadId} has no active provider session for steering.`,
-      });
-    }
-    const providerSessionId = providerThread.providerSessionId;
-    const providerTurn = input.projection.providerTurns.find(
-      (candidate) =>
-        candidate.runAttemptId === targetRun.activeAttemptId && candidate.status === "running",
-    );
-    if (providerTurn === undefined) {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: `No running provider turn found for active run ${targetRun.id}.`,
-      });
-    }
-    const sessionOption = yield* providerSessions.get(providerSessionId).pipe(
-      Effect.mapError(
-        (cause) =>
-          new OrchestratorDispatchError({
-            commandId: input.command.commandId,
-            commandType: input.command.type,
-            cause,
-          }),
-      ),
-    );
-    if (Option.isNone(sessionOption)) {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: `Provider session ${providerThread.providerSessionId} is not active.`,
-      });
-    }
-
-    const session = sessionOption.value;
     const now = yield* DateTime.now;
     const emitEvent = emit(input.events, input.command);
-    const selectionChanged = !modelSelectionsEqual(targetRun.modelSelection, input.modelSelection);
-    const providerInstanceChanged =
-      targetRun.providerInstanceId !== input.modelSelection.instanceId;
-    const selectionTransition =
-      selectionChanged && !providerInstanceChanged
-        ? yield* providerAdapters.get(targetRun.providerInstanceId).pipe(
-            Effect.flatMap((adapter) =>
-              adapter.planSelectionTransition({
-                current: targetRun.modelSelection,
-                target: input.modelSelection,
-                sessionCapabilities: session.providerSession.capabilities,
-              }),
-            ),
-            Effect.mapError(
-              (cause) =>
-                new OrchestratorProviderAdapterError({
-                  commandId: input.command.commandId,
-                  providerInstanceId: targetRun.providerInstanceId,
-                  cause,
-                }),
-            ),
-          )
-        : null;
-    if (selectionTransition?.type === "reject") {
-      return yield* new OrchestratorDispatchError({
-        commandId: input.command.commandId,
-        commandType: input.command.type,
-        cause: selectionTransition.reason,
-      });
-    }
     const appendSteeringMessage = Effect.fn("Orchestrator.appendSteeringMessage")(
       function* (messageInput: {
         readonly runId: OrchestrationV2Run["id"];
         readonly nodeId: OrchestrationV2ExecutionNode["id"];
-        readonly providerTurnId: typeof providerTurn.id | null;
-        readonly providerThreadId: OrchestrationV2ProviderThread["id"];
+        readonly providerTurnId: OrchestrationV2ProviderTurn["id"] | null;
+        readonly providerThreadId: OrchestrationV2Run["providerThreadId"];
         readonly providerInstanceId: ProviderInstanceId;
       }) {
         const message: OrchestrationV2ConversationMessage = {
@@ -4326,6 +4271,109 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       },
     );
 
+    // No provider exists during memory compaction; these inputs join its initial request.
+    if (
+      input.projection.thread.botId !== undefined &&
+      !input.forceRestart &&
+      modelSelectionsEqual(targetRun.modelSelection, input.modelSelection) &&
+      (targetRun.status === "preparing" || targetRun.status === "starting")
+    ) {
+      yield* appendSteeringMessage({
+        runId: targetRun.id,
+        nodeId: rootNodeId,
+        providerTurnId: null,
+        providerThreadId: targetRun.providerThreadId,
+        providerInstanceId: targetRun.providerInstanceId,
+      });
+      return;
+    }
+    if (targetRun.status !== "running") {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: `Target run ${targetRun.id} is ${targetRun.status} and cannot be steered.`,
+      });
+    }
+    // The run reads as running until its provider stops, but a steer accepted
+    // after Stop never reaches the agent.
+    if (yield* stopReachedRun(input.command, input.command.threadId, targetRun.id)) {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: `Target run ${targetRun.id} is stopping and cannot be steered.`,
+      });
+    }
+    const providerThread = input.projection.providerThreads.find(
+      (candidate) => candidate.id === targetRun.providerThreadId,
+    );
+    if (providerThread === undefined || providerThread.providerSessionId === null) {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: `Provider thread ${targetRun.providerThreadId} has no active provider session for steering.`,
+      });
+    }
+    const providerSessionId = providerThread.providerSessionId;
+    const providerTurn = input.projection.providerTurns.find(
+      (candidate) =>
+        candidate.runAttemptId === targetRun.activeAttemptId && candidate.status === "running",
+    );
+    if (providerTurn === undefined) {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: `No running provider turn found for active run ${targetRun.id}.`,
+      });
+    }
+    const sessionOption = yield* providerSessions.get(providerSessionId).pipe(
+      Effect.mapError(
+        (cause) =>
+          new OrchestratorDispatchError({
+            commandId: input.command.commandId,
+            commandType: input.command.type,
+            cause,
+          }),
+      ),
+    );
+    if (Option.isNone(sessionOption)) {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: `Provider session ${providerThread.providerSessionId} is not active.`,
+      });
+    }
+
+    const session = sessionOption.value;
+    const selectionChanged = !modelSelectionsEqual(targetRun.modelSelection, input.modelSelection);
+    const providerInstanceChanged =
+      targetRun.providerInstanceId !== input.modelSelection.instanceId;
+    const selectionTransition =
+      selectionChanged && !providerInstanceChanged
+        ? yield* providerAdapters.get(targetRun.providerInstanceId).pipe(
+            Effect.flatMap((adapter) =>
+              adapter.planSelectionTransition({
+                current: targetRun.modelSelection,
+                target: input.modelSelection,
+                sessionCapabilities: session.providerSession.capabilities,
+              }),
+            ),
+            Effect.mapError(
+              (cause) =>
+                new OrchestratorProviderAdapterError({
+                  commandId: input.command.commandId,
+                  providerInstanceId: targetRun.providerInstanceId,
+                  cause,
+                }),
+            ),
+          )
+        : null;
+    if (selectionTransition?.type === "reject") {
+      return yield* new OrchestratorDispatchError({
+        commandId: input.command.commandId,
+        commandType: input.command.type,
+        cause: selectionTransition.reason,
+      });
+    }
     // A selection the provider applies on its next turn joins the running
     // turn as a steer and waits for the next turn. Restarting the turn for it
     // would end the turn's native subagents, which a steer must never do.
@@ -4806,6 +4854,17 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
     effects: Ref.Ref<Array<PendingOrchestrationEffectV2>>,
   ) {
     let projection = yield* getProjectionWithPendingEvents(command.threadId, events);
+    if (projection.thread.botId !== undefined) {
+      const memory = yield* botStorage.get(projection.thread.botId).pipe(mapDispatchError(command));
+      if (memory.status !== "active") {
+        return yield* new OrchestratorDispatchError({
+          commandId: command.commandId,
+          commandType: command.type,
+          cause: "This memory is unavailable here. Open it on its owning environment.",
+        });
+      }
+    }
+
     if (command.manualContinuationOfRunId !== undefined) {
       const source = projection.runs.find((run) => run.id === command.manualContinuationOfRunId);
       const limited = latestRootProviderFailure(source ?? null, projection.turnItems);
@@ -4978,7 +5037,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
     const userMessages = projection.messages.filter((message) => message.role === "user");
     const onlyMaintenanceHistory =
       userMessages.length > 0 && userMessages.every(isNativeMaintenanceCommand);
+    // Bot root titles are their names; conversation titles would rename their identity.
     if (
+      projection.thread.botId === undefined &&
       !isNativeMaintenanceCommand(command) &&
       ((command.titleSeed !== undefined &&
         (yield* projectionStore
@@ -5221,9 +5282,12 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       return;
     }
 
-    const activeProviderThread = projection.providerThreads.find(
-      (candidate) => candidate.id === projection.thread.activeProviderThreadId,
-    );
+    const activeProviderThread =
+      projection.thread.botId === undefined
+        ? projection.providerThreads.find(
+            (candidate) => candidate.id === projection.thread.activeProviderThreadId,
+          )
+        : undefined;
     const activeRun = projection.runs.find(isBlockingRun);
     // A message queued during worktree setup can arrive after that setup failed
     // without a worktree. It waits, held, like the messages queued before the
@@ -5305,9 +5369,11 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       const ordinal = nextRunOrdinal(projection);
       const runId = idAllocator.derive.run({ threadId: command.threadId, ordinal });
       const targetProviderThread =
-        modelSelection.instanceId === queueProviderThread.providerInstanceId
-          ? queueProviderThread
-          : rootProviderThreadsForProvider(projection, modelSelection.instanceId)[0];
+        projection.thread.botId !== undefined
+          ? undefined
+          : modelSelection.instanceId === queueProviderThread.providerInstanceId
+            ? queueProviderThread
+            : rootProviderThreadsForProvider(projection, modelSelection.instanceId)[0];
       const queuedAdapter = yield* providerAdapters
         .get(modelSelection.instanceId)
         .pipe(mapDispatchError(command));
@@ -5643,14 +5709,21 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         ),
       );
       const providerSessionId =
-        activeProviderThread?.providerSessionId ??
-        (yield* mapDispatchError(command)(
-          providerSessionIdFor({
-            adapter,
-            providerInstanceId: modelSelection.instanceId,
-            threadId: command.threadId,
-          }),
-        ));
+        projection.thread.botId !== undefined
+          ? yield* idAllocator.allocate
+              .providerSession({
+                providerInstanceId: modelSelection.instanceId,
+                threadId: command.threadId,
+              })
+              .pipe(mapDispatchError(command))
+          : (activeProviderThread?.providerSessionId ??
+            (yield* mapDispatchError(command)(
+              providerSessionIdFor({
+                adapter,
+                providerInstanceId: modelSelection.instanceId,
+                threadId: command.threadId,
+              }),
+            )));
       const providerThreadId =
         activeProviderThread?.id ??
         idAllocator.derive.providerThread({
@@ -6020,18 +6093,27 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       ),
     );
     const targetProviderThread =
-      isProviderSwitch && !canResumeAcrossInstances
-        ? rootProviderThreadsForProvider(projection, modelSelection.instanceId)[0]
-        : activeProviderThread;
+      projection.thread.botId !== undefined
+        ? undefined
+        : isProviderSwitch && !canResumeAcrossInstances
+          ? rootProviderThreadsForProvider(projection, modelSelection.instanceId)[0]
+          : activeProviderThread;
     const providerSessionId =
-      (canResumeAcrossInstances ? undefined : targetProviderThread?.providerSessionId) ??
-      (yield* mapDispatchError(command)(
-        providerSessionIdFor({
-          adapter,
-          providerInstanceId: modelSelection.instanceId,
-          threadId: command.threadId,
-        }),
-      ));
+      projection.thread.botId !== undefined
+        ? yield* idAllocator.allocate
+            .providerSession({
+              providerInstanceId: modelSelection.instanceId,
+              threadId: command.threadId,
+            })
+            .pipe(mapDispatchError(command))
+        : ((canResumeAcrossInstances ? undefined : targetProviderThread?.providerSessionId) ??
+          (yield* mapDispatchError(command)(
+            providerSessionIdFor({
+              adapter,
+              providerInstanceId: modelSelection.instanceId,
+              threadId: command.threadId,
+            }),
+          )));
     const existingProviderSession = projection.providerSessions.find(
       (candidate) => candidate.id === providerSessionId,
     );
@@ -6173,7 +6255,10 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         ? undefined
         : lastDeliveredRunForProviderThread(projection, targetProviderThread.id);
     const providerSwitchCoveredRuns =
-      !isProviderSwitch || canResumeAcrossInstances || latestHandoffRun === undefined
+      projection.thread.botId !== undefined ||
+      !isProviderSwitch ||
+      canResumeAcrossInstances ||
+      latestHandoffRun === undefined
         ? []
         : projection.runs.filter(
             (run) =>
@@ -12208,6 +12293,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
 export const layer: Layer.Layer<
   OrchestratorV2,
   never,
+  | BotStorage.BotStorage
   | CheckpointServiceV2
   | FileSystem.FileSystem
   | Path.Path
