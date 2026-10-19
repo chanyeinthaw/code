@@ -16,6 +16,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { APP_BASE_NAME, APP_DISPLAY_NAME, APP_STAGE_LABEL, APP_VERSION } from "../branding";
 import { resolveServerBackedAppDisplayName } from "../branding.logic";
+import { AlternateSidebarLayout } from "../components/alternate-layout/AlternateSidebarLayout";
 import { AppSidebarLayout } from "../components/AppSidebarLayout";
 import { CommandPalette } from "../components/CommandPalette";
 import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
@@ -58,7 +59,6 @@ import { isElectron } from "../env";
 import { cn } from "../lib/utils";
 import { applyAppearanceFontVariables } from "~/appearanceFonts";
 import { applyAppearanceContrast } from "~/appearanceContrast";
-import { useClientSettings } from "../hooks/useSettings";
 import {
   deriveLogicalProjectKeyFromSettings,
   derivePhysicalProjectKeyFromPath,
@@ -85,6 +85,7 @@ import {
 } from "../components/KeybindingsUpdateToast.logic";
 
 import { getDesktopSnapShotBridge } from "../lib/desktopSnapShot";
+import { useClientSettings } from "../hooks/useSettings";
 import { installDesktopPasteAsText } from "../lib/desktopPasteAsText";
 import { shouldResumeSnapShotSetupOnStartup } from "../lib/snapShotSetupResume";
 
@@ -143,6 +144,8 @@ function RootRouteNotFoundView() {
 }
 
 function RootRouteView() {
+  const router = useRouter();
+  const alternateLayoutEnabled = useClientSettings((settings) => settings.alternateLayoutEnabled);
   useEffect(() => installDesktopPasteAsText(window.desktopBridge, window), []);
   const pathname = useLocation({ select: (location) => location.pathname });
   const { authGateState } = Route.useRouteContext();
@@ -208,11 +211,15 @@ function RootRouteView() {
     );
   }
 
+  const SidebarLayout =
+    alternateLayoutEnabled || router.options.basepath === "/layout"
+      ? AlternateSidebarLayout
+      : AppSidebarLayout;
   const appShell = (
     <CommandPalette>
-      <AppSidebarLayout>
+      <SidebarLayout>
         <Outlet />
-      </AppSidebarLayout>
+      </SidebarLayout>
     </CommandPalette>
   );
 
