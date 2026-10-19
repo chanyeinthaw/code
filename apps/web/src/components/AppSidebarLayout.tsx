@@ -264,7 +264,7 @@ const MODIFIER_KEYS = new Set(["Alt", "Control", "Meta", "Shift"]);
 // Undoes the thread actions in the sidebar's notice. Mounted wherever the
 // thread sidebar can show; Settings replaces it. Listens in the capture phase
 // so mod+z reaches it before the composer's own undo handler consumes the key.
-function ThreadUndoShortcut() {
+export function ThreadUndoShortcut() {
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const routeThreadRef = useThreadRouteRef();
   // A collapsed sidebar hides the notice, so text fields keep their own undo.
