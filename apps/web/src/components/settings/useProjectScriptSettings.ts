@@ -55,7 +55,7 @@ export function useProjectScriptSettings(
     project?: { id: ProjectId; scripts: readonly ProjectScript[] };
   }[],
 ) {
-  const projects = useProjects();
+  const projects = useProjects({ includeMemory: true });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, "project actions update");

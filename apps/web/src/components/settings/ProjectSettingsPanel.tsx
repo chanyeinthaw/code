@@ -72,7 +72,7 @@ export function ProjectSettingsPanel({
   checkoutKey?: string | null;
   unavailable?: ReactNode;
 }) {
-  const groups = useSettingsProjectGroups();
+  const groups = useSettingsProjectGroups(projectKey);
   const navigate = useNavigate({ from: "/settings" });
   const pathname = useLocation({ select: (location) => location.pathname });
 

@@ -16,6 +16,7 @@ import {
   ProviderInstanceId,
   type ProviderSessionId,
   ThreadId,
+  RunId,
 } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
@@ -5027,5 +5028,55 @@ it.effect(
         projectExists: false,
       });
       assert.isFalse(denied?.capabilities?.has("device"));
+    }),
+);
+
+it.effect(
+  "ProviderSessionManagerV2 binds a worker MCP credential to its inherited memory snapshot",
+  () =>
+    Effect.gen(function* () {
+      const state = yield* Ref.make(emptyState);
+      const mcpConfigs = yield* Ref.make<
+        ReadonlyArray<McpProviderSession.McpProviderSessionConfig | undefined>
+      >([]);
+      yield* Effect.gen(function* () {
+        const eventSink = yield* EventSink.EventSinkV2;
+        const ids = yield* IdAllocator.IdAllocatorV2;
+        const manager = yield* ProviderSessionManager.ProviderSessionManagerV2;
+        const registry = yield* McpSessionRegistry.McpSessionRegistry;
+        const now = yield* DateTime.now;
+        const threadId = ThreadId.make("memory-worker");
+        const memoryThreadId = ThreadId.make("parent-memory");
+        const memoryRunId = RunId.make("parent-frozen-turn");
+        const providerSessionId = yield* ids.allocate.providerSession({
+          providerInstanceId: modelSelection.instanceId,
+          threadId,
+        });
+        yield* eventSink.write({
+          events: [yield* makeThreadCreatedEvent({ idAllocator: ids, threadId, now })],
+        });
+        yield* manager.open({
+          threadId,
+          providerSessionId,
+          modelSelection,
+          runtimePolicy: {
+            ...runtimePolicy,
+            memoryContext: { threadId: memoryThreadId, runId: memoryRunId },
+          },
+        });
+        const captured = (yield* Ref.get(mcpConfigs))[0];
+        assert.isDefined(captured);
+        if (captured === undefined) return;
+        assert.equal(captured.endpoint, "http://127.0.0.1:43123/memory-mcp");
+        const token = captured.authorizationHeader.replace(/^Bearer\s+/, "");
+        const resolved = yield* registry.resolve(token);
+        assert.equal(resolved?.thread.threadId, threadId);
+        assert.equal(resolved?.thread.memoryThreadId, memoryThreadId);
+        assert.equal(resolved?.thread.memoryRunId, memoryRunId);
+        yield* registry.revokeThread(memoryThreadId);
+        assert.isDefined(yield* registry.resolve(token));
+        yield* manager.close(providerSessionId);
+        assert.isUndefined(yield* registry.resolve(token));
+      }).pipe(Effect.provide(layerTest({ state, mcpConfigs, idleTimeoutMs: 1_000 })));
     }),
 );

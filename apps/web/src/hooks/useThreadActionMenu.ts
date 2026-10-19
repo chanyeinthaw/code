@@ -10,6 +10,7 @@ import { canSnooze, effectiveSnoozed } from "@t3tools/client-runtime/state/threa
 import {
   AuthOrchestrationOperateScope,
   type ScopedThreadRef,
+  type ContextMenuItem,
   type ThreadId,
 } from "@t3tools/contracts";
 import { useRouter } from "@tanstack/react-router";
@@ -61,10 +62,11 @@ export function useThreadActionMenu(input: {
   readonly threadRef: ScopedThreadRef | null;
   readonly projectCwd: string | null;
   readonly onStartRename: () => void;
+  readonly actions?: ReadonlyArray<ThreadActionMenuId>;
 }) {
-  const { threadRef, projectCwd, onStartRename } = input;
+  const { threadRef, projectCwd, onStartRename, actions } = input;
   const router = useRouter();
-  const projects = useProjects();
+  const projects = useProjects({ includeMemory: true });
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const projectGroupingSettings = useClientSettings(selectProjectGroupingSettings);
   const logicalProjectKeyByPhysicalKey = buildPhysicalToLogicalProjectKeyMap({
@@ -111,7 +113,14 @@ export function useThreadActionMenu(input: {
     onError: (error) => failureToast("Failed to copy thread ID", error),
   });
 
-  const openMenu = (position: { x: number; y: number }) => {
+  const openMenu = (
+    position: { x: number; y: number },
+    additional?: {
+      items: ReadonlyArray<ContextMenuItem>;
+      sharedItemsIndex?: number;
+      onSelect: (action: string) => void;
+    },
+  ) => {
     if (threadRef === null) return;
     void (async () => {
       const api = readLocalApi();
@@ -142,9 +151,31 @@ export function useThreadActionMenu(input: {
         supports,
         snoozePresets,
       });
-      const clicked = await settlePromise(() => api.contextMenu.show(items, position));
+      const visibleItems = actions ? items.filter((item) => actions.includes(item.id)) : items;
+      const additionalItems = additional?.items ?? [];
+      const sharedItemsIndex = additional?.sharedItemsIndex ?? additionalItems.length;
+      const clicked = await settlePromise(() =>
+        api.contextMenu.show(
+          [
+            ...additionalItems.slice(0, sharedItemsIndex),
+            ...visibleItems,
+            ...additionalItems.slice(sharedItemsIndex),
+          ].map((item, index) => ({
+            ...item,
+            separatorBefore: index > 0 && (item.separatorBefore ?? false),
+          })),
+          position,
+        ),
+      );
       if (clicked._tag === "Failure" || clicked.value === null) return;
-      const action: ThreadActionMenuId = clicked.value;
+      if (additional?.items.some((item) => item.id === clicked.value)) {
+        additional.onSelect(clicked.value);
+        return;
+      }
+      const action = visibleItems
+        .flatMap((item) => [item, ...(item.children ?? [])])
+        .find((item) => item.id === clicked.value)?.id;
+      if (!action) return;
       if (
         threadActionRequiresOperate(action) &&
         !readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope)

@@ -88,6 +88,7 @@ function threadRunStatusIsActive(status: ThreadRuntimeSummary["status"]): boolea
 }
 
 export interface EnvironmentThreadShell {
+  readonly memoryIdentityId?: OrchestrationV2ThreadShell["memoryIdentityId"];
   readonly environmentId: EnvironmentId;
   readonly id: ThreadId;
   readonly projectId: ProjectId;
@@ -229,6 +230,7 @@ export function presentThreadShell(
     runtime?.status === "running";
   return {
     environmentId,
+    ...(thread.memoryIdentityId === undefined ? {} : { memoryIdentityId: thread.memoryIdentityId }),
     id: thread.id,
     projectId: thread.projectId,
     title:

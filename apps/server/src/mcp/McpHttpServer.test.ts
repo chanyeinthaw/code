@@ -1,3 +1,4 @@
+import * as MemoryAccess from "../memory/MemoryAccess.ts";
 import * as Orchestrator from "../orchestration-v2/Orchestrator.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import { expect, it } from "@effect/vitest";
@@ -8,6 +9,7 @@ import {
   OrchestratorMcpFailure,
   PreviewTabId,
   ProviderInstanceId,
+  RunId,
   ThreadId,
 } from "@t3tools/contracts";
 import * as Deferred from "effect/Deferred";
@@ -1177,4 +1179,97 @@ it.effect("admits provider and OAuth client credentials and points only clients 
       expect(deadProvider.headers["www-authenticate"]).toBe('Bearer error="invalid_token"');
     }),
   ).pipe(Effect.provide(NodeHttpServer.layerTest)),
+);
+
+it.effect(
+  "isolates memory tools from ordinary MCP and rejects memory credentials on the ordinary endpoint",
+  () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const memoryScope: McpInvocationContext.McpThreadInvocationScope = {
+          ...invocation,
+          thread: { ...invocation.thread, memoryRunId: RunId.make("frozen-turn") },
+        };
+        const ProbeToolkit = Toolkit.make(
+          Tool.make("ordinary_probe", {
+            description: "Test ordinary registry",
+            success: Schema.String,
+          }),
+        );
+        const standard = McpHttpServer.toolkitRegistration(
+          ProbeToolkit,
+          McpToolAccess.toLayer(ProbeToolkit, {
+            ordinary_probe: McpToolAccess.reads(() => Effect.succeed("ordinary")),
+          }),
+        ).pipe(Layer.provideMerge(McpHttpServer.layerMcpTransport));
+        const memory = Layer.merge(
+          McpHttpServer.layerMemoryRecallToolkit,
+          McpHttpServer.toolkitRegistration(
+            ProbeToolkit,
+            McpToolAccess.toLayer(ProbeToolkit, {
+              ordinary_probe: McpToolAccess.reads(() => Effect.succeed("ordinary")),
+            }),
+          ),
+        ).pipe(Layer.provideMerge(McpHttpServer.layerMemoryTransport), Layer.fresh);
+        const routes = Layer.merge(standard, memory).pipe(
+          Layer.provide(Layer.mock(MemoryAccess.MemoryAccess)({})),
+          Layer.provide(
+            Layer.mock(McpSessionRegistry.McpSessionRegistry)({
+              resolve: (token) =>
+                Effect.succeed(
+                  token === "memoryToken"
+                    ? memoryScope
+                    : token === "ordinaryToken"
+                      ? invocation
+                      : undefined,
+                ),
+            }),
+          ),
+        );
+        yield* HttpRouter.serve(routes, { disableListenLog: true, disableLogger: true }).pipe(
+          Layer.build,
+        );
+        const client = yield* HttpClient.HttpClient;
+        const initialize = (path: string, token: string) =>
+          client.post(path, {
+            headers: {
+              accept: "application/json, text/event-stream",
+              authorization: `Bearer ${token}`,
+            },
+            body: HttpBody.text(
+              '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"memory-test","version":"1"}}}',
+              "application/json",
+            ),
+          });
+        expect((yield* initialize("/mcp", "memoryToken")).status).toBe(401);
+        const list = (path: string, token: string) =>
+          Effect.gen(function* () {
+            const response = yield* initialize(path, token);
+            expect(response.status).toBe(200);
+            const sessionId = response.headers["mcp-session-id"];
+            if (!sessionId) return yield* Effect.die("Missing MCP session ID");
+            const listed = yield* client.post(path, {
+              headers: {
+                accept: "application/json, text/event-stream",
+                authorization: `Bearer ${token}`,
+                "mcp-session-id": sessionId,
+                "mcp-protocol-version": "2025-06-18",
+              },
+              body: HttpBody.text(
+                '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}',
+                "application/json",
+              ),
+            });
+            return yield* listed.text;
+          });
+        const ordinary = yield* list("/mcp", "ordinaryToken");
+        const memoryTools = yield* list("/memory-mcp", "memoryToken");
+        expect(ordinary).toContain('"ordinary_probe"');
+        expect(ordinary).not.toContain('"t3_attachment_read"');
+        expect(memoryTools).toContain('"zoom"');
+        expect(memoryTools).toContain('"date"');
+        expect(memoryTools).toContain('"t3_attachment_read"');
+        expect(memoryTools).toContain('"ordinary_probe"');
+      }),
+    ).pipe(Effect.provide(NodeHttpServer.layerTest)),
 );

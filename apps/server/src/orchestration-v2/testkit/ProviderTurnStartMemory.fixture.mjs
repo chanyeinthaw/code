@@ -30,6 +30,8 @@ const [
   Auth,
   Config,
   Settings,
+  Memory,
+  Commands,
 ] = await Promise.all([
   app("orchestration-v2/ProviderTurnStartService"),
   app("orchestration-v2/ProjectionStore"),
@@ -44,6 +46,8 @@ const [
   app("provider/ProviderAuthService"),
   app("config"),
   app("serverSettings"),
+  app("memory/MemoryChat"),
+  app("orchestration-v2/ThreadCommandExecutor"),
 ]);
 let current;
 let fullReads = 0;
@@ -62,6 +66,8 @@ const session = {
   compactThread: () => Effect.void,
 };
 const dependencies = Layer.mergeAll(
+  Layer.mock(Memory.MemoryChat)({}),
+  Commands.layer,
   Layer.mock(Handoff.ContextHandoffServiceV2)({}),
   Id.layer,
   FileSystem.layerNoop({}),
@@ -136,7 +142,13 @@ function fixture(index) {
   );
   refs.push(new WeakRef(history));
   return {
-    thread: { id: "thread", projectId: "project", branch: null, worktreePath: null },
+    thread: {
+      id: "thread",
+      projectId: "project",
+      branch: null,
+      worktreePath: null,
+      lineage: { parentThreadId: null, relationshipToParent: null, rootThreadId: "thread" },
+    },
     runs: [
       {
         id: runId,

@@ -6,6 +6,7 @@ import {
   PreviewAutomationUnavailableError,
   type ProviderInstanceId,
   type RuntimeMode,
+  type RunId,
   type ThreadId,
 } from "@t3tools/contracts";
 import * as Context from "effect/Context";
@@ -22,6 +23,8 @@ export type McpCapability = (typeof ALL_MCP_CAPABILITIES)[number];
 
 export interface McpThreadCaller {
   readonly threadId: ThreadId;
+  readonly memoryRunId?: RunId;
+  readonly memoryThreadId?: ThreadId;
   readonly providerSessionId: string;
   readonly providerInstanceId: ProviderInstanceId;
 }

@@ -1,4 +1,4 @@
-import { ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { ProviderInstanceId, ThreadId, type RunId } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -14,6 +14,8 @@ import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
 
 export interface McpCredentialRequest {
   readonly threadId: ThreadId;
+  readonly memoryRunId?: RunId;
+  readonly memoryThreadId?: ThreadId;
   readonly providerInstanceId: ProviderInstanceId;
   /**
    * When false, the credential is minted without the "preview" capability so
@@ -107,6 +109,10 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
         requestNamespace: providerSessionId,
         thread: {
           threadId: ThreadId.make(request.threadId),
+          ...(request.memoryRunId === undefined ? {} : { memoryRunId: request.memoryRunId }),
+          ...(request.memoryThreadId === undefined
+            ? {}
+            : { memoryThreadId: request.memoryThreadId }),
           providerSessionId,
           providerInstanceId: ProviderInstanceId.make(request.providerInstanceId),
         },
@@ -130,7 +136,14 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           threadId: scope.thread.threadId,
           providerSessionId,
           providerInstanceId: scope.thread.providerInstanceId,
-          endpoint,
+          endpoint:
+            request.memoryRunId === undefined
+              ? endpoint
+              : endpoint.replace(/\/mcp$/, "/memory-mcp"),
+          ...(request.memoryRunId === undefined ? {} : { memoryRunId: request.memoryRunId }),
+          ...(request.memoryThreadId === undefined
+            ? {}
+            : { memoryThreadId: request.memoryThreadId }),
           authorizationHeader: `Bearer ${rawToken}`,
           browserToolsAvailable: scope.capabilities.has("preview"),
           capabilities: scope.capabilities,

@@ -26,7 +26,8 @@ export type SettingsPath =
   | "/settings/source-control"
   | "/settings/storage"
   | "/settings/connections"
-  | "/settings/archived";
+  | "/settings/archived"
+  | "/settings/memory";
 
 export type SettingsSearchScope =
   | "environment"
@@ -85,6 +86,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/storage": "Storage",
   "/settings/connections": "Connections",
   "/settings/archived": "Archive",
+  "/settings/memory": "Memory",
 };
 
 export function keybindingSearchAnchorId<Command extends KeybindingCommand>(command: Command) {
@@ -129,6 +131,13 @@ const SOURCE_CONTROL_HOST_SEARCH_ITEMS = sourceControlClients.definitions.flatMa
 );
 
 export const SETTINGS_SEARCH_ITEMS = [
+  {
+    id: "memory-management",
+    title: "Manage memories",
+    to: "/settings/memory",
+    searchTerms: ["memory", "create", "transfer", "environment"],
+    scope: "environment-defaults",
+  },
   {
     id: "storage-worktree-keep-when",
     targetId: "storage-worktrees",
@@ -522,6 +531,20 @@ export const SETTINGS_SEARCH_ITEMS = [
     to: "/settings/general",
     searchTerms: ["confirmation desktop app exit direct hold double click press twice"],
     desktopOnly: true,
+  },
+  {
+    id: "memory-compaction-concurrency",
+    title: "Memory compaction concurrency",
+    to: "/settings/memory",
+    scope: "environment-defaults",
+    searchTerms: ["memory summary parallel requests rate limit"],
+  },
+  {
+    id: "memory-compaction-model",
+    title: "Memory compaction model",
+    to: "/settings/memory",
+    scope: "environment-defaults",
+    searchTerms: ["memory chat summary summarization compression provider"],
   },
   {
     id: "text-generation-model",
@@ -1026,6 +1049,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/connections": "connections",
   "/settings/scheduled-tasks": null,
   "/settings/archived": "project-defaults",
+  "/settings/memory": "environment-defaults",
 };
 
 export function getSettingsSearchTargetScope(targetId: string) {

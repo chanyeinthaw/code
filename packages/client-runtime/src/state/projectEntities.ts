@@ -6,6 +6,7 @@ import type {
   ScopedProjectRef,
   ServerConfig,
 } from "@t3tools/contracts";
+import { isMemoryProject } from "@t3tools/shared/memoryChat";
 import { Atom } from "effect/reactivity";
 
 import type { EnvironmentProject } from "./models.ts";
@@ -103,7 +104,7 @@ export function createEnvironmentProjectAtoms(input: {
   }).pipe(Atom.withLabel("environment-project-refs"));
 
   let previousProjects: ReadonlyArray<EnvironmentProject> = [];
-  const projectsAtom = Atom.make((get) => {
+  const allProjectsAtom = Atom.make((get) => {
     const next = get(projectRefsAtom).flatMap((ref) => {
       const project = get(projectAtomFamily(projectKey(ref)));
       return project === null ? [] : [project];
@@ -113,6 +114,14 @@ export function createEnvironmentProjectAtoms(input: {
     }
     previousProjects = next;
     return previousProjects;
+  }).pipe(Atom.withLabel("environment-all-project-list"));
+
+  let previousVisibleProjects: ReadonlyArray<EnvironmentProject> = [];
+  const projectsAtom = Atom.make((get) => {
+    const next = get(allProjectsAtom).filter((project) => !isMemoryProject(project));
+    if (arrayElementsEqual(previousVisibleProjects, next)) return previousVisibleProjects;
+    previousVisibleProjects = next;
+    return next;
   }).pipe(Atom.withLabel("environment-project-list"));
 
   const projectConfigsReadyAtom = Atom.make((get) => {
@@ -132,6 +141,7 @@ export function createEnvironmentProjectAtoms(input: {
     environmentProjectRefsAtom,
     projectRefsAtom,
     projectsAtom,
+    allProjectsAtom,
     projectConfigsReadyAtom,
     projectAtom: (ref: ScopedProjectRef) => projectAtomFamily(projectKey(ref)),
   };

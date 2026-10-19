@@ -1,3 +1,5 @@
+import * as MemoryAccess from "./memory/MemoryAccess.ts";
+import * as MemoryStorage from "./memory/MemoryStorage.ts";
 import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
 import type { RelayManagedEndpointRuntimeConfig } from "@t3tools/contracts/relay";
 import * as Random from "effect/Random";
@@ -710,6 +712,11 @@ const layerMakeRoutes = Layer.mergeAll(
     Ws.layer,
   ),
   McpHttpServer.layer.pipe(
+    Layer.provide(
+      MemoryAccess.layer.pipe(
+        Layer.provide(Layer.merge(MemoryStorage.layer, ProjectionStoreV2.layer)),
+      ),
+    ),
     Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
   ),

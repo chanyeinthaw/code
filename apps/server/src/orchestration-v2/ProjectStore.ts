@@ -29,6 +29,7 @@ export class ProjectStoreV2Error extends Schema.TaggedError<ProjectStoreV2Error>
 }
 
 export const ProjectRow = Schema.Struct({
+  isMemory: Schema.optional(Schema.Boolean),
   projectId: ProjectId,
   title: Schema.String,
   workspaceRoot: Schema.String,
@@ -48,6 +49,7 @@ const ProjectDbRow = Schema.Struct({
   ...ProjectRow.fields,
   defaultModelSelection: Schema.NullOr(Schema.fromJsonString(ModelSelection)),
   autoPull: Schema.BooleanFromBit,
+  isMemory: Schema.optional(Schema.BooleanFromBit),
   projectIcon: Schema.NullOr(Schema.fromJsonString(StoredProjectIcon)),
   scripts: Schema.fromJsonString(Schema.Array(ProjectScript)),
 });
@@ -55,6 +57,7 @@ const ProjectDbRow = Schema.Struct({
 function toShell(row: ProjectRow): OrchestrationProjectShell {
   return {
     id: row.projectId,
+    isMemory: row.isMemory,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
     repositoryIdentity: null,
@@ -110,6 +113,7 @@ export const make = Effect.gen(function* () {
     Result: ProjectDbRow,
     execute: (request) => sql`
       SELECT
+        is_memory AS "isMemory",
         project_id AS "projectId",
         title,
         workspace_root AS "workspaceRoot",
@@ -140,6 +144,7 @@ export const make = Effect.gen(function* () {
       Effect.flatMap(
         (encoded) => sql`
           INSERT INTO projection_projects (
+            is_memory,
             project_id,
             title,
             workspace_root,
@@ -154,6 +159,7 @@ export const make = Effect.gen(function* () {
             deleted_at
           )
           VALUES (
+            ${encoded.isMemory ?? 0},
             ${encoded.projectId},
             ${encoded.title},
             ${encoded.workspaceRoot},
@@ -169,6 +175,7 @@ export const make = Effect.gen(function* () {
           )
           ON CONFLICT (project_id)
           DO UPDATE SET
+            is_memory = excluded.is_memory,
             title = excluded.title,
             workspace_root = excluded.workspace_root,
             default_model_selection_json = excluded.default_model_selection_json,
@@ -214,6 +221,7 @@ export const make = Effect.gen(function* () {
       if (event.type === "project.created") {
         const payload = event.payload;
         return yield* upsertRow({
+          isMemory: payload.isMemory ?? false,
           projectId: payload.projectId,
           title: payload.title,
           workspaceRoot: payload.workspaceRoot,
@@ -241,6 +249,7 @@ export const make = Effect.gen(function* () {
       const payload = event.payload;
       yield* upsertRow({
         ...row,
+        ...(payload.isMemory === undefined ? {} : { isMemory: payload.isMemory }),
         ...(payload.title === undefined ? {} : { title: payload.title }),
         ...(payload.workspaceRoot === undefined ? {} : { workspaceRoot: payload.workspaceRoot }),
         ...(payload.defaultModelSelection === undefined
