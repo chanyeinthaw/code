@@ -159,6 +159,16 @@ describe("resolveIdleCompaction", () => {
   });
 });
 
+describe("ClientSettings alternate layout", () => {
+  it("enables the alternate layout by default while preserving an explicit opt-out", () => {
+    expect(decodeClientSettings({}).alternateLayoutEnabled).toBe(true);
+    expect(decodeClientSettings({ alternateLayoutEnabled: false }).alternateLayoutEnabled).toBe(
+      false,
+    );
+    expect(decodeClientSettingsPatch({})).not.toHaveProperty("alternateLayoutEnabled");
+  });
+});
+
 describe("ClientSettings notifications", () => {
   it("requires opt-in when existing settings omit notification preferences", () => {
     expect(decodeClientSettings({}).notificationMode).toBe("off");
