@@ -1,3 +1,4 @@
+import { useMemoryThreadContext } from "../../state/memories";
 import type {
   EditorId,
   EnvironmentId,
@@ -21,7 +22,7 @@ import { ThreadDetailsCard } from "./ThreadDetailsCard";
 import { OpenInPicker } from "./OpenInPicker";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { ThreadAutomationsPanel } from "./ThreadAutomationsPanel";
-import { ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
+import { useHasThreadLineage, ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
 
 const GitActionsControl = memo(BaseGitActionsControl);
 
@@ -74,6 +75,8 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
     props.activeProjectScripts ? props.gitCwd : null,
   );
   const activeThreadRef = { environmentId: props.environmentId, threadId: props.threadId };
+  const memoryId = useMemoryThreadContext(activeThreadRef)?.memoryId;
+  const hasLineage = useHasThreadLineage(memoryId ? activeThreadRef : null);
   const branchToolbarProps = {
     showGitControls: props.isGitRepo,
     environmentId: props.environmentId,
@@ -99,6 +102,22 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
       ? { onCheckoutPullRequestRequest: props.onCheckoutPullRequestRequest }
       : {}),
   };
+
+  if (memoryId) {
+    if (!hasLineage) return null;
+    return (
+      <ThreadDetailsCard
+        threadRef={activeThreadRef}
+        anchor={props.anchor}
+        handle={props.handle}
+        onPresentationChange={props.onPresentationChange}
+      >
+        {() => (
+          <ThreadRelationshipsPanel environmentId={props.environmentId} threadId={props.threadId} />
+        )}
+      </ThreadDetailsCard>
+    );
+  }
 
   return (
     <ThreadDetailsCard
@@ -157,7 +176,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
             </div>
           </ThreadDetailsSection>
 
-          {props.gitCwd ? (
+          {!memoryId && props.gitCwd ? (
             <ThreadDetailsSection
               headingId="thread-details-version-control-heading"
               title="Version Control"

@@ -133,3 +133,27 @@ describe("project scratch identity", () => {
     }
   });
 });
+
+it("hides memory projects from pickers while keeping direct project lookup", () => {
+  const { registry, projects, snapshotAtom } = makeHarness();
+  try {
+    const source = registry.get(snapshotAtom(environmentId));
+    registry.set(snapshotAtom(environmentId), {
+      ...source,
+      projects: source.projects.map((project) =>
+        project.id === v2Project.id ? { ...project, isMemory: true } : project,
+      ),
+    });
+    expect(
+      registry
+        .get(projects.projectsAtom)
+        .filter((project) => project.environmentId === environmentId)
+        .map((project) => project.id),
+    ).toEqual([ProjectId.make("ordinary")]);
+    expect(
+      registry.get(projects.projectAtom({ environmentId, projectId: v2Project.id }))?.isMemory,
+    ).toBe(true);
+  } finally {
+    registry.dispose();
+  }
+});

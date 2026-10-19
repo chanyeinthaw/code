@@ -1,3 +1,8 @@
+import { memoryInput } from "../memory/MemoryInput.ts";
+import { makeEnsureWorkspace } from "../memory/MemoryWorkspace.ts";
+import * as ThreadCommandExecutor from "./ThreadCommandExecutor.ts";
+import * as MemoryChat from "../memory/MemoryChat.ts";
+import { turnInstructions } from "../memory/MemoryWorker.ts";
 import { modelSelectionsEqual } from "@t3tools/shared/model";
 import { projectComposerContextForProvider } from "@t3tools/shared/composerContextReferences";
 import {
@@ -113,6 +118,8 @@ export const layer: Layer.Layer<
   | ProviderSessionManager.ProviderSessionManagerV2
   | RunExecutionService.RunExecutionServiceV2
   | RuntimePolicy.RuntimePolicyV2
+  | MemoryChat.MemoryChat
+  | ThreadCommandExecutor.ThreadCommandExecutor
 > = Layer.effect(
   ProviderTurnStartServiceV2,
   Effect.gen(function* () {
@@ -129,6 +136,9 @@ export const layer: Layer.Layer<
     const projectionStore = yield* ProjectionStore.ProjectionStoreV2;
     const providerSessions = yield* ProviderSessionManager.ProviderSessionManagerV2;
     const runExecution = yield* RunExecutionService.RunExecutionServiceV2;
+    const memoryChat = yield* MemoryChat.MemoryChat;
+    const threadCommands = yield* ThreadCommandExecutor.ThreadCommandExecutor;
+    const ensureWorkspace = yield* makeEnsureWorkspace;
     const runtimePolicy = yield* RuntimePolicy.RuntimePolicyV2;
     const isManagedWorktreePath = yield* makeIsManagedWorktreePath;
 
@@ -533,33 +543,13 @@ export const layer: Layer.Layer<
       });
       const { isCurrentAttemptInStatus } = runControls;
 
-      const resolvedRuntimePolicy = yield* runtimePolicy.resolve({
+      const baseRuntimePolicy = yield* runtimePolicy.resolve({
         thread: projection.thread,
         modelSelection: run.modelSelection,
       });
       if (!(yield* isCurrentAttemptInStatus("starting"))) return;
       const existingSessionProjection = projection.providerSessions.find(
         (candidate) => candidate.id === providerSessionId,
-      );
-      const sessionResult = yield* Effect.result(
-        providerSessions.open({
-          threadId: projection.thread.id,
-          providerSessionId,
-          modelSelection: run.modelSelection,
-          runtimePolicy: resolvedRuntimePolicy,
-          ...(existingSessionProjection === undefined
-            ? {}
-            : { resumeFromSession: existingSessionProjection }),
-          ...(providerThread.nativeThreadRef?.nativeId == null
-            ? {}
-            : { initialNativeThreadId: providerThread.nativeThreadRef.nativeId }),
-          ...(providerThread.nativeMetadata?.itemIdentityVersion === undefined
-            ? {}
-            : {
-                initialProviderItemIdentityVersion:
-                  providerThread.nativeMetadata.itemIdentityVersion,
-              }),
-        }),
       );
       const settleStartFailure = Effect.fn("ProviderTurnStartService.settleStartFailure")(
         function* (failed: {
@@ -591,6 +581,66 @@ export const layer: Layer.Layer<
             },
           });
         },
+      );
+      const workspaceResult = yield* Effect.result(
+        projection.thread.memoryIdentityId === undefined
+          ? Effect.succeed(undefined)
+          : ensureWorkspace(projection.thread.memoryIdentityId),
+      );
+      if (workspaceResult._tag === "Failure") {
+        yield* settleStartFailure({
+          signal: "memory-workspace-failure",
+          title: "Memory workspace is unavailable",
+          error: workspaceResult.failure,
+        });
+        return;
+      }
+      const resolvedRuntimePolicy =
+        projection.thread.memoryIdentityId === undefined
+          ? baseRuntimePolicy
+          : {
+              ...baseRuntimePolicy,
+              cwd: workspaceResult.success ?? baseRuntimePolicy.cwd,
+              memoryChat: { systemPrompt: turnInstructions, runId: run.id },
+            };
+      const memorySnapshotResult = yield* Effect.result(
+        projection.thread.memoryIdentityId === undefined
+          ? Effect.succeed(undefined)
+          : memoryChat.prepare({
+              memoryId: projection.thread.memoryIdentityId,
+              runId: run.id,
+              message,
+            }),
+      );
+      if (memorySnapshotResult._tag === "Failure") {
+        yield* settleStartFailure({
+          signal: "memory-prepare-failure",
+          title: "Memory is not ready",
+          error: memorySnapshotResult.failure,
+        });
+        return;
+      }
+      const memorySnapshot = memorySnapshotResult.success;
+      if (!(yield* isCurrentAttemptInStatus("starting"))) return;
+      const sessionResult = yield* Effect.result(
+        providerSessions.open({
+          threadId: projection.thread.id,
+          providerSessionId,
+          modelSelection: run.modelSelection,
+          runtimePolicy: resolvedRuntimePolicy,
+          ...(existingSessionProjection === undefined
+            ? {}
+            : { resumeFromSession: existingSessionProjection }),
+          ...(providerThread.nativeThreadRef?.nativeId == null
+            ? {}
+            : { initialNativeThreadId: providerThread.nativeThreadRef.nativeId }),
+          ...(providerThread.nativeMetadata?.itemIdentityVersion === undefined
+            ? {}
+            : {
+                initialProviderItemIdentityVersion:
+                  providerThread.nativeMetadata.itemIdentityVersion,
+              }),
+        }),
       );
       if (sessionResult._tag === "Failure") {
         if (input.willRetry === true) return yield* sessionResult.failure;
@@ -941,23 +991,55 @@ export const layer: Layer.Layer<
           payload: runningRootNode,
         },
       ];
-      const runningWrite = yield* eventSink.writeIfRunCurrent({
+      const markRunning = eventSink.writeIfRunCurrent({
         threadId: projection.thread.id,
         runId: run.id,
         activeAttemptId: attempt.id,
         expectedStatus: "starting",
         events,
       });
+      // Close the input buffer atomically with the transition out of preparation.
+      const { runningWrite, bufferedMessages } = yield* memorySnapshot === undefined
+        ? Effect.map(markRunning, (runningWrite) => ({ runningWrite, bufferedMessages: [] }))
+        : threadCommands.withLock(
+            projection.thread.id,
+            Effect.gen(function* () {
+              const latest = yield* projectionStore.getThreadRecords(
+                projection.thread.id,
+                ["messages"],
+                { runIds: [run.id] },
+              );
+              const bufferedMessages = latest.messages.filter(
+                (candidate) =>
+                  candidate.runId === run.id &&
+                  candidate.role === "user" &&
+                  candidate.id !== message.id,
+              );
+              for (const buffered of bufferedMessages) {
+                yield* memoryChat.prepare({
+                  memoryId: memorySnapshot.memoryId,
+                  runId: run.id,
+                  message: buffered,
+                });
+              }
+              return { runningWrite: yield* markRunning, bufferedMessages };
+            }),
+          );
       if (!runningWrite.committed) {
         return;
       }
       const routableSubagents = projection.subagents.filter((subagent) =>
         RunExecutionService.canRouteRelatedSubagent(subagent.status),
       );
-      const userText = projectComposerContextForProvider({
-        text: message.text,
-        records: message.context?.records ?? [],
-      });
+      const userText = [message, ...bufferedMessages]
+        .map((input) =>
+          projectComposerContextForProvider({
+            text: input.text,
+            records: input.context?.records ?? [],
+          }),
+        )
+        .join("\n\n");
+      const inputAttachments = [message, ...bufferedMessages].flatMap((input) => input.attachments);
       // Delivered once: this run's provider turn marks the work as told. A
       // restart continuation is prompted by its own text or resumes natively.
       const noteContinuation = isRestartNoteContinuation(
@@ -1096,6 +1178,19 @@ export const layer: Layer.Layer<
             );
       const startWithHandoffs = Effect.fn("ProviderTurnStartService.startWithHandoffs")(
         function* (turnInput: Parameters<typeof session.startTurn>[0], compact = false) {
+          if (memorySnapshot !== undefined) {
+            if (!(yield* isCurrentAttemptInStatus("running"))) return;
+            return yield* session.startTurn({
+              ...turnInput,
+              message: {
+                ...turnInput.message,
+                ...memoryInput(
+                  `${memorySnapshot.view}\n\nUser message:\n${userText}`,
+                  turnInput.message.attachments,
+                ),
+              },
+            });
+          }
           const retryHandoff =
             missedItems.length === 0
               ? []
@@ -1215,6 +1310,7 @@ export const layer: Layer.Layer<
         ),
       );
       const deliverySession =
+        memorySnapshot === undefined &&
         effectiveHandoffs.length === 0 &&
         missedItems.length === 0 &&
         restartNote === "" &&
@@ -1257,7 +1353,7 @@ export const layer: Layer.Layer<
         message: {
           messageId: message.id,
           text: userText,
-          attachments: message.attachments,
+          attachments: inputAttachments,
           createdBy: message.createdBy,
           creationSource: message.creationSource,
           ...(message.scheduledTaskId === undefined

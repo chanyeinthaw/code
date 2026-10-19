@@ -1,5 +1,6 @@
 import {
   MessageId,
+  MemoryId,
   RuntimeRequestId,
   CheckpointId,
   CheckpointScopeId,
@@ -19,6 +20,11 @@ import {
   type OrchestrationV2TurnItem,
 } from "@t3tools/contracts";
 import type { ThreadRuntimeSummary } from "@t3tools/client-runtime/state/shell";
+import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/models";
+import {
+  deriveLatestThreadRun,
+  deriveThreadRuntime,
+} from "@t3tools/client-runtime/state/thread-execution";
 import { deriveMessagesTimelineRows } from "./components/chat/MessagesTimeline.logic";
 import * as DateTime from "effect/DateTime";
 import { describe, expect, it } from "vite-plus/test";
@@ -46,6 +52,50 @@ import { makeStreamingTimelineFixture, makeThreadProjectionFixture } from "./tes
 import type { ChatMessage } from "./types";
 
 describe("V2 session presentation", () => {
+  it.each(["preparing", "starting", "running", "completed"] as const)(
+    "restores memory activity from a %s run without local send state",
+    (status) => {
+      const original = makeThreadProjectionFixture();
+      const now = original.updatedAt;
+      const projection = {
+        ...original,
+        thread: { ...original.thread, memoryIdentityId: MemoryId.make("personal") },
+        runs: [
+          {
+            id: RunId.make("memory-turn"),
+            threadId: original.thread.id,
+            ordinal: 1,
+            providerInstanceId: original.thread.providerInstanceId,
+            modelSelection: original.thread.modelSelection,
+            providerThreadId: null,
+            userMessageId: MessageId.make("memory-prompt"),
+            rootNodeId: null,
+            activeAttemptId: null,
+            status,
+            requestedAt: now,
+            startedAt: status === "running" || status === "completed" ? now : null,
+            completedAt: status === "completed" ? now : null,
+            checkpointId: null,
+            contextHandoffId: null,
+          },
+        ],
+      };
+      const runtime = deriveThreadRuntime(projection);
+      const rows = deriveMessagesTimelineRows({
+        timelineEntries: [],
+        latestRun: deriveLatestThreadRun(projection),
+        runningRunId: runtime?.activeRunId ?? null,
+        isWorking: threadRuntimeIsActive(runtime),
+        turnDiffSummaries: [],
+        supportsConversationRollback: false,
+      });
+      expect(rows.some((row) => row.kind === "working" || row.kind === "thinking")).toBe(
+        status !== "completed",
+      );
+      expect(deriveCanInterruptRunningThread(true, runtime)).toBe(status !== "completed");
+    },
+  );
+
   it("uses run status as the settlement boundary", () => {
     const runId = RunId.make("run-1");
     expect(

@@ -1,6 +1,12 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { ChartNoAxesColumnIcon, MessagesSquareIcon, SettingsIcon } from "lucide-react";
-import { type ComponentProps, type ReactNode } from "react";
+import { useLastActiveMemory, useMemories } from "../../state/memories";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  ChartNoAxesColumnIcon,
+  MessagesSquareIcon,
+  GitBranchIcon,
+  SettingsIcon,
+} from "lucide-react";
+import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 import { isElectron } from "../../env";
 import { useWindowFullscreen } from "../../hooks/useWindowFullscreen";
 import { isMacPlatform } from "../../lib/utils";
@@ -8,11 +14,11 @@ import { isMacPlatform } from "../../lib/utils";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { usePullRequestsSupported } from "../../state/environments";
-import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { AlternateSidebarFrame } from "./AlternateSidebarFrame";
 import { AlternateSidebarHeader } from "./AlternateSidebarHeader";
 import { SidebarProviderUpdatePill } from "../sidebar/SidebarProviderUpdatePill";
 import Sidebar from "../Sidebar";
+import { MemorySidebar } from "../memory/MemorySidebar";
 import { Button } from "../ui/button";
 import { SidebarFooter, SidebarMenu, SidebarTrigger, useSidebarVisibility } from "../ui/sidebar";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "../sidebar/SidebarUpdatePill";
@@ -22,6 +28,7 @@ export function AlternateSidebarLayout({ children }: { children: ReactNode }) {
   return (
     <AlternateSidebarFrame
       navigationRail={<AlternateNavigationRail />}
+      memorySidebar={<MemorySidebar />}
       threadSidebar={
         <>
           <AlternateSidebarHeader />
@@ -81,7 +88,16 @@ function AlternateNavigationRail() {
   });
   const settingsOpen = pathname === "/settings" || pathname.startsWith("/settings/");
   const isUtilityPage = pathname === "/usage" || pathname === "/pull-requests";
-  const navigateToMainApp = useNavigateToMainApp();
+  const navigate = useNavigate();
+  const lastActiveMemory = useLastActiveMemory();
+  const memoryOpen = pathname === "/memory" || pathname.startsWith("/memory/");
+  const memories = useMemories();
+  const showSidebarControl = !memoryOpen || memories.length > 1;
+  const href = useLocation({ select: (location) => location.href });
+  const lastThreadHref = useRef<string | null>(null);
+  useEffect(() => {
+    if (!memoryOpen && !settingsOpen && !isUtilityPage) lastThreadHref.current = href;
+  }, [href, memoryOpen, settingsOpen, isUtilityPage]);
   const pullRequestsSupported = usePullRequestsSupported();
   return (
     <nav
@@ -92,26 +108,45 @@ function AlternateNavigationRail() {
       className="alternate-navigation-rail z-40 flex w-12 shrink-0 flex-col items-center gap-2 pb-2 [-webkit-app-region:no-drag]"
     >
       <div className="flex h-[var(--workspace-topbar-height)] w-full shrink-0 items-center justify-center">
-        {!reserveTrafficLights && !settingsOpen && !isUtilityPage ? (
+        {!reserveTrafficLights && !settingsOpen && !isUtilityPage && showSidebarControl ? (
           <Tooltip>
             <TooltipTrigger
               render={
                 <SidebarTrigger
-                  aria-label={sidebarVisible ? "Collapse thread sidebar" : "Expand thread sidebar"}
+                  aria-label={sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
                 />
               }
             />
             <TooltipPopup side="right">
-              {sidebarVisible ? "Collapse thread sidebar" : "Expand thread sidebar"}
+              {sidebarVisible ? "Collapse sidebar" : "Expand sidebar"}
             </TooltipPopup>
           </Tooltip>
         ) : null}
       </div>
       <NavigationButton
+        label="Chat"
+        render={
+          lastActiveMemory ? (
+            <Link
+              to="/memory/$environmentId/$threadId"
+              params={{
+                environmentId: lastActiveMemory.ownerEnvironmentId,
+                threadId: lastActiveMemory.threadId,
+              }}
+            />
+          ) : (
+            <Link to="/memory" />
+          )
+        }
+        aria-current={memoryOpen ? "page" : undefined}
+      >
+        <GitBranchIcon />
+      </NavigationButton>
+      <NavigationButton
         label="Threads"
-        onClick={() => void navigateToMainApp()}
+        onClick={() => void navigate({ href: lastThreadHref.current ?? "/" })}
         aria-current={
-          !settingsOpen && pathname !== "/usage" && pathname !== "/pull-requests"
+          !memoryOpen && !settingsOpen && pathname !== "/usage" && pathname !== "/pull-requests"
             ? "page"
             : undefined
         }
