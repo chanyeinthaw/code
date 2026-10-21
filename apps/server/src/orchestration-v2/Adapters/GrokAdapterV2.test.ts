@@ -11,12 +11,12 @@ import {
   ProviderSessionId,
   type RuntimeMode,
   ThreadId,
-} from "@t3tools/contracts";
-import { GrokSettings } from "@t3tools/provider-grok/settings";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { resolveSelfInvocation } from "@t3tools/shared/nodeRuntime";
+} from "@satslab/contracts";
+import { GrokSettings } from "@satslab/provider-grok/settings";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { resolveSelfInvocation } from "@satslab/shared/nodeRuntime";
 import * as EffectAcpErrors from "effect-acp/errors";
-import { xAiRateLimitedErrorCode } from "@t3tools/provider-grok/testing";
+import { xAiRateLimitedErrorCode } from "@satslab/provider-grok/testing";
 import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -30,23 +30,23 @@ import * as Schema from "effect/Schema";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import type * as EffectAcpSchema from "effect-acp/compat";
 
-import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
+import * as TestProviderHost from "@satslab/provider-testing/TestProviderHost";
 import * as ProjectStore from "../ProjectStore.ts";
-import { buildInitialGrokProviderSnapshot } from "@t3tools/provider-grok/testing";
-import type { ProviderInstance } from "@t3tools/provider-core/server/driver";
+import { buildInitialGrokProviderSnapshot } from "@satslab/provider-grok/testing";
+import type { ProviderInstance } from "@satslab/provider-core/server/driver";
 import * as ProviderInstanceRegistry from "../../provider/ProviderInstanceRegistry.ts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
+import * as McpProviderSessions from "@satslab/provider-core/server/McpProviderSessions";
+import * as ProviderAdapter from "@satslab/provider-core/server/ProviderAdapter";
 import * as RuntimePolicy from "../RuntimePolicy.ts";
-import { acpPermissionDisposition } from "@t3tools/provider-acp/server/clientPolicy";
-import { acpCompletedTurnShouldTerminalizeTool } from "@t3tools/provider-acp/server/adapter";
+import { acpPermissionDisposition } from "@satslab/provider-acp/server/clientPolicy";
+import { acpCompletedTurnShouldTerminalizeTool } from "@satslab/provider-acp/server/adapter";
 import {
   makeGrokAcpAdapterFlavor,
   makeGrokAdapterV2,
   GROK_PROVIDER,
   GROK_ACP_INITIALIZE_META,
-} from "@t3tools/provider-grok/testing";
+} from "@satslab/provider-grok/testing";
 
 import { makeAcpReplayRuntime, type AcpReplayTranscript } from "./AcpAdapterV2.testkit.ts";
 

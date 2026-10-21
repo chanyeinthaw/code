@@ -1,4 +1,4 @@
-import type { ConnectionCatalogEntry } from "@t3tools/client-runtime/connection";
+import type { ConnectionCatalogEntry } from "@satslab/client-runtime/connection";
 
 import {
   useEnvironmentProviders,

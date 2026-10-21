@@ -7,10 +7,10 @@ import {
   BotId,
   ProviderInstanceId,
   ProviderDriverKind,
-} from "@t3tools/contracts";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
-import { applyServerSettingsPatch } from "@t3tools/shared/serverSettings";
-import type { ProviderInstance } from "@t3tools/provider-core/server/driver";
+} from "@satslab/contracts";
+import * as ProviderAdapter from "@satslab/provider-core/server/ProviderAdapter";
+import { applyServerSettingsPatch } from "@satslab/shared/serverSettings";
+import type { ProviderInstance } from "@satslab/provider-core/server/driver";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Fiber from "effect/Fiber";

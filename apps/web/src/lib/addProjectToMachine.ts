@@ -2,14 +2,14 @@ import {
   executeAtomQuery,
   runAtomCommand,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import { scopedProjectKey } from "@t3tools/client-runtime/environment";
+} from "@satslab/client-runtime/state/runtime";
+import { scopedProjectKey } from "@satslab/client-runtime/environment";
 import type {
   EnvironmentId,
   ProjectCloneSnapshot,
   ProjectId,
   ScopedProjectRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { create } from "zustand";
 
 import { appAtomRegistry } from "../rpc/atomRegistry";

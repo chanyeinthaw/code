@@ -1,4 +1,4 @@
-import { splitPullRequestBody } from "@t3tools/client-runtime/pull-request-markdown";
+import { splitPullRequestBody } from "@satslab/client-runtime/pull-request-markdown";
 import {
   PullRequestImageAttachment,
   PullRequestMedia,

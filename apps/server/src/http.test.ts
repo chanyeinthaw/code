@@ -21,8 +21,8 @@ import {
   injectMcpAppCookieBootstrap,
   injectMcpAppThemeBootstrap,
   MCP_APP_MAX_HTML_BYTES,
-} from "@t3tools/shared/mcpApp";
-import { ORCHESTRATION_PROTOCOL_HEADER } from "@t3tools/contracts";
+} from "@satslab/shared/mcpApp";
+import { ORCHESTRATION_PROTOCOL_HEADER } from "@satslab/contracts";
 
 import * as ServerConfig from "./config.ts";
 
@@ -112,7 +112,7 @@ describe("browser API CORS", () => {
         new Request("https://backend.example/api/environment", {
           method: "OPTIONS",
           headers: {
-            origin: "https://app.t3.codes",
+            origin: "https://sora.satslab.xyz",
             "access-control-request-method": "GET",
             "access-control-request-headers": [
               ORCHESTRATION_PROTOCOL_HEADER,

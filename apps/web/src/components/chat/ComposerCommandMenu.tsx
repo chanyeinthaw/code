@@ -1,9 +1,9 @@
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
-import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
+import { formatProviderSkillDisplayName } from "@satslab/shared/inlineSkills";
+import type { ComposerPathSearchTarget } from "@satslab/client-runtime/state/threads";
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@satslab/client-runtime/providerSkills";
 import {
   type ProjectEntry,
   type ProviderDriverKind,
@@ -11,7 +11,7 @@ import {
   type ScopedThreadRef,
   type ServerProviderSkill,
   type ServerProviderSlashCommand,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   BlocksIcon,
   FolderIcon,

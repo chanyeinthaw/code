@@ -4,7 +4,7 @@ import {
   type DesktopUpdateStatusReport,
   type ServerSelfUpdateProgressStage,
   type ServerSelfUpdateResult,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Duration from "effect/Duration";
@@ -52,7 +52,7 @@ export class DesktopAppUpdate extends Context.Service<
       onHandoffAccepted?: () => Effect.Effect<void>,
     ) => Effect.Effect<never, ServerSelfUpdateError>;
   }
->()("t3/desktopUpdate/DesktopAppUpdate") {}
+>()("@satslab/sora/desktopUpdate/DesktopAppUpdate") {}
 
 export const make = Effect.fn("desktopUpdate.desktopAppUpdate.make")(function* () {
   const config = yield* ServerConfig.ServerConfig;
@@ -124,7 +124,7 @@ export const make = Effect.fn("desktopUpdate.desktopAppUpdate.make")(function* (
     }
     if (report.outcome === "up-to-date") {
       return yield* failWith(
-        `The T3 Code desktop app on this machine is already up to date on ${report.state.currentVersion}.`,
+        `The Sora desktop app on this machine is already up to date on ${report.state.currentVersion}.`,
       );
     }
     return yield* failWith(
@@ -136,7 +136,7 @@ export const make = Effect.fn("desktopUpdate.desktopAppUpdate.make")(function* (
     function* (reportProgress) {
       if (!available) {
         return yield* failWith(
-          "This server was not started by the T3 Code desktop app, so it cannot drive a desktop update.",
+          "This server was not started by the Sora desktop app, so it cannot drive a desktop update.",
         );
       }
       if (yield* Ref.getAndSet(inFlight, true)) {
@@ -159,7 +159,7 @@ export const make = Effect.fn("desktopUpdate.desktopAppUpdate.make")(function* (
             .requestDesktopUpdate(requestId)
             .pipe(
               Effect.mapError((error) =>
-                failWith("Could not reach the T3 Code desktop app on this machine.", error),
+                failWith("Could not reach the Sora desktop app on this machine.", error),
               ),
             );
           return yield* consumeReports(requestId, changes, reportProgress).pipe(
@@ -191,7 +191,7 @@ export const make = Effect.fn("desktopUpdate.desktopAppUpdate.make")(function* (
         });
         yield* Effect.uninterruptible(
           receiver.commitDesktopUpdate(requestId).pipe(
-            Effect.mapError((error) => failWith("Could not reach the T3 Code desktop app.", error)),
+            Effect.mapError((error) => failWith("Could not reach the Sora desktop app.", error)),
             Effect.tap(() => onHandoffAccepted()),
           ),
         );

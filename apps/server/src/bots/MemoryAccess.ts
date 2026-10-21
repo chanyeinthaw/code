@@ -1,4 +1,4 @@
-import { BotChatError, type ThreadId, type RunId } from "@t3tools/contracts";
+import { BotChatError, type ThreadId, type RunId } from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -127,6 +127,6 @@ const make = Effect.gen(function* () {
   };
 });
 export class MemoryAccess extends Context.Service<MemoryAccess, Effect.Success<typeof make>>()(
-  "t3/bots/MemoryAccess",
+  "@satslab/sora/bots/MemoryAccess",
 ) {}
 export const layer = Layer.effect(MemoryAccess, make);

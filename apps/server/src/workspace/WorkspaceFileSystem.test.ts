@@ -15,11 +15,11 @@ import * as KnownWorkspaces from "./KnownWorkspaces.ts";
 import * as WorkspaceEntries from "./WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./WorkspaceFileSystem.ts";
 import * as WorkspacePaths from "./WorkspacePaths.ts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { symlinksSupported } from "@satslab/shared/testing/symlinks";
 
 // Temp folders count as known workspaces unless named as unknown.
-const UNKNOWN_WORKSPACE_PREFIX = "t3code-unknown-workspace-";
+const UNKNOWN_WORKSPACE_PREFIX = "sora-unknown-workspace-";
 const layerKnownWorkspacesTest = Layer.mock(KnownWorkspaces.KnownWorkspaces)({
   assertContains: (cwd) =>
     cwd.includes(UNKNOWN_WORKSPACE_PREFIX)
@@ -49,7 +49,7 @@ const layerTest = Layer.empty.pipe(
 const makeTempDir = Effect.gen(function* () {
   const fileSystem = yield* FileSystem.FileSystem;
   return yield* fileSystem.makeTempDirectoryScoped({
-    prefix: "t3code-workspace-files-",
+    prefix: "sora-workspace-files-",
   });
 });
 
@@ -233,7 +233,7 @@ it.layer(layerTest, { excludeTestServices: true })("WorkspaceFileSystemLive", (i
           const missingChildError = yield* workspaceFileSystem
             .readFile(
               Object.assign(
-                { cwd, relativePath: "linked-dir/missing/t3.json" },
+                { cwd, relativePath: "linked-dir/missing/sora.json" },
                 { allowMissing: true },
               ),
             )

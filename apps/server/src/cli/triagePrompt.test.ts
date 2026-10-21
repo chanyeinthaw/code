@@ -21,21 +21,23 @@ it("stays byte-identical to .github/triage/PLAYBOOK.md", () => {
 it("launch prompt stays a single argv-safe line naming the prompt file", () => {
   // The launch argument goes through cmd.exe on Windows (.cmd shims), which
   // cannot carry newlines; the playbook itself must stay on disk.
-  const launch = buildTriageLaunchPrompt(String.raw`C:\Users\a b\.t3\userdata\triage\x\prompt.md`);
+  const launch = buildTriageLaunchPrompt(
+    String.raw`C:\Users\a b\.sora\userdata\triage\x\prompt.md`,
+  );
   assert.notInclude(launch, "\n");
-  assert.include(launch, String.raw`C:\Users\a b\.t3\userdata\triage\x\prompt.md`);
+  assert.include(launch, String.raw`C:\Users\a b\.sora\userdata\triage\x\prompt.md`);
   assert.isBelow(launch.length, 1_000);
 });
 
 it("context file labels the CLI version as the CLI's, not the user's build", () => {
-  // `npx t3 triage` can resolve a different `t3` than the app the bug
+  // `npx @satslab/sora triage` can resolve a different `sora` than the app the bug
   // happened on (#13337), so the agent must not read it as the user's version.
   const context = buildTriageContext({
     generatedAt: "2026-09-24T00:00:00.000Z",
     cliVersion: "0.0.42",
     os: "linux x64 (7.2.0)",
     nodeVersion: "v26.8.2",
-    launchedAs: "npx t3 triage",
+    launchedAs: "npx @satslab/sora triage",
     server: "running (pid 42, http://127.0.0.1:3773, version 0.0.43-nightly.20260923.2173)",
     paths: {
       stateDir: "/home/u/.t3/userdata",

@@ -2,7 +2,7 @@ import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
@@ -18,19 +18,19 @@ import {
   threadWokeAt,
   isThreadWokeUnseen,
   snoozeWakeLabel,
-} from "@t3tools/client-runtime/state/thread-settled";
+} from "@satslab/client-runtime/state/thread-settled";
 import type { WorktreeSetupCardProps } from "./worktree-setup-card";
 import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
-import { type EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import type { HandoffEndpoints } from "@t3tools/client-runtime/handoff";
+import { type EnvironmentConnectionPhase } from "@satslab/client-runtime/connection";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
+import type { HandoffEndpoints } from "@satslab/client-runtime/handoff";
 import {
   childThreadInputsTitle,
   type CodexFeedbackSubmission,
   type EnvironmentThreadStatus,
-} from "@t3tools/client-runtime/state/threads";
+} from "@satslab/client-runtime/state/threads";
 import { useKeyboardChatComposerInset, useKeyboardScrollToEnd } from "@legendapp/list/keyboard";
-import { resolveProviderSkillsForCwd } from "@t3tools/client-runtime/providerSkills";
+import { resolveProviderSkillsForCwd } from "@satslab/client-runtime/providerSkills";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { HeaderHeightContext } from "@react-navigation/elements";
 import { NativeLayoutObserver } from "../../native/NativeLayoutObserver";
@@ -46,30 +46,30 @@ import type {
   ServerConfig as T3ServerConfig,
   ThreadId,
   UsageLimitsReport,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   appendCodexArtifactTemplateUsePrompt,
   type CodexArtifactTemplate,
-} from "@t3tools/shared/codexArtifactTemplates";
+} from "@satslab/shared/codexArtifactTemplates";
 import {
   declinePendingApprovals,
   type ApprovalResponder,
   type ThreadUserInputQuestion,
-} from "@t3tools/client-runtime/state/thread-requests";
+} from "@satslab/client-runtime/state/thread-requests";
 import {
   presentPendingBackgroundWork,
   presentProviderGoal,
-} from "@t3tools/client-runtime/state/thread-execution";
-import { resolveSubagentPillSegment } from "@t3tools/client-runtime/state/thread-subagents";
+} from "@satslab/client-runtime/state/thread-execution";
+import { resolveSubagentPillSegment } from "@satslab/client-runtime/state/thread-subagents";
 import {
   formatModelSelectionEffort,
   type ProviderSubagentStatus,
-} from "@t3tools/client-runtime/state/thread-execution";
-import { formatModelSlugName, resolveSelectableModel } from "@t3tools/shared/model";
-import { isProviderNativeSubagentThread } from "@t3tools/contracts";
+} from "@satslab/client-runtime/state/thread-execution";
+import { formatModelSlugName, resolveSelectableModel } from "@satslab/shared/model";
+import { isProviderNativeSubagentThread } from "@satslab/contracts";
 import type { QueuedRunEdit } from "../../state/queued-run-edit";
 import type { FollowUpBehavior } from "../../lib/followUpBehavior";
-import type { ActiveTurnComposerAction } from "@t3tools/client-runtime/state/composer-dispatch";
+import type { ActiveTurnComposerAction } from "@satslab/client-runtime/state/composer-dispatch";
 import * as Haptics from "expo-haptics";
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
@@ -104,7 +104,7 @@ import { useWorkspaceContentWidth } from "../layout/workspace-content-width";
 import { useNativeWorkspaceColumnsSupported } from "../../native/NativeWorkspaceColumns";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
-import { collectProviderUsageLimits } from "@t3tools/shared/usageLimits";
+import { collectProviderUsageLimits } from "@satslab/shared/usageLimits";
 import type { ComposerEditorHandle } from "../../components/ComposerEditor";
 import type { StatusTone } from "../../components/StatusPill";
 import { getComposerDraftSnapshot } from "../../state/use-composer-drafts";

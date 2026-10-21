@@ -1,5 +1,5 @@
 import { RegistryContext } from "@effect/atom-react";
-import { selectBotIdentities } from "@t3tools/contracts";
+import { selectBotIdentities } from "@satslab/contracts";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import * as Effect from "effect/Effect";
 import { AtomRegistry } from "effect/reactivity";

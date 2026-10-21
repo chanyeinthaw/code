@@ -1,8 +1,8 @@
 import { DeviceHostUpdates } from "./DeviceHostUpdates";
-import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@t3tools/contracts";
+import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@satslab/contracts";
 import { Check } from "lucide-react";
 import { Check as CheckGlyph, CircleAlert } from "lucide";
-import { AuthSettingsWriteScope } from "@t3tools/contracts";
+import { AuthSettingsWriteScope } from "@satslab/contracts";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";

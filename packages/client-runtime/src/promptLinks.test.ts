@@ -2,7 +2,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type RepositoryIdentity,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { findPromptLinkProject, resolvePromptLinkModelSelection } from "./promptLinks.ts";
@@ -18,16 +18,16 @@ describe("findPromptLinkProject", () => {
     const projects = [
       {
         id: "fork",
-        repositoryIdentity: identity("github.com/pingdotgg/t3code", "github.com/me/t3code"),
+        repositoryIdentity: identity("github.com/pingdotgg/t3code", "github.com/me/sora"),
       },
       { id: "none", repositoryIdentity: null },
       { id: "recent", repositoryIdentity: identity("github.com/PingDotGG/T3Code") },
       { id: "older", repositoryIdentity: identity("github.com/pingdotgg/t3code") },
     ];
-    expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "t3code" })?.id).toBe(
+    expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "sora" })?.id).toBe(
       "recent",
     );
-    expect(findPromptLinkProject(projects, { owner: "me", name: "t3code" })?.id).toBe("fork");
+    expect(findPromptLinkProject(projects, { owner: "me", name: "sora" })?.id).toBe("fork");
     expect(findPromptLinkProject(projects, { owner: "gitlab", name: "x" })).toBeUndefined();
   });
 });

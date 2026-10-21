@@ -1,7 +1,7 @@
-import { presentThreadShell } from "@t3tools/client-runtime/state/models";
+import { presentThreadShell } from "@satslab/client-runtime/state/models";
 import * as DateTime from "effect/DateTime";
 import * as Schema from "effect/Schema";
-import { planPinnedMove } from "@t3tools/client-runtime/state/thread-sort";
+import { planPinnedMove } from "@satslab/client-runtime/state/thread-sort";
 import {
   createPendingThreadOrder,
   createThreadMovePlanner,
@@ -11,8 +11,8 @@ import {
   type PendingThreadOrder,
   type ThreadMoveAvailability,
 } from "./threadOrder";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import { resolveSnoozePresets } from "@t3tools/client-runtime/state/thread-settled";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
+import { resolveSnoozePresets } from "@satslab/client-runtime/state/thread-settled";
 import {
   CommandId,
   EnvironmentId,
@@ -22,7 +22,7 @@ import {
   ProviderInstanceId,
   RunId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";

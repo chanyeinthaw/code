@@ -41,7 +41,7 @@ describe("workspaceRelativeFilePath", () => {
   // regression: #9309 POSIX paths compare case-sensitively, Windows paths do not
   it.each([
     ["/Repo/Project/src/main.ts", "/repo/project", null],
-    ["C:/USERS/mike/t3code/main.ts", "c:/users/MIKE/t3code", "main.ts"],
+    ["C:/USERS/mike/sora/main.ts", "c:/users/MIKE/sora", "main.ts"],
     ["/repo/project-two/a.ts", "/repo/project", null],
   ])("relates %s to %s", (path, workspaceRoot, relativePath) => {
     expect(workspaceRelativeFilePath(path, workspaceRoot)).toBe(relativePath);

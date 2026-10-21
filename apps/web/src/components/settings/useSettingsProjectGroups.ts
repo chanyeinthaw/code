@@ -1,4 +1,4 @@
-import { isBotProject } from "@t3tools/shared/botChat";
+import { isBotProject } from "@satslab/shared/botChat";
 import { useClientSettings } from "../../hooks/useSettings";
 import { buildSidebarProjectSnapshots } from "../../sidebarProjectGrouping";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";

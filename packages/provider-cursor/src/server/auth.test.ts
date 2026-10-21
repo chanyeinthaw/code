@@ -1,7 +1,7 @@
 import type { SdkLoginOptions, StoredSdkCredentials } from "@cursor/sdk";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
-import { ProviderInstanceId, ProviderSetupError, type ProviderAuthState } from "@t3tools/contracts";
+import { ProviderInstanceId, ProviderSetupError, type ProviderAuthState } from "@satslab/contracts";
 import * as Clock from "effect/Clock";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -186,7 +186,7 @@ it.layer(NodeServices.layer)("CursorAuth", (it) => {
   it.effect("discards a credential rejected by verification and permits a fresh login", () =>
     Effect.gen(function* () {
       const rejectionMessage =
-        "Cursor needs a paid plan to run in T3 Code. Upgrade this account or sign in with a different one.";
+        "Cursor needs a paid plan to run in Sora. Upgrade this account or sign in with a different one.";
       let rejected = true;
       const harness = yield* makeHarness({
         onChanged: (signedIn) =>

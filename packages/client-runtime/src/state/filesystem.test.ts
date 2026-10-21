@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { AuthFilesystemReadScope, AuthOrchestrationReadScope } from "@t3tools/contracts";
+import { AuthFilesystemReadScope, AuthOrchestrationReadScope } from "@satslab/contracts";
 
 import {
   createBrowseNavigationCoordinator,
@@ -72,7 +72,7 @@ describe("filesystem browse model", () => {
     expect(getFilesystemBrowsePath("~/projects/t3")).toEqual({
       isBrowsing: true,
       directoryPath: "~/projects/",
-      filterQuery: "t3",
+      filterQuery: "sora",
       parentPath: "~/",
       canBrowseUp: true,
     });

@@ -3,8 +3,8 @@ import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 import * as NodeSqlite from "node:sqlite";
 
-import { SERVER_EXIT_CODE_STATE_DIR_OWNED } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import { SERVER_EXIT_CODE_STATE_DIR_OWNED } from "@satslab/contracts";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as Crypto from "effect/Crypto";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -45,7 +45,7 @@ export class ServerAlreadyRunningError extends Schema.TaggedError<ServerAlreadyR
   override readonly [Runtime.errorExitCode] = SERVER_EXIT_CODE_STATE_DIR_OWNED;
 
   override get message(): string {
-    return `A T3 Code server already owns ${this.stateDir}. Stop that server, or use a separate T3 home and pair with it, then retry. No server was stopped.`;
+    return `A Sora server already owns ${this.stateDir}. Stop that server, or use a separate T3 home and pair with it, then retry. No server was stopped.`;
   }
 }
 
@@ -56,7 +56,7 @@ export class OlderBootServiceError extends Schema.TaggedError<OlderBootServiceEr
   override readonly [Runtime.errorExitCode] = SERVER_EXIT_CODE_STATE_DIR_OWNED;
 
   override get message(): string {
-    return `A T3 Code background service set up for ${this.baseDir} may still run a release without the ownership lock. On that machine, try \`t3 update\` and let it restart (or run \`t3 service restart\` if the update is already installed). If the older launcher cannot update, run \`t3 service uninstall\`, then reinstall with \`t3 service install\` from a current CLI. You can also leave the service uninstalled. Pass \`--base-dir ${this.baseDir}\` to each command, and use \`npx t3@latest\` if \`t3\` is not installed or is outdated. Then retry. No server was stopped.`;
+    return `A Sora background service set up for ${this.baseDir} may still run a release without the ownership lock. On that machine, try \`sora update\` and let it restart (or run \`sora service restart\` if the update is already installed). If the older launcher cannot update, run \`sora service uninstall\`, then reinstall with \`sora service install\` from a current CLI. You can also leave the service uninstalled. Pass \`--base-dir ${this.baseDir}\` to each command, and use \`npx @satslab/sora@latest\` if \`t3\` is not installed or is outdated. Then retry. No server was stopped.`;
   }
 }
 

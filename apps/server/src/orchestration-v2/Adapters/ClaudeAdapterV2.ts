@@ -1,11 +1,11 @@
-import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
+import { buildBotSystemPrompt } from "@satslab/provider-core/server/botInstructions";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import { claudeTaskOutputRoot, tailClaudeTaskOutput } from "./ClaudeTaskOutputTail.ts";
 import {
   dynamicToolTitle,
   formatReadToolLabel,
   formatSearchToolLabel,
-} from "@t3tools/shared/toolActivity";
+} from "@satslab/shared/toolActivity";
 import { field, text } from "../unknownField.ts";
 import {
   initialWorkflowAgentTranscriptCursor,
@@ -19,7 +19,7 @@ import {
   parseClaudeWorkflowRunHandles,
 } from "./claudeWorkflowProgress.ts";
 
-import { isWorkspaceImagePreviewPath } from "@t3tools/shared/filePreview";
+import { isWorkspaceImagePreviewPath } from "@satslab/shared/filePreview";
 import { normalizeClaudeTurnTokenUsage } from "../../provider/ClaudeTurnTokenUsage.ts";
 import {
   type CanUseTool,
@@ -53,15 +53,15 @@ import type {
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- the SDK takes a Node ChildProcess for the CLI.
 import * as NodeChildProcess from "node:child_process";
 import * as NodeUtil from "node:util";
-import { parseCliArgs } from "@t3tools/shared/cliArgs";
-import { fromLenientJson } from "@t3tools/shared/schemaJson";
-import { AgentScope } from "@t3tools/shared/AgentScope";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { applyClaudePromptEffortPrefix } from "@t3tools/shared/model";
+import { parseCliArgs } from "@satslab/shared/cliArgs";
+import { fromLenientJson } from "@satslab/shared/schemaJson";
+import { AgentScope } from "@satslab/shared/AgentScope";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { applyClaudePromptEffortPrefix } from "@satslab/shared/model";
 import {
   CLAUDE_RESUME_COMPACTION_NEVER_ANSWER,
   formatClaudeResumeCompactionQuestion,
-} from "@t3tools/shared/claudeCompaction";
+} from "@satslab/shared/claudeCompaction";
 import {
   type ChatAttachment,
   ClaudeSettings,
@@ -99,7 +99,7 @@ import {
   type RunId,
   type ThreadId,
   resolveIdleCompaction,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
@@ -136,9 +136,9 @@ import {
 } from "../../claudeModelOptions.ts";
 import * as ServerConfig from "../../config.ts";
 import * as ServerSettings from "../../serverSettings.ts";
-import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
-import { spawnAndCollect } from "@t3tools/provider-core/server/snapshotProbe";
-import { signalProcessGroup } from "@t3tools/provider-core/server/processGroup";
+import { expandHomePath } from "@satslab/provider-core/server/pathExpansion";
+import { spawnAndCollect } from "@satslab/provider-core/server/snapshotProbe";
+import { signalProcessGroup } from "@satslab/provider-core/server/processGroup";
 import {
   claudeSignedOutMessage,
   makeClaudeEnvironment,
@@ -156,44 +156,44 @@ import {
   boundProviderEventForLogging,
   shouldPersistProviderEvent,
 } from "../../provider/EventNdjsonLogger.ts";
-import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
+import * as ProviderEventLoggers from "@satslab/provider-core/server/ProviderEventLoggers";
 import {
   claudeRateLimitEventToUpdate,
   type ClaudeScopedLimitNames,
 } from "../../provider/claudeUsageLimits.ts";
-import type { ManagedServerProvider } from "@t3tools/provider-core/server/snapshot";
-import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@t3tools/provider-core/server/orchestrationInstructions";
-import { buildRuntimeInstructions } from "@t3tools/provider-core/server/runtimeInstructions";
+import type { ManagedServerProvider } from "@satslab/provider-core/server/snapshot";
+import { mergeProviderInstanceEnvironment } from "@satslab/provider-core/server/instanceEnvironment";
+import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@satslab/provider-core/server/orchestrationInstructions";
+import { buildRuntimeInstructions } from "@satslab/provider-core/server/runtimeInstructions";
 import {
   mcpToolPresentation,
   normalizeMcpText,
-} from "@t3tools/provider-core/server/mcpToolPresentation";
-import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
+} from "@satslab/provider-core/server/mcpToolPresentation";
+import * as McpProviderSession from "@satslab/provider-core/server/mcpSession";
+import * as McpProviderSessions from "@satslab/provider-core/server/McpProviderSessions";
+import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
 import {
   makeProviderFailure,
   makeProviderRetryTurnItem,
-} from "@t3tools/provider-core/server/failure";
-import { turnScopedSelectionTransition } from "@t3tools/provider-core/server/selectionTransition";
-import { providerMessageTextWithAttachmentPaths } from "@t3tools/provider-core/server/attachmentPrompt";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+} from "@satslab/provider-core/server/failure";
+import { turnScopedSelectionTransition } from "@satslab/provider-core/server/selectionTransition";
+import { providerMessageTextWithAttachmentPaths } from "@satslab/provider-core/server/attachmentPrompt";
+import * as ProviderAdapter from "@satslab/provider-core/server/ProviderAdapter";
 import {
   ProviderAdapterDriverCreateError,
   type ProviderAdapterDriver,
   type ProviderAdapterDriverCreateInput,
-} from "@t3tools/provider-core/server/adapterDriver";
+} from "@satslab/provider-core/server/adapterDriver";
 import {
   type BackgroundWorkReport,
   backgroundWorkNotification,
-} from "@t3tools/provider-core/server/notification";
-import * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
+} from "@satslab/provider-core/server/notification";
+import * as ProviderContinuationRequests from "@satslab/provider-core/server/ProviderContinuationRequests";
 import {
   makeSubagentChildThread,
   makeSubagentConversationArtifacts,
   subagentThreadTitle,
-} from "@t3tools/provider-core/server/subagentProjection";
+} from "@satslab/provider-core/server/subagentProjection";
 
 export const CLAUDE_PROVIDER = ProviderDriverKind.make("claudeAgent");
 const CLAUDE_AGENT_SDK_QUERY_PROTOCOL = "claude-agent-sdk.query" as const;
@@ -568,7 +568,7 @@ export interface ClaudeAgentSdkQueryRunnerShape {
 export class ClaudeAgentSdkQueryRunner extends Context.Service<
   ClaudeAgentSdkQueryRunner,
   ClaudeAgentSdkQueryRunnerShape
->()("t3/orchestration-v2/Adapters/ClaudeAdapterV2/ClaudeAgentSdkQueryRunner") {}
+>()("@satslab/sora/orchestration-v2/Adapters/ClaudeAdapterV2/ClaudeAgentSdkQueryRunner") {}
 
 export interface ClaudeAgentSdkSessionForkInput {
   readonly sessionId: string;
@@ -1445,41 +1445,41 @@ const readClaudeAppendSystemPromptFile = Effect.fnUntraced(function* (input: {
     );
 });
 
-export const CLAUDE_T3_MCP_TOOL_WILDCARD = "mcp__t3-code__*";
+export const CLAUDE_SORA_MCP_TOOL_WILDCARD = "mcp__sora__*";
 
 // Must stay in sync with the Tool.Readonly annotations on OrchestratorToolkit;
 // ClaudeAdapterV2.test.ts cross-checks this list against the toolkit.
-export const CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS: ReadonlyArray<string> = [
-  "mcp__t3-code__orchestrator_capabilities",
-  "mcp__t3-code__list_scheduled_tasks",
-  "mcp__t3-code__t3_thread_list",
-  "mcp__t3-code__t3_thread_wait",
-  "mcp__t3-code__t3_pending_request_list",
-  "mcp__t3-code__t3_pending_request_read",
-  "mcp__t3-code__t3_thread_configuration",
-  "mcp__t3-code__t3_thread_transfers",
-  "mcp__t3-code__t3_worktree_status",
-  "mcp__t3-code__t3_worktree_list",
-  "mcp__t3-code__t3_project_list",
-  "mcp__t3-code__t3_project_read",
-  "mcp__t3-code__t3_thread_search",
-  "mcp__t3-code__t3_preview_list",
-  "mcp__t3-code__t3_environment_read",
-  "mcp__t3-code__t3_queue_list",
-  "mcp__t3-code__t3_queue_read",
-  "mcp__t3-code__html_preview",
-  "mcp__t3-code__html_render",
+export const CLAUDE_READ_ONLY_SORA_MCP_ALLOWED_TOOLS: ReadonlyArray<string> = [
+  "mcp__sora__orchestrator_capabilities",
+  "mcp__sora__list_scheduled_tasks",
+  "mcp__sora__s3_thread_list",
+  "mcp__sora__s3_thread_wait",
+  "mcp__sora__s3_pending_request_list",
+  "mcp__sora__s3_pending_request_read",
+  "mcp__sora__s3_thread_configuration",
+  "mcp__sora__s3_thread_transfers",
+  "mcp__sora__s3_worktree_status",
+  "mcp__sora__s3_worktree_list",
+  "mcp__sora__s3_project_list",
+  "mcp__sora__s3_project_read",
+  "mcp__sora__s3_thread_search",
+  "mcp__sora__s3_preview_list",
+  "mcp__sora__s3_environment_read",
+  "mcp__sora__s3_queue_list",
+  "mcp__sora__s3_queue_read",
+  "mcp__sora__html_preview",
+  "mcp__sora__html_render",
 ];
 
 // Claude Code aborts an HTTP MCP call after 60 s ("The operation timed out.")
-// unless the server config sets `timeout`. T3's wait tools (t3_thread_wait,
+// unless the server config sets `timeout`. T3's wait tools (s3_thread_wait,
 // delegate_task mode=wait) legitimately block for up to an hour
 // (MAX_WAIT_TIMEOUT_MS in OrchestratorMcpService), so the budget sits just
 // above that and the server's own wait timeout is what ends a long call.
-export const CLAUDE_T3_MCP_TOOL_TIMEOUT_MS = 65 * 60 * 1_000;
+export const CLAUDE_SORA_MCP_TOOL_TIMEOUT_MS = 65 * 60 * 1_000;
 
 // The SDK's `allowedTools` only pre-approves tool calls; availability is the separate `tools`
-// option. Attaching the t3-code MCP server therefore always pre-approves its tools (headless
+// option. Attaching the sora MCP server therefore always pre-approves its tools (headless
 // modes like `dontAsk` deny anything that is not pre-approved), but read-only sandboxes
 // pre-approve only the annotated read-only orchestrator tools so a read-only session cannot
 // silently spawn threads or scheduled tasks.
@@ -1498,22 +1498,22 @@ export function claudeMcpQueryOverrides(input: {
   }
   const mcpAllowedTools = input.readOnlySandbox
     ? [
-        ...CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS,
+        ...CLAUDE_READ_ONLY_SORA_MCP_ALLOWED_TOOLS,
         ...(session.botRunId === undefined
           ? []
-          : ["mcp__t3-code__zoom", "mcp__t3-code__date", "mcp__t3-code__t3_attachment_read"]),
+          : ["mcp__sora__zoom", "mcp__sora__date", "mcp__sora__s3_attachment_read"]),
       ]
-    : [CLAUDE_T3_MCP_TOOL_WILDCARD];
+    : [CLAUDE_SORA_MCP_TOOL_WILDCARD];
   return {
     allowedTools: Array.from(new Set([...(input.allowedTools ?? []), ...mcpAllowedTools])),
     mcpServers: {
-      "t3-code": {
+      sora: {
         type: "http",
         url: session.endpoint,
         headers: {
           Authorization: session.authorizationHeader,
         },
-        timeout: CLAUDE_T3_MCP_TOOL_TIMEOUT_MS,
+        timeout: CLAUDE_SORA_MCP_TOOL_TIMEOUT_MS,
       },
     },
   };

@@ -20,7 +20,7 @@ import {
   PreviewAutomationError,
   type RunId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import packageJson from "../../package.json" with { type: "json" };
 import * as ServerConfig from "../config.ts";
@@ -105,7 +105,7 @@ const unauthorized = (input: {
   return HttpServerResponse.jsonUnsafe(
     {
       error: "invalid_mcp_credential",
-      message: "A valid T3 Code MCP credential is required.",
+      message: "A valid Sora MCP credential is required.",
     },
     {
       status: 401,
@@ -124,7 +124,7 @@ export class McpClientAuthenticator extends Context.Service<
       request: HttpServerRequest.HttpServerRequest,
     ) => Effect.Effect<McpInvocationContext.McpInvocationScope | undefined>;
   }
->()("t3/mcp/McpHttpServer/McpClientAuthenticator") {}
+>()("@satslab/sora/mcp/McpHttpServer/McpClientAuthenticator") {}
 
 type AuthenticatedHttpEffect = Effect.Effect<
   HttpServerResponse.HttpServerResponse,
@@ -777,23 +777,23 @@ const registerHtmlPreview = Effect.fn("McpHttpServer.registerHtmlPreview")(funct
 const HANDOFF_TOOLS: ReadonlySet<string> = new Set([
   "delegate_task",
   "create_threads",
-  "t3_thread_launch",
-  "t3_thread_send",
-  "t3_thread_send_attachments",
-  "t3_thread_fork",
-  "t3_thread_merge_back",
-  "t3_queue_edit",
-  "t3_queue_promote_to_steer",
-  "t3_pending_request_respond",
+  "s3_thread_launch",
+  "s3_thread_send",
+  "s3_thread_send_attachments",
+  "s3_thread_fork",
+  "s3_thread_merge_back",
+  "s3_queue_edit",
+  "s3_queue_promote_to_steer",
+  "s3_pending_request_respond",
   "schedule_task",
   "run_scheduled_task_now",
 ]);
 
 /** Handoff tools whose result is only `{ sequence }`; their input names the receiving thread. */
 const INPUT_TARGET_TOOLS: ReadonlySet<string> = new Set([
-  "t3_queue_edit",
-  "t3_queue_promote_to_steer",
-  "t3_pending_request_respond",
+  "s3_queue_edit",
+  "s3_queue_promote_to_steer",
+  "s3_pending_request_respond",
 ]);
 
 const resultThreadKeys = ["childThreadId", "targetThreadId", "boundThreadId", "threadId"] as const;
@@ -1065,7 +1065,7 @@ export const layerDeviceToolkit = Layer.mergeAll(
 );
 
 export const layerMcpTransport = McpServer.layerHttp({
-  name: "T3 Code",
+  name: "Sora",
   version: packageJson.version,
   path: "/mcp",
   protocols: [McpProtocol.v2025_06_18],
@@ -1089,7 +1089,7 @@ const layerTools = Layer.mergeAll(
 const layerStandard = layerTools.pipe(Layer.provideMerge(layerMcpTransport));
 
 export const layerBotTransport = McpServer.layerHttp({
-  name: "T3 Code bots",
+  name: "Sora bots",
   version: packageJson.version,
   path: "/bot-mcp",
   protocols: [McpProtocol.v2025_06_18],
