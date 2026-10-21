@@ -1,5 +1,5 @@
 // @effect-diagnostics globalTimers:off - The bridge runs in the client, outside an Effect runtime.
-import { MCP_APP_PROTOCOL_VERSION, type McpAppReference } from "@t3tools/shared/mcpApp";
+import { MCP_APP_PROTOCOL_VERSION, type McpAppReference } from "@satslab/shared/mcpApp";
 import * as Base64 from "effect/encoding/Base64";
 import * as Predicate from "effect/Predicate";
 import * as Result from "effect/Result";
@@ -211,7 +211,7 @@ export function makeMcpAppHost(options: McpAppHostOptions): McpAppHost {
         respond(id, {
           protocolVersion:
             requested === MCP_APP_PROTOCOL_VERSION ? requested : MCP_APP_PROTOCOL_VERSION,
-          hostInfo: { name: "t3-code", version: options.hostVersion },
+          hostInfo: { name: "sora", version: options.hostVersion },
           hostCapabilities: {
             openLinks: {},
             serverTools: {},

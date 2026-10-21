@@ -1,8 +1,8 @@
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useNavigation } from "@react-navigation/native";
 import { useAtomValue } from "@effect/atom-react";
-import { managedRelaySessionAtom } from "@t3tools/client-runtime/relay";
-import type { EnvironmentId } from "@t3tools/contracts";
+import { managedRelaySessionAtom } from "@satslab/client-runtime/relay";
+import type { EnvironmentId } from "@satslab/contracts";
 import { useRef, useState } from "react";
 import { Platform, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

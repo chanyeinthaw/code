@@ -1,4 +1,4 @@
-import { botCodexDisabledReason } from "@t3tools/shared/botChat";
+import { botCodexDisabledReason } from "@satslab/shared/botChat";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Stream from "effect/Stream";

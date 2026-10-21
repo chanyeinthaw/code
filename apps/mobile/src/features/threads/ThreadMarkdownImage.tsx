@@ -1,5 +1,5 @@
-import { MISSING_FILE_ACCESS_MESSAGE } from "@t3tools/client-runtime/state/assets";
-import type { AssetResource, EnvironmentId } from "@t3tools/contracts";
+import { MISSING_FILE_ACCESS_MESSAGE } from "@satslab/client-runtime/state/assets";
+import type { AssetResource, EnvironmentId } from "@satslab/contracts";
 import { Image } from "expo-image";
 import { createContext, useContext, useEffect, useEffectEvent, useId, useState } from "react";
 import { fetch } from "expo/fetch";

@@ -5,12 +5,12 @@ import {
   secretRequestDisplay,
   secretRequestFailureMessage,
   type SecretRequestItem,
-} from "@t3tools/client-runtime/secret-request";
+} from "@satslab/client-runtime/secret-request";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@t3tools/contracts";
+} from "@satslab/client-runtime/state/runtime";
+import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@satslab/contracts";
 import { useRef, useState } from "react";
 import { View, type ColorValue } from "react-native";
 

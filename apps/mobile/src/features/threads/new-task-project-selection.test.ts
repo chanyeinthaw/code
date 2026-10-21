@@ -1,7 +1,7 @@
-import { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import { EnvironmentId, ProjectId } from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@satslab/client-runtime/state/shell";
 import type { HomeProjectScope } from "../home/homeThreadList";
 import {
   resolveDraftProjectSelection,
@@ -41,8 +41,8 @@ function makeProject(
 
 function makeScope(projects: ReadonlyArray<EnvironmentProject>): HomeProjectScope {
   return {
-    key: "github.com/t3tools/t3code",
-    title: "T3 Code",
+    key: "github.com/t3tools/sora",
+    title: "Sora",
     representative: projects[0]!,
     projects,
     projectRefs: projects.map((project) => ({
@@ -54,40 +54,40 @@ function makeScope(projects: ReadonlyArray<EnvironmentProject>): HomeProjectScop
 
 describe("resolveEnvironmentProjectMatch", () => {
   it("follows the same repository onto the target machine", () => {
-    const selected = makeProject("t3code", "mac", { repositoryKey: "github.com/t3tools/t3code" });
+    const selected = makeProject("sora", "mac", { repositoryKey: "github.com/t3tools/sora" });
     const target = [
       makeProject("other", "server", { repositoryKey: "github.com/t3tools/other" }),
-      makeProject("t3code-clone", "server", { repositoryKey: "github.com/t3tools/t3code" }),
+      makeProject("sora-clone", "server", { repositoryKey: "github.com/t3tools/sora" }),
     ];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[1]);
   });
 
   it("falls back to workspace basename, then title, for unindexed projects", () => {
-    const selected = makeProject("t3code", "mac", { workspaceRoot: "/Users/me/t3code" });
+    const selected = makeProject("sora", "mac", { workspaceRoot: "/Users/me/sora" });
     const byBasename = [
       makeProject("other", "server"),
-      makeProject("srv", "server", { workspaceRoot: "/home/me/t3code" }),
+      makeProject("srv", "server", { workspaceRoot: "/home/me/sora" }),
     ];
     expect(resolveEnvironmentProjectMatch(byBasename, selected)).toBe(byBasename[1]);
 
     const byTitle = [
       makeProject("other", "server"),
-      makeProject("srv", "server", { title: "t3code" }),
+      makeProject("srv", "server", { title: "sora" }),
     ];
     expect(resolveEnvironmentProjectMatch(byTitle, selected)).toBe(byTitle[1]);
   });
 
   it("does not treat a known different repository as a basename or title match", () => {
-    const selected = makeProject("t3code", "mac", {
-      repositoryKey: "github.com/t3tools/t3code",
-      workspaceRoot: "/Users/me/t3code",
+    const selected = makeProject("sora", "mac", {
+      repositoryKey: "github.com/t3tools/sora",
+      workspaceRoot: "/Users/me/sora",
     });
     const fork = makeProject("fork", "server", {
-      repositoryKey: "github.com/someone/t3code",
-      title: "t3code",
-      workspaceRoot: "/home/me/t3code",
+      repositoryKey: "github.com/someone/sora",
+      title: "sora",
+      workspaceRoot: "/home/me/sora",
     });
-    const unindexed = makeProject("unindexed", "server", { workspaceRoot: "/srv/t3code" });
+    const unindexed = makeProject("unindexed", "server", { workspaceRoot: "/srv/sora" });
     expect(resolveEnvironmentProjectMatch([fork, unindexed], selected)).toBe(unindexed);
     expect(resolveEnvironmentProjectMatch([fork], selected)).toBe(fork);
   });
@@ -95,7 +95,7 @@ describe("resolveEnvironmentProjectMatch", () => {
 
 describe("resolveDraftProjectSelection", () => {
   it("selects one logical project even when it has multiple physical workspaces", () => {
-    const projects = [makeProject("t3code"), makeProject("t3code-2"), makeProject("t3code-3")];
+    const projects = [makeProject("sora"), makeProject("sora-2"), makeProject("sora-3")];
     expect(resolveDraftProjectSelection(null, projects, [makeScope(projects)])).toEqual({
       kind: "select",
       project: projects[0],
@@ -103,7 +103,7 @@ describe("resolveDraftProjectSelection", () => {
   });
 
   it("does not preserve a project key that is missing from the catalog", () => {
-    const project = makeProject("t3code");
+    const project = makeProject("sora");
     expect(
       resolveDraftProjectSelection("environment:removed", [project], [makeScope([project])]),
     ).toEqual({

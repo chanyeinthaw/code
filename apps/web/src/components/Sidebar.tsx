@@ -1,6 +1,6 @@
 import { SidebarThreadUndoNotice } from "./sidebar/SidebarThreadUndoNotice";
-import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
-import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
+import { type EnvironmentId, type ScopedProjectRef } from "@satslab/contracts";
+import type { EnvironmentServerConfig } from "@satslab/client-runtime/connection";
 import {
   FloatingThreadFilters,
   type FloatingThreadFilter,
@@ -32,25 +32,25 @@ import {
   canSnooze,
   effectiveSnoozed,
   threadWokeAt,
-} from "@t3tools/client-runtime/state/thread-settled";
-import { createInboxReturnTracker } from "@t3tools/client-runtime/state/thread-inbox";
-import { sortSettledThreads } from "@t3tools/client-runtime/state/thread-sort";
-import { threadSearchMatchKey } from "@t3tools/client-runtime/state/thread-search";
+} from "@satslab/client-runtime/state/thread-settled";
+import { createInboxReturnTracker } from "@satslab/client-runtime/state/thread-inbox";
+import { sortSettledThreads } from "@satslab/client-runtime/state/thread-sort";
+import { threadSearchMatchKey } from "@satslab/client-runtime/state/thread-search";
 import {
   threadRuntimeCanArchive,
   type EnvironmentThreadShell,
-} from "@t3tools/client-runtime/state/models";
+} from "@satslab/client-runtime/state/models";
 import {
   parseScopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
   scopedThreadKey,
-} from "@t3tools/client-runtime/environment";
+} from "@satslab/client-runtime/environment";
 import {
   AuthOrchestrationOperateScope,
   type ScopedThreadRef,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import { FolderIcon, ListFilterIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import {
@@ -70,7 +70,7 @@ import {
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { isElectron } from "../env";
 import {
   resolveShortcutCommand,
@@ -132,7 +132,7 @@ import { useOrchestrationCommand } from "../state/use-orchestration-command";
 import { readEnvironmentScope } from "../state/session";
 import { buildThreadRouteParams, resolveActiveThreadRouteRef } from "../threadRoutes";
 import type { SidebarThreadSummary } from "../types";
-import { isScratchProject } from "@t3tools/client-runtime/state/projects";
+import { isScratchProject } from "@satslab/client-runtime/state/projects";
 import { cn } from "~/lib/utils";
 import { ProjectEnvironmentBadge } from "./ProjectEnvironmentBadge";
 import {
@@ -273,9 +273,9 @@ const EMPTY_THREADS: readonly EnvironmentThreadShell[] = [];
 
 const SETTLED_TAIL_INITIAL_COUNT = 10;
 const SETTLED_TAIL_PAGE_COUNT = 25;
-const SETTLED_SHELF_EXPANDED_KEY = "t3code:sidebar:settled-expanded";
-const SNOOZED_SHELF_EXPANDED_KEY = "t3code:sidebar:snoozed-expanded";
-const WORKING_SHELF_EXPANDED_KEY = "t3code:sidebar:working-expanded";
+const SETTLED_SHELF_EXPANDED_KEY = "sora:sidebar:settled-expanded";
+const SNOOZED_SHELF_EXPANDED_KEY = "sora:sidebar:snoozed-expanded";
+const WORKING_SHELF_EXPANDED_KEY = "sora:sidebar:working-expanded";
 
 const inboxReturns = createInboxReturnTracker();
 

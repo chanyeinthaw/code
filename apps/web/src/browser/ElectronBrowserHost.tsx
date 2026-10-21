@@ -1,9 +1,9 @@
-import { parseScopedThreadKey } from "@t3tools/client-runtime/environment";
+import { parseScopedThreadKey } from "@satslab/client-runtime/environment";
 import {
   AuthPreviewOperateScope,
   type DesktopPreviewOpenLinkEvent,
   FILL_PREVIEW_VIEWPORT,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { type ComponentProps, useEffect, useEffectEvent, useState } from "react";
 

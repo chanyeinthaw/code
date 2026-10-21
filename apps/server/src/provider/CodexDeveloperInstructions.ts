@@ -1,12 +1,12 @@
-import type { ProviderInteractionMode } from "@t3tools/contracts";
+import type { ProviderInteractionMode } from "@satslab/contracts";
 import type { V2TurnStartParams__AdditionalContextEntry } from "effect-codex-app-server/schema";
-import { buildRuntimeInstructions } from "@t3tools/provider-core/server/runtimeInstructions";
+import { buildRuntimeInstructions } from "@satslab/provider-core/server/runtimeInstructions";
 
 import {
   T3_CODE_BROWSER_TOOL_INSTRUCTIONS,
   T3_CODE_DEVICE_TOOL_INSTRUCTIONS,
   T3_CODE_ORCHESTRATION_SECTIONS,
-} from "@t3tools/provider-core/server/orchestrationInstructions";
+} from "@satslab/provider-core/server/orchestrationInstructions";
 
 /**
  * Codex cuts the middle out of any `additionalContext` value over 1,000 tokens,
@@ -211,14 +211,14 @@ export function buildCodexAdditionalContext(
   return {
     ...Object.fromEntries(
       T3_CODE_ORCHESTRATION_SECTIONS.map((section, index) => [
-        `t3_code_orchestration_${String(index + 1).padStart(2, "0")}`,
+        `sora_code_orchestration_${String(index + 1).padStart(2, "0")}`,
         { kind: "application" as const, value: section },
       ]),
     ),
-    t3_code_runtime: {
+    sora_code_runtime: {
       kind: "application",
       value: buildRuntimeInstructions({ harness: "Codex", ...runtime }),
     },
-    ...(tools ? { t3_code_tools: { kind: "application", value: tools } } : {}),
+    ...(tools ? { sora_code_tools: { kind: "application", value: tools } } : {}),
   };
 }

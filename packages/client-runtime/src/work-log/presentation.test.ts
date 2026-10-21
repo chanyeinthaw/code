@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { ThreadId, TurnItemId, type OrchestrationV2TurnItem } from "@t3tools/contracts";
+import { ThreadId, TurnItemId, type OrchestrationV2TurnItem } from "@satslab/contracts";
 import * as DateTime from "effect/DateTime";
 
 import {
@@ -103,7 +103,7 @@ describe("resolveWorkEntryToolPresentation", () => {
       id: "clone",
       createdAt: "2026-09-19T00:00:00.000Z",
       tone: "tool",
-      label: "T3-code.t3_project_clone",
+      label: "T3-code.s3_project_clone",
       toolLifecycleStatus: "inProgress",
       itemType: "dynamic_tool",
       toolData: { output: { isError: true } },
@@ -123,12 +123,12 @@ describe("resolveWorkEntryToolPresentation", () => {
     expect(workEntryIndicatesToolSuccess(childFailure)).toBe(true);
   });
   it.each([
-    "mcp__t3-code__preview_click",
+    "mcp__sora__preview_click",
     "mcp__t3_code__preview_click",
-    "mcp__t3code__preview_click",
+    "mcp__sora__preview_click",
     "T3-code.preview_click",
-    "t3-code · preview_click completed",
-    "t3_code/preview_click",
+    "sora · preview_click completed",
+    "sora_code/preview_click",
     "preview_click",
   ])("recognizes browser tool names across providers: %s", (label) => {
     expect(resolveWorkEntryToolPresentation({ label })).toEqual({
@@ -142,7 +142,7 @@ describe("resolveWorkEntryToolPresentation", () => {
       resolveWorkEntryToolPresentation({
         label: "Tool call complete",
         toolTitle: "Inspect the current page",
-        toolData: { server: "t3-code", tool: "preview_snapshot", result: { title: "Example" } },
+        toolData: { server: "sora", tool: "preview_snapshot", result: { title: "Example" } },
       }),
     ).toEqual({ displayName: "Taking a snapshot of the preview page", icon: "browser" });
   });
@@ -168,8 +168,8 @@ describe("resolveWorkEntryToolPresentation", () => {
   it("does not brand unknown tools or another server's matching tool name", () => {
     for (const label of [
       "mcp__github__preview_click",
-      "t3-code.unknown_tool",
-      "t3-code.toString",
+      "sora.unknown_tool",
+      "sora.toString",
       "Search files",
     ]) {
       expect(resolveWorkEntryToolPresentation({ label })).toBeNull();

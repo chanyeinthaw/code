@@ -3,7 +3,7 @@ import {
   EnvironmentId,
   ProviderDriverKind,
   ProviderInstanceId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 
 import {

@@ -1,15 +1,15 @@
-import { filterComposerPullRequestMatches } from "@t3tools/shared/composerPullRequestMatches";
-import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@t3tools/contracts";
+import { filterComposerPullRequestMatches } from "@satslab/shared/composerPullRequestMatches";
+import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@satslab/contracts";
 import {
   collectAssistantCitations,
   expandAssistantCitationsForProvider,
   serializeAssistantCitation,
-} from "@t3tools/shared/assistantCitations";
+} from "@satslab/shared/assistantCitations";
 import {
   DEFAULT_RESOLVED_KEYBINDINGS,
   compileResolvedKeybindingsConfig,
   mergeWithDefaultKeybindings,
-} from "@t3tools/shared/keybindings";
+} from "@satslab/shared/keybindings";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -301,7 +301,7 @@ describe("filterComposerPullRequestMatches", () => {
     {
       number: 7,
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       updatedAt: "2026-09-01T12:00:00.000Z",
     },
     {
@@ -313,13 +313,13 @@ describe("filterComposerPullRequestMatches", () => {
     {
       number: 27,
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       updatedAt: "2026-09-02T12:00:00.000Z",
     },
     {
       number: 27,
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       updatedAt: "2026-09-01T13:00:00.000Z",
     },
     {
@@ -335,7 +335,7 @@ describe("filterComposerPullRequestMatches", () => {
       filterComposerPullRequestMatches({
         entries,
         projectId: "project-1",
-        repository: "t3tools/t3code",
+        repository: "t3tools/sora",
         query: "7",
         limit: 10,
       }).map((entry) => entry.number),
@@ -346,19 +346,19 @@ describe("filterComposerPullRequestMatches", () => {
     const exact = {
       number: 7,
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       updatedAt: "2020-01-01T00:00:00.000Z",
     };
     const newerSubstringMatches = Array.from({ length: 12 }, (_unused, index) => ({
       number: 700 + index,
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       updatedAt: `2026-09-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
     }));
     const matches = filterComposerPullRequestMatches({
       entries: [...newerSubstringMatches, exact],
       projectId: "project-1",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       query: "7",
       limit: 10,
     });

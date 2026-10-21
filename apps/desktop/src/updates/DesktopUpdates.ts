@@ -6,8 +6,8 @@ import {
   type DesktopUpdateChannel,
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
-} from "@t3tools/contracts";
-import { errorTag } from "@t3tools/shared/observability";
+} from "@satslab/contracts";
+import { errorTag } from "@satslab/shared/observability";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -193,7 +193,7 @@ export class DesktopUpdates extends Context.Service<
       expectedVersion: string,
     ) => Effect.Effect<DesktopPreparedUpdateInstallResult>;
   }
->()("@t3tools/desktop/updates/DesktopUpdates") {}
+>()("@satslab/desktop/updates/DesktopUpdates") {}
 
 const {
   logInfo: logUpdaterInfo,
@@ -323,7 +323,7 @@ function getAutoUpdateDisabledReason(args: {
     return "Automatic updates are only available in packaged production builds.";
   }
   if (args.disabledByEnv) {
-    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    return "Automatic updates are disabled by the SORA_DISABLE_AUTO_UPDATE setting.";
   }
   if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
     return "Automatic updates on Linux require the AppImage or the .deb package.";

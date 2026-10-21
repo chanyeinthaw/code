@@ -7,7 +7,7 @@ import {
   useRetainedContextPayloads,
 } from "./chat/composerContextUndo";
 
-import type { ServerProviderSkill } from "@t3tools/contracts";
+import type { ServerProviderSkill } from "@satslab/contracts";
 import type { Editor } from "@tiptap/core";
 import { createElement, createRef, useEffect, useState } from "react";
 import { describe, expect, it } from "vite-plus/test";

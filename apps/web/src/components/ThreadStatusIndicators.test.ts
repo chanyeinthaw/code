@@ -1,5 +1,5 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import { ProjectId, type PullRequestSummary, type VcsStatusResult } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@satslab/contracts";
+import { ProjectId, type PullRequestSummary, type VcsStatusResult } from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import { AtomRegistry } from "effect/reactivity";

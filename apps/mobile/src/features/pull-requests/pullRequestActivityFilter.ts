@@ -1,4 +1,4 @@
-import type { PullRequestActivity, PullRequestActor } from "@t3tools/contracts";
+import type { PullRequestActivity, PullRequestActor } from "@satslab/contracts";
 
 export interface ActivityFilter {
   readonly kind: "all" | "comments" | "commits";

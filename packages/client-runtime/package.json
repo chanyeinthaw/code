@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/client-runtime",
+  "name": "@satslab/client-runtime",
   "private": true,
   "type": "module",
   "exports": {
@@ -450,15 +450,15 @@
   },
   "dependencies": {
     "@pierre/diffs": "catalog:",
-    "@t3tools/contracts": "workspace:*",
-    "@t3tools/shared": "workspace:*",
-    "@t3tools/source-control-azure-devops": "workspace:*",
-    "@t3tools/source-control-bitbucket": "workspace:*",
-    "@t3tools/source-control-core": "workspace:*",
-    "@t3tools/source-control-forgejo": "workspace:*",
-    "@t3tools/source-control-gitcafe": "workspace:*",
-    "@t3tools/source-control-github": "workspace:*",
-    "@t3tools/source-control-gitlab": "workspace:*",
+    "@satslab/contracts": "workspace:*",
+    "@satslab/shared": "workspace:*",
+    "@satslab/source-control-azure-devops": "workspace:*",
+    "@satslab/source-control-bitbucket": "workspace:*",
+    "@satslab/source-control-core": "workspace:*",
+    "@satslab/source-control-forgejo": "workspace:*",
+    "@satslab/source-control-gitcafe": "workspace:*",
+    "@satslab/source-control-github": "workspace:*",
+    "@satslab/source-control-gitlab": "workspace:*",
     "effect": "catalog:",
     "three": "0.180.0"
   },

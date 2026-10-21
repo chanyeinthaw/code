@@ -1,11 +1,11 @@
-import { filePreviewDelimiter } from "@t3tools/shared/delimitedPreview";
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { readFilePreviewResponse } from "@t3tools/client-runtime/file-preview";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { filePreviewDelimiter } from "@satslab/shared/delimitedPreview";
+import type { EnvironmentId, ScopedThreadRef } from "@satslab/contracts";
+import { formatAttachmentSize } from "@satslab/client-runtime/state/attachments";
+import { readFilePreviewResponse } from "@satslab/client-runtime/file-preview";
+import { settlePromise } from "@satslab/client-runtime/state/runtime";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Cause from "effect/Cause";
-import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@t3tools/shared/filePreview";
+import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@satslab/shared/filePreview";
 import { ChevronRightIcon, DownloadIcon, Trash2Icon, WrapTextIcon, XIcon } from "lucide-react";
 import { Check, Code2, Copy, Eye, Table2 } from "lucide";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
@@ -241,7 +241,7 @@ export function AttachmentFilePreview(props: {
       />
     </div>
   ) : kind === "image" ? (
-    // oxlint-disable-next-line t3code/require-centered-scroll-gutter -- The image is capped at max-h-full max-w-full, so this never scrolls.
+    // oxlint-disable-next-line sora/require-centered-scroll-gutter -- The image is capped at max-h-full max-w-full, so this never scrolls.
     <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
       <img
         src={url}

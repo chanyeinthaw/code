@@ -1,4 +1,4 @@
-import { RelayProtectedError } from "@t3tools/contracts/relay";
+import { RelayProtectedError } from "@satslab/contracts/relay";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -68,10 +68,10 @@ function recoveryHint(error: RelayProtectedError): string {
     case "RelayEnvironmentLinkLimitExceededError":
       return "Unlink an unused environment in T3 Connect, then restart T3 Code on this machine.";
     case "RelayAuthInvalidError":
-      return "Run `t3 connect login` to check this machine's authorization. If the stored credential was revoked, sign out with `t3 connect logout`, then run `t3 connect` again. Restart T3 Code after signing in.";
+      return "Run `sora connect login` to check this machine's authorization. If the stored credential was revoked, sign out with `sora connect logout`, then run `sora connect` again. Restart Sora after signing in.";
     case "RelayEnvironmentLinkProofExpiredError":
     case "RelayEnvironmentLinkProofInvalidError":
-      return "Check this machine's date and time, update T3 Code, then restart it.";
+      return "Check this machine's date and time, update Sora, then restart it.";
     default:
       return "Retry when the relay is available. If this continues, include the trace ID when reporting it.";
   }

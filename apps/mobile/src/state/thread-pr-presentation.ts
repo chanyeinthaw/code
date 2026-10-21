@@ -1,15 +1,15 @@
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
 import type {
   ExecutionEnvironmentCapabilities,
   ThreadPullRequestLink,
   VcsStatusResult,
-} from "@t3tools/contracts";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+} from "@satslab/contracts";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
 
 import {
   resolveThreadCurrentPullRequestLink,
   resolveThreadPullRequestBadge,
-} from "@t3tools/shared/threadPullRequests";
+} from "@satslab/shared/threadPullRequests";
 
 export type ThreadPr = NonNullable<VcsStatusResult["pr"]>;
 

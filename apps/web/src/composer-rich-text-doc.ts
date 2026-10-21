@@ -35,7 +35,7 @@ import { splitPromptIntoComposerSegments } from "~/composer-editor-mentions";
 import { nextOrderedMarkerText } from "~/composer-list-continuation";
 import { parseInlineMarkdown, RICH_TEXT_DELIMITERS, type RichTextMark } from "~/composer-rich-text";
 import { collectInlineContextIds } from "~/lib/composerContextReferences";
-import { markdownMathRanges } from "@t3tools/shared/markdownMath";
+import { markdownMathRanges } from "@satslab/shared/markdownMath";
 
 export type SkillMeta = { label: string; description: string | null };
 

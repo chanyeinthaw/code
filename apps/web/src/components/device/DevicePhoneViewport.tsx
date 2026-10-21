@@ -1,16 +1,16 @@
 import { useEffect, useRef, type RefObject } from "react";
-import type { PhoneViewer } from "@t3tools/client-runtime/device/phone-viewer";
+import type { PhoneViewer } from "@satslab/client-runtime/device/phone-viewer";
 import type {
   DeviceAccessorySource,
   DeviceModelSource,
-} from "@t3tools/client-runtime/device/model";
-import type { DeviceShapeProfile } from "@t3tools/client-runtime/device/shape-profile";
-import { createPhoneInteraction } from "@t3tools/client-runtime/device/phone-interaction";
-import type { DeviceScreenSize, DeviceStreamClient } from "@t3tools/client-runtime/device/stream";
+} from "@satslab/client-runtime/device/model";
+import type { DeviceShapeProfile } from "@satslab/client-runtime/device/shape-profile";
+import { createPhoneInteraction } from "@satslab/client-runtime/device/phone-interaction";
+import type { DeviceScreenSize, DeviceStreamClient } from "@satslab/client-runtime/device/stream";
 import { bindPhoneTrackpad } from "./phoneTrackpad";
 import { observeResize } from "../../lib/observeResize";
 
-const loadPhoneViewer = () => import("@t3tools/client-runtime/device/phone-viewer");
+const loadPhoneViewer = () => import("@satslab/client-runtime/device/phone-viewer");
 
 export function DevicePhoneViewport(props: {
   readonly profile: DeviceShapeProfile;

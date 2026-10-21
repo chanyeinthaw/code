@@ -46,13 +46,13 @@ describe("createClerkOAuthCancel", () => {
     const second = outcome(wrapped("https://accounts.example/b"));
     assert.strictEqual(await first, "rejected Clerk: OAuth flow was cancelled.");
 
-    resolvers[0]?.({ callbackUrl: "t3code://app/?a" });
+    resolvers[0]?.({ callbackUrl: "sora://app/?a" });
     // Two hops, so the wrapper's own `.then().finally()` on this result has run.
     await opened[0]?.then(() => undefined).then(() => undefined);
     assert.isTrue(oauth.isPending());
 
-    resolvers[1]?.({ callbackUrl: "t3code://app/?b" });
-    assert.strictEqual(await second, "resolved t3code://app/?b");
+    resolvers[1]?.({ callbackUrl: "sora://app/?b" });
+    assert.strictEqual(await second, "resolved sora://app/?b");
     assert.isFalse(oauth.isPending());
   });
 });

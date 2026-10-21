@@ -1,5 +1,5 @@
-import { type ModelCapabilities, type ProviderOptionChoice } from "@t3tools/contracts";
-import { createModelCapabilities } from "@t3tools/shared/model";
+import { type ModelCapabilities, type ProviderOptionChoice } from "@satslab/contracts";
+import { createModelCapabilities } from "@satslab/shared/model";
 import * as Predicate from "effect/Predicate";
 
 /**

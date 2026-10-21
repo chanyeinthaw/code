@@ -1,4 +1,4 @@
-import { matchComposerThreadItems } from "@t3tools/client-runtime/composerThreadItems";
+import { matchComposerThreadItems } from "@satslab/client-runtime/composerThreadItems";
 import type {
   EnvironmentId,
   ProjectId,
@@ -7,19 +7,19 @@ import type {
   ServerProvider,
   ThreadId,
   ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   composerPullRequestsFromLinks,
   filterComposerPullRequestMatches,
-} from "@t3tools/shared/composerPullRequestMatches";
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+} from "@satslab/shared/composerPullRequestMatches";
+import { formatProviderSkillDisplayName } from "@satslab/shared/inlineSkills";
 
 import type { ComposerTrigger } from "../../composer-logic";
 import { basenameOfPath } from "../../pierre-icons";
 import {
   getProviderSkillsForSlashMenu,
   getProviderSlashCommandsForSlashMenu,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@satslab/client-runtime/providerSkills";
 import { searchProviderSkills } from "../../providerSkillSearch";
 import { useThreadShells } from "~/state/entities";
 import {

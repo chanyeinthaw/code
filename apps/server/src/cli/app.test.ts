@@ -8,10 +8,10 @@ import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
-import type { DesktopAppActivationRequest } from "@t3tools/contracts";
-import { resolveDesktopAppControlAddress } from "@t3tools/shared/desktopAppControl";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import * as NetService from "@t3tools/shared/Net";
+import type { DesktopAppActivationRequest } from "@satslab/contracts";
+import { resolveDesktopAppControlAddress } from "@satslab/shared/desktopAppControl";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import * as NetService from "@satslab/shared/Net";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -141,7 +141,7 @@ const withTempDirectory = <A, E, R>(
     (root) => Effect.promise(() => NodeFSP.rm(root, { recursive: true, force: true })),
   );
 
-describe("t3 server command safety", () => {
+describe("sora server command safety", () => {
   it.effect("rejects unknown command words without creating a home or project", () =>
     withTempDirectory("t3-cli-unknown-", (root) =>
       Effect.gen(function* () {
@@ -195,14 +195,14 @@ describe("t3 server command safety", () => {
           [newDirectory],
           ["start", newDirectory],
         ]) {
-          const error = yield* runCli(args, { T3CODE_HOME: baseDir }).pipe(
+          const error = yield* runCli(args, { SORA_HOME: baseDir }).pipe(
             Effect.provideService(
               HostProcess.Platform,
               args[0] === "C:new-project" ? "win32" : platform,
             ),
             Effect.flip,
           );
-          expect(String(error)).toContain("A T3 Code server is already running");
+          expect(String(error)).toContain("A Sora server is already running");
           expect(yield* Effect.promise(() => NodeFSP.readFile(statePath, "utf8"))).toBe(record);
           expect(yield* pathExists(newDirectory)).toBe(false);
           expect(yield* Effect.promise(() => NodeFSP.readdir(stateDir))).toEqual([
@@ -214,8 +214,8 @@ describe("t3 server command safety", () => {
   );
 });
 
-describe("t3 app", () => {
-  it.effect("uses T3CODE_HOME or --base-dir and sends the default or explicit path", () =>
+describe("sora app", () => {
+  it.effect("uses SORA_HOME or --base-dir and sends the default or explicit path", () =>
     withTempDirectory("t3-app-command-test-", (root) =>
       Effect.gen(function* () {
         const baseDir = NodePath.join(root, "t3-home");
@@ -224,7 +224,7 @@ describe("t3 app", () => {
         const workingDirectory = yield* HostProcess.WorkingDirectory;
         const desktop = yield* fakeDesktop({ baseDir });
 
-        yield* runCli(["app"], { T3CODE_HOME: baseDir });
+        yield* runCli(["app"], { SORA_HOME: baseDir });
         yield* runCli(["app", explicitPath, "--base-dir", baseDir]);
 
         expect(desktop.received.map((request) => request.workspaceRoot)).toEqual([
@@ -239,7 +239,7 @@ describe("t3 app", () => {
   it.effect("prefers the installed desktop app when a dev desktop is also running", () =>
     withTempDirectory("t3-app-preferred-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".sora");
         const desktop = yield* fakeDesktop({ baseDir });
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
@@ -254,11 +254,11 @@ describe("t3 app", () => {
   it.effect("finds the dev desktop when the default desktop socket is absent", () =>
     withTempDirectory("t3-app-dev-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".sora");
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
         yield* runCli(["app"]);
-        yield* runCli(["app"], { T3CODE_HOME: "   " });
+        yield* runCli(["app"], { SORA_HOME: "   " });
 
         expect(development.received).toHaveLength(2);
         expect(yield* pathExists(baseDir)).toBe(false);
@@ -269,11 +269,11 @@ describe("t3 app", () => {
   it.effect("never searches a dev state directory for an explicit T3 home", () =>
     withTempDirectory("t3-app-explicit-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".sora");
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
         const flagError = yield* runCli(["app", "--base-dir", baseDir]).pipe(Effect.flip);
-        const envError = yield* runCli(["app"], { T3CODE_HOME: baseDir }).pipe(Effect.flip);
+        const envError = yield* runCli(["app"], { SORA_HOME: baseDir }).pipe(Effect.flip);
 
         expect(flagError).toMatchObject({ _tag: "DesktopAppUnreachableError" });
         expect(envError).toMatchObject({ _tag: "DesktopAppUnreachableError" });
@@ -287,7 +287,7 @@ describe("t3 app", () => {
     (responseKind) =>
       withTempDirectory("t3-app-response-test-", (root) =>
         Effect.gen(function* () {
-          const baseDir = NodePath.join(root, ".t3");
+          const baseDir = NodePath.join(root, ".sora");
           const desktop = yield* fakeDesktop({
             baseDir,
             reply: (request) =>

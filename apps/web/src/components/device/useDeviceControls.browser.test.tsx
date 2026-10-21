@@ -1,5 +1,5 @@
-import { EnvironmentId, type DeviceDetail, type DeviceSummary } from "@t3tools/contracts";
-import type { DeviceHubAccess } from "@t3tools/client-runtime/device/hub-access";
+import { EnvironmentId, type DeviceDetail, type DeviceSummary } from "@satslab/contracts";
+import type { DeviceHubAccess } from "@satslab/client-runtime/device/hub-access";
 import * as Cause from "effect/Cause";
 import { useEffect } from "react";
 import { expect, it, vi } from "vite-plus/test";

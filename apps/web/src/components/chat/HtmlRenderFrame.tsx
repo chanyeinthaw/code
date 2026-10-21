@@ -1,10 +1,10 @@
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import type { EnvironmentId, ScopedThreadRef } from "@satslab/contracts";
 import {
   HTML_RENDER_COLUMN_WIDTH,
   htmlRenderFileName,
   htmlRenderFrameHeight,
   type HtmlRenderReference,
-} from "@t3tools/shared/htmlRender";
+} from "@satslab/shared/htmlRender";
 import { Maximize2Icon } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 

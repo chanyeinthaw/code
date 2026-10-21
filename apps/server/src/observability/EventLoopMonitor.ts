@@ -2,8 +2,8 @@
 import * as NodeOS from "node:os";
 import * as NodePerfHooks from "node:perf_hooks";
 
-import type { ServerEventLoopStall } from "@t3tools/contracts";
-import { RotatingFileSink } from "@t3tools/shared/logging";
+import type { ServerEventLoopStall } from "@satslab/contracts";
+import { RotatingFileSink } from "@satslab/shared/logging";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -37,7 +37,7 @@ export class EventLoopMonitor extends Context.Reference<{
    * first, so a stall that ended just before a client reconnected is included.
    */
   readonly latestNoticeableStall: Effect.Effect<ServerEventLoopStall | undefined>;
-}>("t3/observability/EventLoopMonitor", {
+}>("@satslab/sora/observability/EventLoopMonitor", {
   defaultValue: () => ({ latestNoticeableStall: Effect.succeed(undefined) }),
 }) {}
 

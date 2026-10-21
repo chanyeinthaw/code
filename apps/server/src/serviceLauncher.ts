@@ -54,8 +54,8 @@ interface ManagedChild {
 
 const runtimePaths = (baseDir: string, version: string) => {
   const versionDir = NodePath.join(baseDir, "runtime", "versions", version);
-  // oxlint-disable-next-line t3code/no-global-process-runtime -- Standalone launcher has no Effect runtime.
-  const executableName = process.platform === "win32" ? "t3.exe" : "t3";
+  // oxlint-disable-next-line sora/no-global-process-runtime -- Standalone launcher has no Effect runtime.
+  const executableName = process.platform === "win32" ? "sora.exe" : "sora";
   return {
     versionDir,
     entryPath: NodePath.join(versionDir, executableName),
@@ -89,8 +89,8 @@ async function pathExists(target: string): Promise<boolean> {
 
 const MANAGED_SERVICE_ENV_NAMES = new Set([
   "PATH",
-  "T3CODE_HOME",
-  "T3_BOOT_SERVICE_UNIT",
+  "SORA_HOME",
+  "SORA_BOOT_SERVICE_UNIT",
   SERVICE_LAUNCHER_CONTEXT_ENV,
 ]);
 
@@ -151,7 +151,7 @@ function runCp(args: ReadonlyArray<string>): Promise<boolean> {
  * Node's own clone flag is not used: on macOS `fs.copyFile` falls back to a full copy.
  */
 async function copyDatabaseFile(source: string, destination: string): Promise<void> {
-  // oxlint-disable-next-line t3code/no-global-process-runtime -- Standalone launcher has no Effect runtime.
+  // oxlint-disable-next-line sora/no-global-process-runtime -- Standalone launcher has no Effect runtime.
   const platform = process.platform;
   // `cp -c` replaces the destination with a new file, which would cut a
   // hard-linked database off from its other links; copy into it instead.
@@ -194,7 +194,7 @@ async function statDatabaseFiles(dbPath: string): Promise<ReadonlyArray<NodeFS.S
  *   which is always APFS.
  */
 async function backupCanClone(dbPath: string, backupRoot: string): Promise<boolean> {
-  // oxlint-disable-next-line t3code/no-global-process-runtime -- Standalone launcher has no Effect runtime.
+  // oxlint-disable-next-line sora/no-global-process-runtime -- Standalone launcher has no Effect runtime.
   const platform = process.platform;
   if (platform === "darwin") {
     const [backupDirectory, backupFs, systemFs] = await Promise.all([
@@ -560,7 +560,7 @@ export class Launcher {
   async #recover(): Promise<void> {
     // A fresh launcher means servers are running again: any stop marker from
     // a previous explicit stop is stale and must not make a future update
-    // handoff release its tunnel. A restart deferred by `t3 update` is done
+    // handoff release its tunnel. A restart deferred by `sora update` is done
     // no matter who restarted the service, but only once this launcher is
     // the version the marker waits for: a launcher that came up between the
     // CLI writing the marker and writing the new state still runs the old
@@ -607,7 +607,7 @@ export class Launcher {
   async #startChild(version: string, role: ChildRole, update?: ServiceUpdateRecord): Promise<void> {
     if (this.#stopping) return;
     if (!(await runtimeExists(this.#baseDir, version))) {
-      throw new Error(`Selected t3@${version} runtime is missing or incomplete.`);
+      throw new Error(`Selected @satslab/sora@${version} runtime is missing or incomplete.`);
     }
     if (this.#stopping) return;
     const paths = runtimePaths(this.#baseDir, version);
@@ -833,7 +833,7 @@ export class Launcher {
     // Signal listeners alone do not keep Node alive.
     this.#timer = setInterval(() => {}, 2_147_483_647);
     process.stderr.write(
-      "[service-launcher] Another T3 Code server owns this T3 home. Stop it, then restart this service.\n",
+      "[service-launcher] Another Sora server owns this T3 home. Stop it, then restart this service.\n",
     );
   }
 
@@ -862,9 +862,9 @@ export class Launcher {
 }
 
 export async function main(): Promise<void> {
-  const baseDir = process.env.T3CODE_HOME?.trim();
+  const baseDir = process.env.SORA_HOME?.trim();
   if (baseDir === undefined || baseDir === "") {
-    throw new Error("T3CODE_HOME is required by the T3 Code service launcher.");
+    throw new Error("SORA_HOME is required by the Sora service launcher.");
   }
   const environment = await readServiceEnvironment(baseDir);
   const statePath = NodePath.join(baseDir, "runtime", SERVICE_STATE_FILE);

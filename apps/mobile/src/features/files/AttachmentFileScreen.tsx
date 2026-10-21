@@ -4,8 +4,8 @@ import * as Dialog from "../../components/ui/Dialog";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { MenuAction } from "@react-native-menu/menu";
-import { EnvironmentId } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { EnvironmentId } from "@satslab/contracts";
+import { formatAttachmentSize } from "@satslab/client-runtime/state/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
 

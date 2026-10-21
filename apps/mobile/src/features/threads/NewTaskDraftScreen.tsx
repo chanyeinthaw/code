@@ -5,13 +5,13 @@ import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { clampFileAttachmentUploadBytes } from "@t3tools/client-runtime/state/attachments";
+import { settlePromise, squashAtomCommandFailure } from "@satslab/client-runtime/state/runtime";
+import { clampFileAttachmentUploadBytes } from "@satslab/client-runtime/state/attachments";
 import {
   nextPastedTextFileName,
   pastedTextDisposition,
   replaceTextSelection,
-} from "@t3tools/client-runtime/text-paste";
+} from "@satslab/client-runtime/text-paste";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import {
   CommonActions,
@@ -37,8 +37,8 @@ import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
-import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
+} from "@satslab/contracts";
+import { deriveThreadTitleSeed } from "@satslab/client-runtime/operations";
 
 import {
   ComposerEditor,
@@ -70,8 +70,8 @@ import { VideoPreviewModal, type VideoPreviewSource } from "../../components/Vid
 import { ComposerModelControl } from "../../components/ComposerModelControl";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { hasProviderUsageLimits, isUsageLimitsCommand } from "@t3tools/shared/usageLimits";
-import { threadContextsOutsideEnvironment } from "@t3tools/shared/composerContextReferences";
+import { hasProviderUsageLimits, isUsageLimitsCommand } from "@satslab/shared/usageLimits";
+import { threadContextsOutsideEnvironment } from "@satslab/shared/composerContextReferences";
 import { COMPOSER_LAYOUT_TRANSITION, ComposerSurface } from "./ThreadComposer";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
 import { ComposerPopoverAnchor } from "./ComposerPopoverAnchor";

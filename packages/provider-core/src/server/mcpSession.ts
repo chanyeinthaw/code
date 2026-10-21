@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProviderInstanceId, ThreadId, RunId } from "@t3tools/contracts";
+import type { EnvironmentId, ProviderInstanceId, ThreadId, RunId } from "@satslab/contracts";
 
 export interface McpProviderSessionConfig {
   readonly environmentId: EnvironmentId;

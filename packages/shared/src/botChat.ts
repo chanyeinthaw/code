@@ -1,4 +1,4 @@
-import { BOT_CHAT_PROVIDER_DRIVERS } from "@t3tools/contracts";
+import { BOT_CHAT_PROVIDER_DRIVERS } from "@satslab/contracts";
 import { compareSemverVersions, parseSemver } from "./semver.ts";
 
 export const BOT_CODEX_MINIMUM_VERSION = "0.160.0";
