@@ -34,7 +34,7 @@ const RUNS_EVERYTHING = [
 // through relative imports rather than a package.json dependency.
 const EXTRA_OWNERS = [
   // Vite configs and tsconfigs of these apps import scripts/lib directly.
-  [/^scripts\/lib\//, ["@satslab/desktop", "@satslab/mobile", "@satslab/web", "t3"]],
+  [/^scripts\/lib\//, ["@satslab/desktop", "@satslab/mobile", "@satslab/web", "@satslab/sora"]],
   // scripts/build-desktop-artifact.ts reads the GNOME extension manifest.
   [/^apps\/desktop\/gnome-extension\//, ["@satslab/scripts"]],
   [/^native\/browser-secret\//, ["@satslab/desktop"]],
@@ -52,13 +52,13 @@ const TEST_ONLY_DEPS = {
     "@satslab/desktop",
     "@satslab/mobile",
     "@satslab/web",
-    "t3",
+    "@satslab/sora",
     "@satslab/provider-cursor",
   ],
 };
 // Declared dependencies that only feed a build step: the server bundles the
 // built web app (apps/server/vite.config.ts) but never imports it.
-const BUILD_ONLY_DEPS = { t3: ["@satslab/web"] };
+const BUILD_ONLY_DEPS = { "@satslab/sora": ["@satslab/web"] };
 
 // Sources scripts/mobile-native-static-check.ts lints, plus the tool and rule
 // configuration that decides how it lints them, plus the root package.json
@@ -67,7 +67,7 @@ const MOBILE_NATIVE =
   /^apps\/mobile\/.*\.(swift|kt|kts)$|^apps\/mobile\/(\.swiftlint\.yml|detekt\.yml|\.editorconfig|Brewfile)$|^scripts\/mobile-native-static-check\.ts$|^package\.json$|^\.github\/workflows\/ci\.yml$|^\.github\/scripts\/ci-changes\.cjs$|^\.github\/actions\/ci-changes\//;
 
 // Jobs that test every package except these, which have jobs of their own.
-const OWN_TEST_JOB = new Set(["t3", "@satslab/web", "@satslab/monorepo"]);
+const OWN_TEST_JOB = new Set(["@satslab/sora", "@satslab/web", "@satslab/monorepo"]);
 
 function readWorkspace() {
   const patterns = [];
@@ -174,12 +174,12 @@ function decide(files, packages, full) {
     affected: [...affected].sort(),
     outputs: {
       typecheck: affected.size > 0,
-      build: has("@satslab/desktop") || has("t3") || has("@satslab/web"),
+      build: has("@satslab/desktop") || has("@satslab/sora") || has("@satslab/web"),
       test: tested.length > 0,
       // Empty means every package the Test job covers.
       test_packages: everything ? "" : tested.map((pkg) => pkg.name).join(" "),
       test_web: has("@satslab/web"),
-      test_server: has("t3"),
+      test_server: has("@satslab/sora"),
       rust: everything || rust,
       release_smoke: scriptsChanged,
       mobile_native: files === null || files.some((file) => MOBILE_NATIVE.test(file)),

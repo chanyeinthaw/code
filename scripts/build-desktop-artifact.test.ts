@@ -46,6 +46,7 @@ import {
   copyDirectoryPreservingSymlinks,
   LinuxBrowserSecretHostError,
   stageBrowserSecret,
+  stageLinuxCaptureHelper,
   validateWindowsPackagedPayload,
   verifyPackagedBundleIsSelfContained,
   WindowsPrimaryNativeProbeError,
@@ -1670,4 +1671,50 @@ it.effect.skipIf(!symlinksSupported)("rebases packaged links into the isolated t
       resolvedCopiedPackage,
     );
   }).pipe(Effect.provide(NodeServices.layer)),
+);
+
+it.effect.each(["kde", "hyprland"] as const)(
+  "stages the %s capture executable under the name Electron loads",
+  (backend) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const root = yield* fs.makeTempDirectoryScoped({ prefix: "sora-capture-package-" });
+      const binaryName = `t3-${backend}-snap-shot`;
+      const source = path.join(root, `native/${backend}-snap-shot`);
+      const output = path.join(source, "target/x86_64-unknown-linux-gnu/release");
+      yield* fs.makeDirectory(output, { recursive: true });
+      yield* fs.writeFileString(path.join(output, binaryName), "capture-helper");
+      if (backend === "hyprland") {
+        yield* fs.makeDirectory(path.join(source, "protocols"));
+        yield* fs.writeFileString(path.join(source, "protocols/capture.xml"), "protocol-notice");
+      }
+      const resources = path.join(root, "resources");
+      yield* stageLinuxCaptureHelper({
+        backend,
+        repoRoot: root,
+        stageResourcesDir: resources,
+        arch: "x64",
+        verbose: false,
+      });
+      assert.equal(
+        yield* fs.readFileString(path.join(resources, `${backend}-capture`, binaryName)),
+        "capture-helper",
+      );
+      if (backend === "hyprland")
+        assert.equal(
+          yield* fs.readFileString(path.join(resources, "hyprland-capture/protocols/capture.xml")),
+          "protocol-notice",
+        );
+    }).pipe(
+      Effect.scoped,
+      Effect.provide([
+        NodeServices.layer,
+        ConfigProvider.layer(
+          ConfigProvider.fromEnv({
+            env: { SORA_DESKTOP_REUSE_LINUX_CAPTURE_HELPERS: "true" },
+          }),
+        ),
+      ]),
+    ),
 );
