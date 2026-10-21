@@ -1,11 +1,11 @@
 import { useAtomValue } from "@effect/atom-react";
-import { BotId, selectBotIdentities, WS_METHODS, type ScopedThreadRef } from "@t3tools/contracts";
+import { BotId, selectBotIdentities, WS_METHODS, type ScopedThreadRef } from "@satslab/contracts";
 import {
   createEnvironmentRpcCommand,
   createEnvironmentRpcQueryAtomFamily,
-} from "@t3tools/client-runtime/state/runtime";
-import { arrayElementsEqual } from "@t3tools/client-runtime/state/entities";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+} from "@satslab/client-runtime/state/runtime";
+import { arrayElementsEqual } from "@satslab/client-runtime/state/entities";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
 import { environmentThreadShells } from "./threads";
 import { AsyncResult, Atom } from "effect/reactivity";
 import * as Option from "effect/Option";

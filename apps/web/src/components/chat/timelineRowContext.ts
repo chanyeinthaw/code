@@ -1,4 +1,4 @@
-import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
+import type { WorktreeSetupSnapshot } from "@satslab/contracts";
 import {
   type EnvironmentId,
   type MessageId,
@@ -8,16 +8,16 @@ import {
   type ServerProviderSkill,
   type RunId,
   ThreadId,
-} from "@t3tools/contracts";
-import type { WorkflowOpening } from "@t3tools/client-runtime/state/subagentRuntime";
+} from "@satslab/contracts";
+import type { WorkflowOpening } from "@satslab/client-runtime/state/subagentRuntime";
 import { createContext, type MouseEvent } from "react";
 import { type LegendListRef } from "@legendapp/list/react";
-import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
+import type { CodexArtifactTemplate } from "@satslab/shared/codexArtifactTemplates";
 import { type ChatFileAttachment } from "../../types";
 import { ExpandedImagePreview } from "./ExpandedImagePreview";
 import { type AssistantCitationTarget } from "./AssistantCitationSource";
 import { type MessagesTimelineRow, type WorkGroupScrollAnchor } from "./MessagesTimeline.logic";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { type TimestampFormat } from "@satslab/contracts/settings";
 import { type HandoffTimelineRun } from "./V2LifecycleRow";
 
 export interface TimelineRowSharedState {

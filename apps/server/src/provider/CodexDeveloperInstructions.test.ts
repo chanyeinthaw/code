@@ -3,7 +3,7 @@ import * as NodeAssert from "node:assert/strict";
 import {
   T3_CODE_ORCHESTRATION_INSTRUCTIONS,
   T3_CODE_ORCHESTRATION_SECTIONS,
-} from "@t3tools/provider-core/server/orchestrationInstructions";
+} from "@satslab/provider-core/server/orchestrationInstructions";
 import { describe, it } from "vite-plus/test";
 
 import {
@@ -45,7 +45,7 @@ describe("buildCodexAdditionalContext", () => {
       reasoningEffort: "high",
     });
     const sections = Object.keys(context)
-      .filter((key) => key.startsWith("t3_code_orchestration_"))
+      .filter((key) => key.startsWith("sora_code_orchestration_"))
       .sort()
       .map((key) => context[key]!);
 
@@ -73,5 +73,5 @@ describe("buildCodexDeveloperInstructions", () => {
 });
 
 function runtimeInstructions(runtime: Parameters<typeof buildCodexAdditionalContext>[0]) {
-  return buildCodexAdditionalContext(runtime).t3_code_runtime!.value;
+  return buildCodexAdditionalContext(runtime).sora_code_runtime!.value;
 }

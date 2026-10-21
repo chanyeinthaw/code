@@ -9,7 +9,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { resolveEnvironmentMachineKind, type BotIdentity } from "@t3tools/contracts";
+import { resolveEnvironmentMachineKind, type BotIdentity } from "@satslab/contracts";
 import { useClientSettings } from "../../hooks/useSettings";
 import {
   deriveLogicalProjectKeyFromSettings,

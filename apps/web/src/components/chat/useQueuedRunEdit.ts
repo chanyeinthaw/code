@@ -1,4 +1,4 @@
-import type { ThreadStructure } from "@t3tools/client-runtime/state/shell";
+import type { ThreadStructure } from "@satslab/client-runtime/state/shell";
 import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   type ChatAttachment,
@@ -10,9 +10,9 @@ import {
   type ScopedThreadRef,
   type ThreadContextRecord,
   type ThreadId,
-} from "@t3tools/contracts";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@t3tools/shared/composerContextReferences";
+} from "@satslab/contracts";
+import { scopedThreadKey } from "@satslab/client-runtime/environment";
+import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@satslab/shared/composerContextReferences";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useAssetUrls } from "../../assets/assetUrls";
 import {

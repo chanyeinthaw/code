@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import type { EnvironmentId, ProjectId } from "@satslab/contracts";
 import { ArrowRightLeftIcon, RotateCcwIcon } from "lucide-react";
 import { useBots, useBotThreadShells } from "../../state/bots";
 import { Button } from "../ui/button";

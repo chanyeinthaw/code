@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@satslab/contracts";
 import type { useEnvironments } from "../../state/environments";
 import { Label } from "../ui/label";
 import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from "../ui/select";

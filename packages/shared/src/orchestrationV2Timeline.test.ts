@@ -1,4 +1,4 @@
-import { NodeId, RunId } from "@t3tools/contracts";
+import { NodeId, RunId } from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

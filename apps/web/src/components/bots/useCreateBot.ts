@@ -1,7 +1,7 @@
 import { RegistryContext } from "@effect/atom-react";
-import { DEFAULT_SERVER_SETTINGS, type EnvironmentId } from "@t3tools/contracts";
-import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
-import { botChatProviderDisabledReason } from "@t3tools/shared/botChat";
+import { DEFAULT_SERVER_SETTINGS, type EnvironmentId } from "@satslab/contracts";
+import { DEFAULT_CLIENT_SETTINGS } from "@satslab/contracts/settings";
+import { botChatProviderDisabledReason } from "@satslab/shared/botChat";
 import { useContext } from "react";
 import { mergeEnvironmentSettings } from "../../hooks/useSettings";
 import { newThreadId } from "../../lib/utils";

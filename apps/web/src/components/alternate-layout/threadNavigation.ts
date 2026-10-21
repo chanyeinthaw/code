@@ -1,8 +1,8 @@
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
-} from "@t3tools/client-runtime/state/shell";
-import { isBotProject } from "@t3tools/shared/botChat";
+} from "@satslab/client-runtime/state/shell";
+import { isBotProject } from "@satslab/shared/botChat";
 import type { DraftThreadState } from "../../composerDraftStore";
 
 type NavigationProject = Pick<EnvironmentProject, "id" | "environmentId" | "isBot">;

@@ -1,6 +1,6 @@
-import { MISSING_FILE_ACCESS_MESSAGE } from "@t3tools/client-runtime/state/assets";
-import { mediaFileReference, mediaUrlReference } from "@t3tools/client-runtime/media-reference";
-import type { AssetResource, EnvironmentId } from "@t3tools/contracts";
+import { MISSING_FILE_ACCESS_MESSAGE } from "@satslab/client-runtime/state/assets";
+import { mediaFileReference, mediaUrlReference } from "@satslab/client-runtime/media-reference";
+import type { AssetResource, EnvironmentId } from "@satslab/contracts";
 import { TriangleAlertIcon } from "lucide-react";
 import {
   createContext,

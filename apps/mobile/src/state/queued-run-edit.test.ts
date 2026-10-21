@@ -6,7 +6,7 @@ import {
   RunId,
   type ChatAttachment,
   type OrchestrationMessageContext,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import { resolveQueuedEditPayload, type QueuedRunEdit } from "./queued-run-edit";
 

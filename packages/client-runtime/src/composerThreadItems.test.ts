@@ -1,5 +1,5 @@
 import { expect, it } from "vite-plus/test";
-import { BotId, EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { BotId, EnvironmentId, ThreadId } from "@satslab/contracts";
 import { matchComposerThreadItems } from "./composerThreadItems.ts";
 
 const environmentId = EnvironmentId.make("local");
