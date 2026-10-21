@@ -127,6 +127,10 @@ case "$(uname -m)" in
   x86_64 | amd64) arch="x64" ;;
   *) fail "unsupported architecture $(uname -m)" ;;
 esac
+case "$platform-$arch" in
+  darwin-arm64 | linux-x64) ;;
+  *) fail "Sora supports macOS Apple Silicon and Linux x64" ;;
+esac
 command -v tar >/dev/null 2>&1 || fail "tar is required"
 if command -v sha256sum >/dev/null 2>&1; then
   checksum() { sha256sum "$1" | cut -d' ' -f1; }
