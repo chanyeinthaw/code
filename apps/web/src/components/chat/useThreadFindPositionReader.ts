@@ -1,5 +1,5 @@
 import { useLayoutEffect } from "react";
-import type { RunId } from "@t3tools/contracts";
+import type { RunId } from "@satslab/contracts";
 import type { TimelineEntry } from "../../session-logic";
 import {
   timelineTurnFoldRunIdsByEntryId,

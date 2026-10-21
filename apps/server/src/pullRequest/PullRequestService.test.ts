@@ -1,4 +1,4 @@
-import { SourceControlProviderKind, VcsProcessExitError } from "@t3tools/contracts";
+import { SourceControlProviderKind, VcsProcessExitError } from "@satslab/contracts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
@@ -19,37 +19,37 @@ import type {
   ProjectId,
   PullRequestReviewCapabilities,
   PullRequestReviewerCapabilities,
-} from "@t3tools/contracts";
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts/settings";
-import type { ServerSettings } from "@t3tools/contracts";
+} from "@satslab/contracts";
+import { DEFAULT_SERVER_SETTINGS } from "@satslab/contracts/settings";
+import type { ServerSettings } from "@satslab/contracts";
 import * as ServerSettingsService from "../serverSettings.ts";
-import { PullRequestOperationError } from "@t3tools/contracts";
+import { PullRequestOperationError } from "@satslab/contracts";
 
 import * as ProjectService from "../project/ProjectService.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as PullRequestFilesViewed from "../persistence/PullRequestFilesViewed.ts";
 import * as RepositoryIdentityResolver from "../project/RepositoryIdentityResolver.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
-import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
-import * as GitLabCli from "@t3tools/source-control-gitlab/server/GitLabCli";
-import * as GitLabPullRequestCli from "@t3tools/source-control-gitlab/server/GitLabPullRequestCli";
-import * as GitLabPullRequestProvider from "@t3tools/source-control-gitlab/server/GitLabPullRequestProvider";
-import * as ForgejoCli from "@t3tools/source-control-forgejo/server/ForgejoCli";
-import * as ForgejoPullRequestProvider from "@t3tools/source-control-forgejo/server/ForgejoPullRequestProvider";
-import * as BitbucketApi from "@t3tools/source-control-bitbucket/server/BitbucketApi";
-import * as BitbucketPullRequestApi from "@t3tools/source-control-bitbucket/server/BitbucketPullRequestApi";
-import * as BitbucketPullRequestProvider from "@t3tools/source-control-bitbucket/server/BitbucketPullRequestProvider";
-import * as GitHubRest from "@t3tools/source-control-github/server/GitHubRest";
-import * as GitHubCredentials from "@t3tools/source-control-github/server/GitHubCredentials";
-import * as GitHubPullRequestApi from "@t3tools/source-control-github/server/GitHubPullRequestApi";
-import * as GitHubPullRequestProvider from "@t3tools/source-control-github/server/GitHubPullRequestProvider";
-import * as GitHubQuota from "@t3tools/source-control-github/server/GitHubQuota";
-import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
+import * as SourceControlRateLimit from "@satslab/source-control-core/server/SourceControlRateLimit";
+import * as GitLabCli from "@satslab/source-control-gitlab/server/GitLabCli";
+import * as GitLabPullRequestCli from "@satslab/source-control-gitlab/server/GitLabPullRequestCli";
+import * as GitLabPullRequestProvider from "@satslab/source-control-gitlab/server/GitLabPullRequestProvider";
+import * as ForgejoCli from "@satslab/source-control-forgejo/server/ForgejoCli";
+import * as ForgejoPullRequestProvider from "@satslab/source-control-forgejo/server/ForgejoPullRequestProvider";
+import * as BitbucketApi from "@satslab/source-control-bitbucket/server/BitbucketApi";
+import * as BitbucketPullRequestApi from "@satslab/source-control-bitbucket/server/BitbucketPullRequestApi";
+import * as BitbucketPullRequestProvider from "@satslab/source-control-bitbucket/server/BitbucketPullRequestProvider";
+import * as GitHubRest from "@satslab/source-control-github/server/GitHubRest";
+import * as GitHubCredentials from "@satslab/source-control-github/server/GitHubCredentials";
+import * as GitHubPullRequestApi from "@satslab/source-control-github/server/GitHubPullRequestApi";
+import * as GitHubPullRequestProvider from "@satslab/source-control-github/server/GitHubPullRequestProvider";
+import * as GitHubQuota from "@satslab/source-control-github/server/GitHubQuota";
+import * as TestSourceControlHost from "@satslab/source-control-testing/TestSourceControlHost";
 import {
   PullRequestProviderError,
   type ProviderChangeRequest,
   type PullRequestProviderApi,
-} from "@t3tools/source-control-core/server/PullRequestProvider";
+} from "@satslab/source-control-core/server/PullRequestProvider";
 import * as PullRequestProviderRegistry from "./PullRequestProviderRegistry.ts";
 import * as PullRequestService from "./PullRequestService.ts";
 import * as PullRequestReadCache from "./PullRequestReadCache.ts";
@@ -408,7 +408,7 @@ it.effect("reads nothing from a host with no implementation, but reports it", ()
     const listed: string[] = [];
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({ id: "p2", title: "notes", workspaceRoot: "/b" }),
         project({
           id: "p3",
@@ -454,7 +454,7 @@ it.effect("says where each repository carries on, and from nothing it has run ou
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({ id: "p2", title: "web", workspaceRoot: "/b", repository: "acme/web" }),
       ],
       providers: [
@@ -591,7 +591,7 @@ it.effect("keeps a row already sent at the boundary instant from arriving twice"
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
       ],
       providers: [
         fakeProvider(SourceControlProviderKind.make("github"), {
@@ -628,7 +628,7 @@ it.effect("keeps the earlier exclusions when a slice ends on the instant it bega
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
       ],
       providers: [
         fakeProvider(SourceControlProviderKind.make("github"), {
@@ -664,7 +664,7 @@ it.effect("calls a transient viewer failure a failed operation, not a signed-out
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
       ],
       providers: [
         fakeProvider(SourceControlProviderKind.make("github"), {
@@ -691,7 +691,7 @@ it.effect("reports an unusable host over a merely failing one", () =>
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({
           id: "p2",
           title: "on gitlab",
@@ -773,10 +773,10 @@ it.effect("reads a repository once when several worktrees share it", () =>
     let calls = 0;
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({
           id: "p2",
-          title: "t3code worktree",
+          title: "sora worktree",
           workspaceRoot: "/b",
           repository: "PingDotGG/T3Code",
         }),
@@ -806,7 +806,7 @@ it.effect("keeps healthy repositories when one of them cannot be read", () =>
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({ id: "p2", title: "broken", workspaceRoot: "/b", repository: "pingdotgg/broken" }),
       ],
       providers: [
@@ -1439,7 +1439,7 @@ it.effect("refuses a repository that does not belong to the requested project", 
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
       ],
       providers: [fakeProvider(SourceControlProviderKind.make("github"))],
     });
@@ -2142,7 +2142,7 @@ it.effect("reads a host's repositories in one search, and files the rows back un
     const separately: string[] = [];
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({ id: "p2", title: "web", workspaceRoot: "/b", repository: "acme/web" }),
         project({
           id: "p3",
@@ -2200,7 +2200,7 @@ it.effect("carries every repository of a slice on from the oldest row in it", ()
   Effect.gen(function* () {
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
         project({ id: "p2", title: "web", workspaceRoot: "/b", repository: "acme/web" }),
         project({ id: "p3", title: "docs", workspaceRoot: "/c", repository: "acme/docs" }),
       ],
@@ -3751,7 +3751,7 @@ it.effect("expands only files the change request changes, across every slice of 
     const read: Array<string> = [];
     const service = yield* makeService({
       projects: [
-        project({ id: "p1", title: "t3code", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
+        project({ id: "p1", title: "sora", workspaceRoot: "/a", repository: "pingdotgg/t3code" }),
       ],
       providers: [
         fakeProvider(SourceControlProviderKind.make("github"), {

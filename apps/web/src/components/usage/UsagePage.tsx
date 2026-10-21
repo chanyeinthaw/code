@@ -1,6 +1,6 @@
 import { AlternatePageBrand } from "../alternate-layout/AlternatePageBrand";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
-import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
+import { usesChatGptSharing } from "@satslab/shared/usageLimits";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
@@ -10,21 +10,21 @@ import {
   type EnvironmentId,
   type UsageProviderKind,
   type UsageSummaryInput,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { CircleAlertIcon, ChevronDownIcon, InfoIcon, SlidersHorizontalIcon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { settlePromise } from "@satslab/client-runtime/state/runtime";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Cause from "effect/Cause";
 import {
   cursorKeychainAccessEnvironments,
   refreshUsageLimits,
-} from "@t3tools/client-runtime/state/usage";
+} from "@satslab/client-runtime/state/usage";
 import {
   updatingProvidersLabel,
   usageEnvironmentProgress,
   usageLoadingState,
-} from "@t3tools/client-runtime/state/usage-progress";
+} from "@satslab/client-runtime/state/usage-progress";
 
 import {
   isCompatibleUsageContractVersion,
@@ -32,7 +32,7 @@ import {
   type DailyTotals,
   type HourlyTotals,
   type MergedUsage,
-} from "@t3tools/shared/usageMerge";
+} from "@satslab/shared/usageMerge";
 
 import { isElectron } from "../../env";
 import { cn } from "../../lib/utils";
@@ -58,7 +58,7 @@ import {
   formatUsageContractMismatch,
   formatUsd,
   makeWindow,
-} from "@t3tools/shared/usageFormat";
+} from "@satslab/shared/usageFormat";
 import { Button, InlineButton } from "../ui/button";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import {

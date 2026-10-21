@@ -1,10 +1,10 @@
 import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
-import { selectEnvironmentQueryData } from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import type { EnvironmentId, ProjectId, PullRequestRef } from "@t3tools/contracts";
-import { sourceControlRepositorySelector } from "@t3tools/shared/sourceControl";
+import { selectEnvironmentQueryData } from "@satslab/client-runtime/state/runtime";
+import type { EnvironmentProject } from "@satslab/client-runtime/state/shell";
+import type { EnvironmentId, ProjectId, PullRequestRef } from "@satslab/contracts";
+import { sourceControlRepositorySelector } from "@satslab/shared/sourceControl";
 import {
   ArrowUpRightIcon,
   EyeIcon,

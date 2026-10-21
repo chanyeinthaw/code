@@ -71,8 +71,8 @@ reduced-capability local build. Personal Team builds omit the widget and share e
 entitlement, and native Sign in with Apple entitlement; builds without this opt-in are unchanged.
 
 ```bash
-T3CODE_IOS_PERSONAL_TEAM=1 \
-T3CODE_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code.dev \
+SORA_IOS_PERSONAL_TEAM=1 \
+SORA_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.sora.dev \
 vp run ios:dev
 ```
 
@@ -85,8 +85,8 @@ vp run ios:release
 The Personal Team equivalent also needs a unique bundle identifier:
 
 ```bash
-T3CODE_IOS_PERSONAL_TEAM=1 \
-T3CODE_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code \
+SORA_IOS_PERSONAL_TEAM=1 \
+SORA_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.sora \
 vp run ios:release
 ```
 

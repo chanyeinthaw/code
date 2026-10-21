@@ -1,4 +1,4 @@
-import type { PullRequestFileViewedState, PullRequestFilesViewedResult } from "@t3tools/contracts";
+import type { PullRequestFileViewedState, PullRequestFilesViewedResult } from "@satslab/contracts";
 
 export type FileViewedStates = ReadonlyMap<string, PullRequestFileViewedState>;
 

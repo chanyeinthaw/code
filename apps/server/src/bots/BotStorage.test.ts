@@ -7,11 +7,11 @@ import {
   RunId,
   ThreadId,
   type BotIdentity,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import migration from "../persistence/Migrations/068_BotChat.ts";
 import * as BotStorage from "./BotStorage.ts";
 import { makeMemory } from "./MemoryWorker.ts";

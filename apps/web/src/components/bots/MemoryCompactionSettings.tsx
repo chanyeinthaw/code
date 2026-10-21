@@ -1,10 +1,10 @@
-import type { ProviderInstanceId } from "@t3tools/contracts";
+import type { ProviderInstanceId } from "@satslab/contracts";
 import {
   DEFAULT_UNIFIED_SETTINGS,
   MEMORY_COMPACTION_CONCURRENCY_OPTIONS,
-} from "@t3tools/contracts/settings";
-import { botCodexDisabledReason } from "@t3tools/shared/botChat";
-import { createModelSelection } from "@t3tools/shared/model";
+} from "@satslab/contracts/settings";
+import { botCodexDisabledReason } from "@satslab/shared/botChat";
+import { createModelSelection } from "@satslab/shared/model";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
 import { TraitsPicker } from "../chat/TraitsPicker";
 import { useSettingsScope } from "../settings/SettingsScopeContext";

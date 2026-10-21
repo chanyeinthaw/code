@@ -9,7 +9,7 @@ import {
   ThreadId,
   type BotTransfer,
   type OrchestrationV2ConversationMessage,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as DateTime from "effect/DateTime";
 import { resolveAttachmentPath } from "../attachmentStore.ts";

@@ -1,7 +1,7 @@
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { resolveProviderInstanceDisplayName } from "@t3tools/client-runtime/state/provider-instance-display";
-import { resolveSubagentMetadata } from "@t3tools/client-runtime/state/subagent-display";
-import type { EnvironmentId, OrchestrationV2Subagent } from "@t3tools/contracts";
+import { scopeProjectRef, scopeThreadRef } from "@satslab/client-runtime/environment";
+import { resolveProviderInstanceDisplayName } from "@satslab/client-runtime/state/provider-instance-display";
+import { resolveSubagentMetadata } from "@satslab/client-runtime/state/subagent-display";
+import type { EnvironmentId, OrchestrationV2Subagent } from "@satslab/contracts";
 import type { ReactNode } from "react";
 import { View } from "react-native";
 

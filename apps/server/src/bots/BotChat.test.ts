@@ -22,8 +22,8 @@ import {
   type OrchestrationV2DomainEvent,
   type OrchestrationV2Run,
   type OrchestrationV2StoredEvent,
-} from "@t3tools/contracts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
+} from "@satslab/contracts";
+import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -237,7 +237,7 @@ it.effect(
       assert.include(next.view, 'Your name changed from "Atlas" to "Nova"');
       assert.include(next.view, 'Your name changed from "Personal" to "Atlas"');
       assert.include(next.view, 'Your name is now "Atlas"');
-      assert.notInclude(turnInstructions(updated.title), "You are T3 Code");
+      assert.notInclude(turnInstructions(updated.title), "You are Sora");
     }).pipe(Effect.provide(layer)),
 );
 

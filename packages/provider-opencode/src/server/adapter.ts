@@ -1,4 +1,4 @@
-import { buildBotSystemPrompt } from "@t3tools/provider-core/server/botInstructions";
+import { buildBotSystemPrompt } from "@satslab/provider-core/server/botInstructions";
 import type {
   Event as OpenCodeEvent,
   Message as OpenCodeMessage,
@@ -10,9 +10,9 @@ import type {
   Todo as OpenCodeTodo,
   ToolPart,
 } from "@opencode-ai/sdk/v2";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { getModelSelectionStringOptionValue } from "@t3tools/shared/model";
-import { causeErrorTag } from "@t3tools/shared/observability";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { getModelSelectionStringOptionValue } from "@satslab/shared/model";
+import { causeErrorTag } from "@satslab/shared/observability";
 import {
   defaultInstanceIdForDriver,
   type ModelSelection,
@@ -36,7 +36,7 @@ import {
   type ProviderSessionId,
   type RuntimeRequestId,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { OpenCodeSettings } from "../settings.ts";
 import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
@@ -55,32 +55,32 @@ import * as Semaphore from "effect/Semaphore";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 
-import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
-import { mcpToolPresentation } from "@t3tools/provider-core/server/mcpToolPresentation";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
-import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
+import * as ProviderHost from "@satslab/provider-core/server/ProviderHost";
+import { mcpToolPresentation } from "@satslab/provider-core/server/mcpToolPresentation";
+import * as McpProviderSessions from "@satslab/provider-core/server/McpProviderSessions";
+import * as ProviderEventLoggers from "@satslab/provider-core/server/ProviderEventLoggers";
 import {
   structuralProtocolMethod,
   summarizeNativeProtocolPayload,
-} from "@t3tools/provider-core/server/nativeProtocolLogging";
-import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import { t3OrchestrationSystemPrompt } from "@t3tools/provider-core/server/orchestrationInstructions";
-import { buildRuntimeInstructions } from "@t3tools/provider-core/server/runtimeInstructions";
+} from "@satslab/provider-core/server/nativeProtocolLogging";
+import { mergeProviderInstanceEnvironment } from "@satslab/provider-core/server/instanceEnvironment";
+import { t3OrchestrationSystemPrompt } from "@satslab/provider-core/server/orchestrationInstructions";
+import { buildRuntimeInstructions } from "@satslab/provider-core/server/runtimeInstructions";
 import * as OpenCodeRuntime from "./OpenCodeRuntime.ts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import { makeProviderFailure } from "@t3tools/provider-core/server/failure";
-import { turnScopedSelectionTransition } from "@t3tools/provider-core/server/selectionTransition";
-import { providerMessageTextWithAttachmentPaths } from "@t3tools/provider-core/server/attachmentPrompt";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
+import { makeProviderFailure } from "@satslab/provider-core/server/failure";
+import { turnScopedSelectionTransition } from "@satslab/provider-core/server/selectionTransition";
+import { providerMessageTextWithAttachmentPaths } from "@satslab/provider-core/server/attachmentPrompt";
+import * as ProviderAdapter from "@satslab/provider-core/server/ProviderAdapter";
 import {
   ProviderAdapterDriverCreateError,
   type ProviderAdapterDriver,
   type ProviderAdapterDriverCreateInput,
-} from "@t3tools/provider-core/server/adapterDriver";
+} from "@satslab/provider-core/server/adapterDriver";
 import {
   makeSubagentChildThread,
   subagentThreadTitle,
-} from "@t3tools/provider-core/server/subagentProjection";
+} from "@satslab/provider-core/server/subagentProjection";
 import { openCodeToolTurnItem } from "./toolItems.ts";
 
 export const OPENCODE_PROVIDER = ProviderDriverKind.make("opencode");
@@ -988,7 +988,7 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
         if (hasT3Mcp) {
           yield* OpenCodeRuntime.runOpenCodeSdk("mcp.add", () =>
             client.mcp.add({
-              name: "t3-code",
+              name: "sora",
               config: {
                 type: "remote",
                 url: mcpSession.endpoint,

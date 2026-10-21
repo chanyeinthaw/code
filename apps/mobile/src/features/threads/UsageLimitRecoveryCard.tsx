@@ -1,8 +1,8 @@
 import { Button } from "../../components/ui/Button";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { squashAtomCommandFailure } from "@satslab/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
+import type { EnvironmentId } from "@satslab/contracts";
 import * as DateTime from "effect/DateTime";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
