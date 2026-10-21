@@ -109,7 +109,7 @@ Step "Finding your release..."
 $rawArch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
 $arch = switch ($rawArch) {
   "AMD64" { "x64" }
-  "ARM64" { "arm64" }
+  "ARM64" { Fail "Sora supports Windows x64 only" }
   default { Fail "unsupported architecture $rawArch" }
 }
 

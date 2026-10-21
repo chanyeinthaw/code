@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { cliArchiveTarCommand, newestCliReleaseVersion, parseChecksums } from "./cliRelease.ts";
+import {
+  cliArchivePlatformKey,
+  cliArchiveTarCommand,
+  newestCliReleaseVersion,
+  parseChecksums,
+} from "./cliRelease.ts";
 
 describe("cliRelease", () => {
+  it("offers downloads only for supported Sora targets", () => {
+    expect(cliArchivePlatformKey("linux", "x64")).toBe("linux-x64");
+    expect(cliArchivePlatformKey("darwin", "arm64")).toBe("darwin-arm64");
+    expect(cliArchivePlatformKey("win32", "x64")).toBe("win32-x64");
+    expect(cliArchivePlatformKey("linux", "arm64")).toBeUndefined();
+    expect(cliArchivePlatformKey("darwin", "x64")).toBeUndefined();
+    expect(cliArchivePlatformKey("win32", "arm64")).toBeUndefined();
+  });
   it("parses sha256sum output including binary-mode markers", () => {
     const checksums = parseChecksums(
       [
