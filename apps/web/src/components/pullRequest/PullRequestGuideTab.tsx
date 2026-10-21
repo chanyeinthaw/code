@@ -1,4 +1,4 @@
-import type { EnvironmentId, PullRequestRef, PullRequestReviewGuideStop } from "@t3tools/contracts";
+import type { EnvironmentId, PullRequestRef, PullRequestReviewGuideStop } from "@satslab/contracts";
 import { SparklesIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect, useEffectEvent } from "react";
 

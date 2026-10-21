@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { PlusIcon, SquarePenIcon } from "lucide-react";
-import type { EnvironmentId } from "@t3tools/contracts";
-import { botChatProviderDisabledReason } from "@t3tools/shared/botChat";
+import type { EnvironmentId } from "@satslab/contracts";
+import { botChatProviderDisabledReason } from "@satslab/shared/botChat";
 import {
   useEnvironments,
   useEnvironmentProviders,

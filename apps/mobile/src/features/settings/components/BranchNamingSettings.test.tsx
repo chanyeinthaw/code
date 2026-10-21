@@ -1,4 +1,4 @@
-import type { BranchNamingMode } from "@t3tools/contracts";
+import type { BranchNamingMode } from "@satslab/contracts";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -45,7 +45,7 @@ function render(
     root.render(
       <BranchNamingSettings
         mode={mode}
-        prefix={saved.prefix ?? "t3"}
+        prefix={saved.prefix ?? "sora"}
         instructions={saved.instructions ?? "Use issue IDs."}
         disabled={disabled}
         onChange={onChange}

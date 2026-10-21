@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -30,7 +30,7 @@ const startBesideBootService = Effect.fn("test.startBesideBootService")(function
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-owner-boot-service-" });
-  const t3Home = path.join(root, ".t3");
+  const t3Home = path.join(root, ".sora");
   const serviceHome = input.unitServesOtherHome ? path.join(root, "other") : t3Home;
   for (const home of [t3Home, serviceHome]) {
     yield* fs.makeDirectory(path.join(home, "userdata"), { recursive: true });
@@ -45,7 +45,7 @@ const startBesideBootService = Effect.fn("test.startBesideBootService")(function
   }
   if (input.npmRuntime) {
     const versionDir = path.join(serviceHome, "runtime", "versions", activeVersion);
-    const entryPath = path.join(versionDir, "node_modules", "t3", "dist", "bin.mjs");
+    const entryPath = path.join(versionDir, "node_modules", "sora", "dist", "bin.mjs");
     yield* fs.makeDirectory(path.dirname(entryPath), { recursive: true });
     yield* fs.writeFileString(entryPath, "");
   }
@@ -67,11 +67,11 @@ const startBesideBootService = Effect.fn("test.startBesideBootService")(function
   const [unitPath, unit] =
     input.platform === "darwin"
       ? [
-          path.join(root, "Library", "LaunchAgents", "com.t3tools.t3code.service.plist"),
+          path.join(root, "Library", "LaunchAgents", "xyz.satslab.sora.service.plist"),
           renderBootServicePlist(plan, { homeDir: root, environmentPath: "" }),
         ]
       : [
-          path.join(root, ".config", "systemd", "user", "t3code.service"),
+          path.join(root, ".config", "systemd", "user", "sora.service"),
           renderBootServiceUnit(plan),
         ];
   yield* fs.makeDirectory(path.dirname(unitPath), { recursive: true });
@@ -247,7 +247,7 @@ describe("server ownership", () => {
               "launchctl print": { code: 113 },
               "launchctl print-disabled": {
                 code: 0,
-                stdout: '"com.t3tools.t3code.service" => false',
+                stdout: '"xyz.satslab.sora.service" => false',
               },
             },
           },
@@ -278,8 +278,8 @@ describe("server ownership", () => {
           assert.equal(result.failure._tag, "OlderBootServiceError");
           assert.equal(Runtime.getErrorExitCode(result.failure), 78);
           assert.include(result.failure.message, t3Home);
-          assert.include(result.failure.message, "t3 update");
-          assert.include(result.failure.message, "t3 service restart");
+          assert.include(result.failure.message, "sora update");
+          assert.include(result.failure.message, "sora service restart");
           assert.include(result.failure.message, "No server was stopped");
         }
       }).pipe(Effect.provide(NodeServices.layer)),
@@ -360,7 +360,7 @@ describe("server ownership", () => {
               "launchctl print": { code: 113 },
               "launchctl print-disabled": {
                 code: 0,
-                stdout: '"com.t3tools.t3code.service" => disabled',
+                stdout: '"xyz.satslab.sora.service" => disabled',
               },
             },
           },

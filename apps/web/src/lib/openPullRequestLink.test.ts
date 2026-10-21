@@ -9,7 +9,7 @@ import {
   parseChangeRequestUrl,
   pullRequestCandidateUrlFromReferenceAutolink,
 } from "./openPullRequestLink";
-import { ProjectId, type RepositoryIdentity } from "@t3tools/contracts";
+import { ProjectId, type RepositoryIdentity } from "@satslab/contracts";
 
 function repositoryIdentity(
   provider: string,
@@ -318,17 +318,17 @@ describe("findProjectForChangeRequest", () => {
   it("matches a nested GitLab group by the whole path below the host", () => {
     const projects = [
       project({
-        canonicalKey: "gitlab.com/t3tools/platform/t3code",
+        canonicalKey: "gitlab.com/t3tools/platform/sora",
         provider: "gitlab",
-        displayName: "t3tools/platform/t3code",
+        displayName: "t3tools/platform/sora",
         owner: "t3tools",
-        name: "t3code",
+        name: "sora",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "gitlab.com",
-        repository: "t3tools/platform/t3code",
+        repository: "t3tools/platform/sora",
         number: 42,
       }),
     ).toBe(projects[0]);
@@ -340,7 +340,7 @@ describe("findProjectForChangeRequest", () => {
         canonicalKey: "github.com/pingdotgg/t3code",
         provider: "github",
         owner: "pingdotgg",
-        name: "t3code",
+        name: "sora",
       }),
     ];
     expect(

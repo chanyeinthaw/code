@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off - exercises concurrent real CLI subprocesses.
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import { describe, expect, it } from "@effect/vitest";
 import * as NodeChildProcess from "node:child_process";
 import * as NodeUtil from "node:util";
@@ -26,7 +26,7 @@ describe("host-bound agent commands", () => {
         const temp = yield* fs.makeTempDirectoryScoped({ prefix: "t3-device-target-" });
         const dir = path.join(temp, "quotes '\" $HOME `literal`");
         yield* fs.makeDirectory(dir);
-        const desktopApp = path.join(dir, "T3 Code");
+        const desktopApp = path.join(dir, "Sora");
         // Dropping Node mode after checking it forces each hop to set it independently.
         yield* fs.writeFileString(
           desktopApp,

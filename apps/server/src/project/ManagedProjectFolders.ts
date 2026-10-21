@@ -4,8 +4,8 @@ import {
   ProjectId,
   type ThreadId,
   VcsProcessSpawnError,
-} from "@t3tools/contracts";
-import { newProjectFolderName } from "@t3tools/shared/path";
+} from "@satslab/contracts";
+import { newProjectFolderName } from "@satslab/shared/path";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -111,7 +111,7 @@ export class ManagedProjectFolders extends Context.Service<
       NamedProjectError
     >;
   }
->()("t3/project/ManagedProjectFolders") {}
+>()("@satslab/sora/project/ManagedProjectFolders") {}
 
 const folderWords = (text: string) =>
   text
@@ -183,7 +183,7 @@ function namedProjectReadme(name: string): string {
     "",
     `# ${name}`,
     "",
-    "Created in [T3 Code](https://t3.codes).",
+    "Created in [Sora](https://t3.codes).",
     "",
   ].join("\n");
 }
@@ -240,7 +240,7 @@ const make = Effect.gen(function* () {
     }
   });
 
-  // Inside a checkout (a dev worktree's .t3, a dotfiles home) the folder would
+  // Inside a checkout (a dev worktree's .sora, a dotfiles home) the folder would
   // inherit the repo's git status and checkpoints, so Scratch is offered only
   // when the data dir is outside any work tree.
   const [probe, invalidate] = yield* Effect.cachedInvalidateWithTTL(

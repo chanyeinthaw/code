@@ -1,4 +1,4 @@
-import type { ThreadTitleMessage } from "@t3tools/provider-core/server/threadTitleContext";
+import type { ThreadTitleMessage } from "@satslab/provider-core/server/threadTitleContext";
 
 export const threadTitleEvaluationCases = [
   {
@@ -91,10 +91,10 @@ export const threadTitleEvaluationCases = [
   {
     id: "research",
     source: "Maintainer title generation request",
-    request: "How can we improve title generation in T3 Code?",
+    request: "How can we improve title generation in Sora?",
     previousTitle: "Research title gen improvements",
     messages: [
-      { role: "user", text: "How can we improve title gen further in T3 Code?" },
+      { role: "user", text: "How can we improve title gen further in Sora?" },
       {
         role: "assistant",
         text: "Prioritize user messages, refine vague titles once, and resolve PR subjects.",

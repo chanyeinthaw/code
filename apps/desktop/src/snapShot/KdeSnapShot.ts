@@ -6,7 +6,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 import * as Schema from "effect/Schema";
-import type { DesktopCaptureHelperState } from "@t3tools/contracts";
+import type { DesktopCaptureHelperState } from "@satslab/contracts";
 
 import { escapeDesktopEntryExecArgument } from "../app/DesktopLinuxUrlHandler.ts";
 import type { LinuxWindowSnapshot } from "./LinuxSnapShot.ts";
@@ -15,7 +15,7 @@ import { startNativeCaptureFeedback } from "./NativeCaptureFeedback.ts";
 export { isKdeCaptureSession } from "./linuxCaptureSession.ts";
 
 export const KDE_CAPTURE_EXECUTABLE = "t3-kde-snap-shot";
-const DESKTOP_FILE = "com.t3tools.T3Code.KdeCapture.desktop";
+const DESKTOP_FILE = "xyz.satslab.Sora.KdeCapture.desktop";
 const MARKER = "X-T3Code-Capture-Helper=true";
 const decodeCapabilities = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.Struct({ feedbackAvailable: Schema.optional(Schema.Boolean) })),
@@ -24,7 +24,7 @@ export type KdeCapturePaths = { readonly bundle: string; readonly dataHome: stri
 
 export function kdeCapturePaths(paths: KdeCapturePaths) {
   return {
-    executable: NodePath.join(paths.dataHome, "t3code", "kde-capture", KDE_CAPTURE_EXECUTABLE),
+    executable: NodePath.join(paths.dataHome, "sora", "kde-capture", KDE_CAPTURE_EXECUTABLE),
     desktop: NodePath.join(paths.dataHome, "applications", DESKTOP_FILE),
   };
 }
@@ -33,7 +33,7 @@ function kdeCaptureDesktopEntry(executable: string): string {
   return [
     "[Desktop Entry]",
     "Type=Application",
-    "Name=T3 Code SnapShots",
+    "Name=Sora SnapShots",
     "NoDisplay=true",
     `Exec=${escapeDesktopEntryExecArgument(executable)} check`,
     // KService reads this custom property as a KConfig list, not an XDG ';' list.
@@ -115,7 +115,7 @@ export class KdeCaptureSetup {
       if (!bundle)
         return {
           status: "error",
-          message: "The capture helper is missing from this build. Update or reinstall T3 Code.",
+          message: "The capture helper is missing from this build. Update or reinstall Sora.",
         };
       if (!installed.equals(bundle) || entry.toString() !== kdeCaptureDesktopEntry(executable))
         return {
@@ -159,9 +159,7 @@ export class KdeCaptureSetup {
     } else {
       const bundle = await regularFile(this.paths.bundle);
       if (!bundle)
-        throw new Error(
-          "The capture helper is missing from this build. Update or reinstall T3 Code.",
-        );
+        throw new Error("The capture helper is missing from this build. Update or reinstall Sora.");
       await NodeFSP.mkdir(directory, { recursive: true });
       await NodeFSP.mkdir(NodePath.dirname(desktop), { recursive: true });
       const staging = await NodeFSP.mkdtemp(NodePath.join(directory, ".install-"));

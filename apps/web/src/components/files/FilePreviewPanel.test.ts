@@ -1,5 +1,5 @@
-import type { ScopedThreadRef } from "@t3tools/contracts";
-import { ProjectReadFileError } from "@t3tools/contracts";
+import type { ScopedThreadRef } from "@satslab/contracts";
+import { ProjectReadFileError } from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 

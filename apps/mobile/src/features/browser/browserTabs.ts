@@ -1,4 +1,4 @@
-import type { PreviewSessionSnapshot } from "@t3tools/contracts";
+import type { PreviewSessionSnapshot } from "@satslab/contracts";
 
 export function latestBrowserTab(tabs: ReadonlyArray<PreviewSessionSnapshot>) {
   return tabs.reduce<PreviewSessionSnapshot | null>(

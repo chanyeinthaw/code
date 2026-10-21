@@ -2,12 +2,12 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ProviderInstanceEnvironment,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 import type * as Effect from "effect/Effect";
 import type * as Scope from "effect/Scope";
 
-import type * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import type * as ProviderAdapter from "@satslab/provider-core/server/ProviderAdapter";
 
 export class ProviderAdapterDriverCreateError extends Schema.TaggedError<ProviderAdapterDriverCreateError>()(
   "ProviderAdapterDriverCreateError",

@@ -1,4 +1,4 @@
-import type { ProjectEntry } from "@t3tools/contracts";
+import type { ProjectEntry } from "@satslab/contracts";
 
 export interface FileTreeNode {
   readonly path: string;
