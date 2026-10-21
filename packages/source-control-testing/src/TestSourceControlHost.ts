@@ -2,9 +2,9 @@ import {
   DEFAULT_SERVER_SETTINGS,
   type ServerSettings,
   type ServerSettingsPatch,
-} from "@t3tools/contracts";
-import { applyServerSettingsPatch } from "@t3tools/shared/serverSettings";
-import * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
+} from "@satslab/contracts";
+import { applyServerSettingsPatch } from "@satslab/shared/serverSettings";
+import * as SourceControlHost from "@satslab/source-control-core/server/SourceControlHost";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -20,7 +20,7 @@ export interface TestSourceControlHostOptions {
 export class TestSourceControlHostSettings extends Context.Service<
   TestSourceControlHostSettings,
   { readonly update: (patch: ServerSettingsPatch) => Effect.Effect<void> }
->()("@t3tools/source-control-testing/TestSourceControlHost/TestSourceControlHostSettings") {}
+>()("@satslab/source-control-testing/TestSourceControlHost/TestSourceControlHostSettings") {}
 
 type Git = SourceControlHost.SourceControlHost["Service"]["git"];
 

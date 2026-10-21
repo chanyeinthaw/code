@@ -1,6 +1,6 @@
 import { ArrowUpRightIcon, BotIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
+import { resolveEnvironmentMachineKind } from "@satslab/contracts";
 import { useBots } from "../../state/bots";
 import { useEnvironments } from "../../state/environments";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";

@@ -7,11 +7,11 @@ import {
   ThreadId,
   type BotIdentity,
   type BotTransfer,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import migration from "../persistence/Migrations/068_BotChat.ts";
 import * as BotStorage from "./BotStorage.ts";
 import * as BotOwnership from "./BotOwnership.ts";

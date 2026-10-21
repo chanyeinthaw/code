@@ -29,23 +29,23 @@ import type {
   ScopedThreadRef,
   ServerProvider,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   EnvironmentRequestInvalidError,
   AuthOrchestrationOperateScope,
   ProviderDriverKind,
   ProviderInstanceId,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
-} from "@t3tools/contracts";
-import type { EnvironmentConnectionPresentation } from "@t3tools/client-runtime/connection";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/contracts";
+import type { EnvironmentConnectionPresentation } from "@satslab/client-runtime/connection";
+import { settlePromise, squashAtomCommandFailure } from "@satslab/client-runtime/state/runtime";
 import * as Schema from "effect/Schema";
-import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
-import { serializeComposerFileLink } from "@t3tools/shared/composerTrigger";
+import { isPasteAsTextShortcut } from "@satslab/client-runtime/text-paste";
+import { serializeComposerFileLink } from "@satslab/shared/composerTrigger";
 import { folderDropTarget, resolveDroppedFolderPath } from "./folderDrop";
 import { splitTransferredFiles } from "./workspaceFileDrop";
-import { createModelSelection, normalizeModelSlug } from "@t3tools/shared/model";
-import { USAGE_LIMITS_COMMAND } from "@t3tools/shared/usageLimits";
+import { createModelSelection, normalizeModelSlug } from "@satslab/shared/model";
+import { USAGE_LIMITS_COMMAND } from "@satslab/shared/usageLimits";
 import {
   memo,
   type ReactNode,
@@ -146,7 +146,7 @@ import {
   type TerminalContextDraft,
   type TerminalContextSelection,
 } from "../../lib/terminalContext";
-import { toKindScopedComposerContextId } from "@t3tools/shared/composerContextReferences";
+import { toKindScopedComposerContextId } from "@satslab/shared/composerContextReferences";
 import {
   shouldUseCompactComposerPrimaryActions,
   shouldUseCompactComposerFooter,
@@ -186,8 +186,8 @@ import {
 import { rememberCopiedComposerAttachments } from "~/lib/copiedComposerAttachments";
 import { useThreadContextDrop, threadContextDropTargetProps } from "./threadContextDrag";
 import { readThreadShell } from "~/state/entities";
-import { encodeComposerContextFragment } from "@t3tools/shared/composerContextClipboard";
-import type { ComposerContextRecord, ThreadPullRequestLink } from "@t3tools/contracts";
+import { encodeComposerContextFragment } from "@satslab/shared/composerContextClipboard";
+import type { ComposerContextRecord, ThreadPullRequestLink } from "@satslab/contracts";
 import { threadContextAttachment } from "~/lib/threadContextAttachment";
 import {
   type ComposerCommandItem,
@@ -247,10 +247,10 @@ const COMPOSER_SCROLL_COLLAPSE_THRESHOLD_PX = 24;
 const COMPOSER_SCROLL_GESTURE_RESET_MS = 120;
 import { toastManager } from "../ui/toast";
 import { PlayIcon, ShieldIcon } from "lucide-react";
-import { proposedPlanTitle } from "@t3tools/shared/proposedPlanText";
+import { proposedPlanTitle } from "@satslab/shared/proposedPlanText";
 import { hasProviderSetup } from "./ProviderStatusBanner";
 import { type AppModelOption, getAppModelOptionsForInstance } from "../../modelSelection";
-import type { UnifiedSettings } from "@t3tools/contracts/settings";
+import type { UnifiedSettings } from "@satslab/contracts/settings";
 import {
   isVideoAttachment,
   type ChatMessage,
@@ -268,12 +268,12 @@ import type {
 import {
   resolveComposerDispatchMode,
   type ComposerDispatchMode,
-} from "@t3tools/client-runtime/state/composer-dispatch";
+} from "@satslab/client-runtime/state/composer-dispatch";
 import type { ContextWindowSnapshot } from "../../lib/contextWindow";
 import {
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@satslab/client-runtime/providerSkills";
 import { useDelayedStatus } from "../../hooks/useDelayedStatus";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { useSoftwareKeyboardOpen } from "../../hooks/useSoftwareKeyboardOpen";

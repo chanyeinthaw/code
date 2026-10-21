@@ -1,4 +1,4 @@
-import type { ThreadStructure } from "@t3tools/client-runtime/state/shell";
+import type { ThreadStructure } from "@satslab/client-runtime/state/shell";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
@@ -7,15 +7,15 @@ import {
   type ScopedThreadRef,
   type ThreadId,
   type UserInputAttachments,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   derivePendingThreadRequests,
   seedUserInputDraftAnswers,
-} from "@t3tools/client-runtime/state/thread-requests";
+} from "@satslab/client-runtime/state/thread-requests";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { create } from "zustand";
 import {
   useLayoutEffect,

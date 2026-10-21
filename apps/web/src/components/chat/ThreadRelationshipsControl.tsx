@@ -6,14 +6,14 @@ import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { CollapsibleSectionHeader, SectionHeaderStatus } from "../ui/collapsible-section-header";
 import { SubagentTooltipContent } from "./SubagentTooltipContent";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
-import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { scopedThreadKey, scopeThreadRef } from "@satslab/client-runtime/environment";
 import {
   deriveWorkflowGroups,
   projectedSubagentsToRuntime,
   type RuntimeSubagent,
-} from "@t3tools/client-runtime/state/subagentRuntime";
-import { formatSubagentDisplayTitle } from "@t3tools/client-runtime/state/subagent-display";
-import { deriveProviderSubagentStatus } from "@t3tools/client-runtime/state/thread-execution";
+} from "@satslab/client-runtime/state/subagentRuntime";
+import { formatSubagentDisplayTitle } from "@satslab/client-runtime/state/subagent-display";
+import { deriveProviderSubagentStatus } from "@satslab/client-runtime/state/thread-execution";
 import {
   deriveThreadRelationshipGraph,
   immediateThreadRelationships,
@@ -23,11 +23,11 @@ import {
   resolveMergeBackTargetThreadId,
   type ThreadRelationshipEdge,
   type ThreadRelationshipWalkRow,
-} from "@t3tools/client-runtime/state/thread-relationships";
+} from "@satslab/client-runtime/state/thread-relationships";
 import {
   canDetachThreadProviderSession,
   resolveLatestMergeBackRun,
-} from "@t3tools/client-runtime/state/thread-workflows";
+} from "@satslab/client-runtime/state/thread-workflows";
 import {
   isOrchestrationV2WorkActive,
   isProviderNativeSubagentThread,
@@ -37,8 +37,8 @@ import {
   type OrchestrationV2Subagent,
   type OrchestrationV2ThreadShell,
   type ThreadId,
-} from "@t3tools/contracts";
-import { deriveSubagentElapsedMs } from "@t3tools/shared/orchestrationTiming";
+} from "@satslab/contracts";
+import { deriveSubagentElapsedMs } from "@satslab/shared/orchestrationTiming";
 import { groupBy } from "effect/Array";
 import * as DateTime from "effect/DateTime";
 import { useNavigate } from "@tanstack/react-router";

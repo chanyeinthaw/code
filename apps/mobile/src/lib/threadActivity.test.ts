@@ -16,8 +16,8 @@ import {
   type OrchestrationV2RunAttempt,
   type OrchestrationV2ProjectedTurnItem,
   type OrchestrationV2TurnItem,
-} from "@t3tools/contracts";
-import { deriveThreadCheckpointSummaries } from "@t3tools/client-runtime/state/thread-checkpoints";
+} from "@satslab/contracts";
+import { deriveThreadCheckpointSummaries } from "@satslab/client-runtime/state/thread-checkpoints";
 import { getReviewSectionIdForCheckpoint } from "../features/review/reviewModel";
 import * as DateTime from "effect/DateTime";
 import { describe, expect, it } from "vite-plus/test";
@@ -1017,7 +1017,7 @@ describe("retained v2 feed presentation", () => {
           {
             ...base(id, "2026-06-20T00:00:02.000Z", index),
             type: "dynamic_tool",
-            toolName: "t3-code.delegate_task",
+            toolName: "sora.delegate_task",
             input: { task: "Identical task" },
             output,
             ...overrides,
@@ -1461,7 +1461,7 @@ describe("streamed feed updates", () => {
   const delegation: OrchestrationV2TurnItem = {
     ...item("delegation", 3, runs[0]),
     type: "dynamic_tool",
-    toolName: "t3-code.delegate_task",
+    toolName: "sora.delegate_task",
     input: { task: "Check" },
     output: { taskId: "child" },
   };

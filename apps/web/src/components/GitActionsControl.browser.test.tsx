@@ -3,7 +3,7 @@ import {
   AuthSourceControlWriteScope,
   EnvironmentId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
 import { memo } from "react";

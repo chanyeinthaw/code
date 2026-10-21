@@ -1,4 +1,4 @@
-import { EnvironmentId, MessageId, RunId, ScheduledTaskId } from "@t3tools/contracts";
+import { EnvironmentId, MessageId, RunId, ScheduledTaskId } from "@satslab/contracts";
 import type { LegendListRef } from "@legendapp/list/react";
 import { createRef, Profiler, type ComponentProps, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -8,7 +8,7 @@ import "~/index.css";
 import { act, render } from "../../../test/render";
 import { MessagesTimeline } from "./MessagesTimeline";
 import { remarkThoughtPreview } from "./TimelineWorkEntryRow.logic";
-import { parseMarkdownWithMath } from "@t3tools/shared/markdownMath";
+import { parseMarkdownWithMath } from "@satslab/shared/markdownMath";
 import { collectThreadFindRanges } from "./threadFindHighlights";
 
 const environmentQuery = vi.hoisted(() => ({

@@ -1,23 +1,23 @@
-import { sourceControlRepositorySelector } from "@t3tools/shared/sourceControl";
+import { sourceControlRepositorySelector } from "@satslab/shared/sourceControl";
 import type {
   EnvironmentId,
   ScopedThreadRef,
   ThreadLinkedPullRequest,
   ThreadPullRequestLink,
-} from "@t3tools/contracts";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+} from "@satslab/contracts";
+import type { EnvironmentProject } from "@satslab/client-runtime/state/shell";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import {
   planThreadPullRequestMutation,
   threadPullRequestLinkMode,
-} from "@t3tools/client-runtime/thread-pull-request-compatibility";
+} from "@satslab/client-runtime/thread-pull-request-compatibility";
 import {
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
-} from "@t3tools/shared/threadPullRequests";
+} from "@satslab/shared/threadPullRequests";
 import {
   findProjectForChangeRequest,
   matchesLinkedPullRequestUrl,

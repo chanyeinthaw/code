@@ -1,5 +1,5 @@
-import { EnvironmentId } from "@t3tools/contracts";
-import { RelayEnvironmentEndpointFailure } from "@t3tools/contracts/relay";
+import { EnvironmentId } from "@satslab/contracts";
+import { RelayEnvironmentEndpointFailure } from "@satslab/contracts/relay";
 import * as Schema from "effect/Schema";
 
 const ConnectionTargetBase = {

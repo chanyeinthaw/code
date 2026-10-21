@@ -1,5 +1,5 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import type { VcsStatusRemoteResult, VcsStatusResult } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@satslab/contracts";
+import type { VcsStatusRemoteResult, VcsStatusResult } from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -17,23 +17,23 @@ import {
 
 describe("normalizeGitRemoteUrl", () => {
   it("canonicalizes equivalent GitHub remotes across protocol variants", () => {
-    expect(normalizeGitRemoteUrl("git@github.com:T3Tools/T3Code.git")).toBe(
-      "github.com/t3tools/t3code",
+    expect(normalizeGitRemoteUrl("git@github.com:T3Tools/Sora.git")).toBe(
+      "github.com/t3tools/sora",
     );
-    expect(normalizeGitRemoteUrl("https://github.com/T3Tools/T3Code.git")).toBe(
-      "github.com/t3tools/t3code",
+    expect(normalizeGitRemoteUrl("https://github.com/T3Tools/Sora.git")).toBe(
+      "github.com/t3tools/sora",
     );
-    expect(normalizeGitRemoteUrl("ssh://git@github.com/T3Tools/T3Code")).toBe(
-      "github.com/t3tools/t3code",
+    expect(normalizeGitRemoteUrl("ssh://git@github.com/T3Tools/Sora")).toBe(
+      "github.com/t3tools/sora",
     );
   });
 
   it("preserves nested group paths for providers like GitLab", () => {
-    expect(normalizeGitRemoteUrl("git@gitlab.com:T3Tools/platform/T3Code.git")).toBe(
-      "gitlab.com/t3tools/platform/t3code",
+    expect(normalizeGitRemoteUrl("git@gitlab.com:T3Tools/platform/Sora.git")).toBe(
+      "gitlab.com/t3tools/platform/sora",
     );
-    expect(normalizeGitRemoteUrl("https://gitlab.com/T3Tools/platform/T3Code.git")).toBe(
-      "gitlab.com/t3tools/platform/t3code",
+    expect(normalizeGitRemoteUrl("https://gitlab.com/T3Tools/platform/Sora.git")).toBe(
+      "gitlab.com/t3tools/platform/sora",
     );
   });
 
@@ -64,23 +64,23 @@ describe("normalizeGitRemoteUrl", () => {
   });
 
   it("gives an Azure DevOps repository the same key over SSH as over HTTPS", () => {
-    expect(normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/T3Tools/Platform/T3Code")).toBe(
-      "dev.azure.com/t3tools/platform/_git/t3code",
+    expect(normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/T3Tools/Platform/Sora")).toBe(
+      "dev.azure.com/t3tools/platform/_git/sora",
     );
-    expect(normalizeGitRemoteUrl("ssh://git@ssh.dev.azure.com:22/v3/T3Tools/Platform/T3Code")).toBe(
-      "dev.azure.com/t3tools/platform/_git/t3code",
+    expect(normalizeGitRemoteUrl("ssh://git@ssh.dev.azure.com:22/v3/T3Tools/Platform/Sora")).toBe(
+      "dev.azure.com/t3tools/platform/_git/sora",
     );
-    expect(
-      normalizeGitRemoteUrl("https://T3Tools@dev.azure.com/T3Tools/Platform/_git/T3Code"),
-    ).toBe("dev.azure.com/t3tools/platform/_git/t3code");
+    expect(normalizeGitRemoteUrl("https://T3Tools@dev.azure.com/T3Tools/Platform/_git/Sora")).toBe(
+      "dev.azure.com/t3tools/platform/_git/sora",
+    );
   });
 
   it("puts the organization back in the host on the name dev.azure.com replaced", () => {
-    expect(
-      normalizeGitRemoteUrl("T3Tools@vs-ssh.visualstudio.com:v3/T3Tools/Platform/T3Code"),
-    ).toBe("t3tools.visualstudio.com/platform/_git/t3code");
-    expect(normalizeGitRemoteUrl("https://T3Tools.visualstudio.com/Platform/_git/T3Code")).toBe(
-      "t3tools.visualstudio.com/platform/_git/t3code",
+    expect(normalizeGitRemoteUrl("T3Tools@vs-ssh.visualstudio.com:v3/T3Tools/Platform/Sora")).toBe(
+      "t3tools.visualstudio.com/platform/_git/sora",
+    );
+    expect(normalizeGitRemoteUrl("https://T3Tools.visualstudio.com/Platform/_git/Sora")).toBe(
+      "t3tools.visualstudio.com/platform/_git/sora",
     );
   });
 });
@@ -158,33 +158,31 @@ describe("isTemporaryWorktreeBranch", () => {
     );
   });
 
-  it("matches legacy t3code temporary worktree refs", () => {
-    expect(isTemporaryWorktreeBranch("t3code/deadbeef")).toBe(true);
-    expect(isTemporaryWorktreeBranch("t3code-deadbeef")).toBe(true);
-    expect(isTemporaryWorktreeBranch("t3code/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(true);
-    expect(
-      isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12`),
-    ).toBe(false);
+  it("matches legacy UUID-shaped temporary worktree refs", () => {
+    expect(isTemporaryWorktreeBranch("sora/deadbeef")).toBe(true);
+    expect(isTemporaryWorktreeBranch("sora-deadbeef")).toBe(true);
+    expect(isTemporaryWorktreeBranch("sora/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(true);
+    expect(isTemporaryWorktreeBranch("feature/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(false);
   });
 
   it("rejects UUID-shaped refs that are not RFC 4122 v4", () => {
-    expect(isTemporaryWorktreeBranch("t3code/f4ae4e0e-f971-1d48-b4f2-9cf0aa54ab12")).toBe(false);
-    expect(isTemporaryWorktreeBranch("t3code/f4ae4e0e-f971-4d48-c4f2-9cf0aa54ab12")).toBe(false);
+    expect(isTemporaryWorktreeBranch("sora/f4ae4e0e-f971-1d48-b4f2-9cf0aa54ab12")).toBe(false);
+    expect(isTemporaryWorktreeBranch("sora/f4ae4e0e-f971-4d48-c4f2-9cf0aa54ab12")).toBe(false);
   });
 
-  it("matches the flat fallback used when a plain t3 branch exists", () => {
+  it("matches the flat fallback used when a plain sora branch exists", () => {
     const flat = flattenTemporaryWorktreeBranchName(`${WORKTREE_BRANCH_PREFIX}/deadbeef`);
     expect(flat).toBe(`${WORKTREE_BRANCH_PREFIX}-deadbeef`);
     expect(isTemporaryWorktreeBranch(flat)).toBe(true);
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}-deadbeef-extra`)).toBe(false);
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}-feature`)).toBe(false);
-    expect(flattenTemporaryWorktreeBranchName("t3code/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(
+    expect(flattenTemporaryWorktreeBranchName("sora/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(
       `${WORKTREE_BRANCH_PREFIX}-f4ae4e0e`,
     );
-    expect(flattenTemporaryWorktreeBranchName("t3code-deadbeef")).toBe(
+    expect(flattenTemporaryWorktreeBranchName("sora-deadbeef")).toBe(
       `${WORKTREE_BRANCH_PREFIX}-deadbeef`,
     );
-    expect(flattenTemporaryWorktreeBranchName("t3code/deadbeef")).toBe(
+    expect(flattenTemporaryWorktreeBranchName("sora/deadbeef")).toBe(
       `${WORKTREE_BRANCH_PREFIX}-deadbeef`,
     );
   });
@@ -310,7 +308,7 @@ describe("formatGeneratedBranchName", () => {
     expect(
       formatGeneratedBranchName("feat/Add Search", {
         mode: "semantic",
-        prefix: "t3code",
+        prefix: "sora",
         instructions: "",
       }),
     ).toBe("feat/add-search");

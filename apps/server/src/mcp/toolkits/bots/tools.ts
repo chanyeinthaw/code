@@ -1,4 +1,4 @@
-import { OrchestratorMcpFailure } from "@t3tools/contracts";
+import { OrchestratorMcpFailure } from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 import { Tool, Toolkit } from "effect/ai";
 import * as MemoryAccess from "../../../bots/MemoryAccess.ts";
@@ -23,7 +23,7 @@ export const MemoryToolkit = Toolkit.make(
     parameters: Schema.Struct({ id: index }),
     success: Schema.String,
   }).annotate(Tool.Readonly, true),
-  Tool.make("t3_attachment_read", {
+  Tool.make("s3_attachment_read", {
     ...shared,
     description:
       "Read bytes of a non-image attachment belonging to this memory by attachment ID. Use utf8 for text or base64 for binary. Offsets and lengths are bytes; continue from nextOffset.",
