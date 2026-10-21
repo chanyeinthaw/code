@@ -115,7 +115,7 @@ function resolveSpawnExecutableWithNode(
 }
 
 export const SpawnExecutableResolution = Context.Reference<SpawnExecutableResolver>(
-  "@t3tools/shared/shell/SpawnExecutableResolution",
+  "@satslab/shared/shell/SpawnExecutableResolution",
   {
     defaultValue: () => resolveSpawnExecutableWithNode,
   },
@@ -199,11 +199,11 @@ export function mergePathEntries(
 }
 
 function envCaptureStart(name: string): string {
-  return `__T3CODE_ENV_${name}_START__`;
+  return `__SORA_ENV_${name}_START__`;
 }
 
 function envCaptureEnd(name: string): string {
-  return `__T3CODE_ENV_${name}_END__`;
+  return `__SORA_ENV_${name}_END__`;
 }
 
 export function buildEnvironmentCaptureCommand(
@@ -326,14 +326,14 @@ export type WindowsShellEnvironmentReader = (
 ) => Effect.Effect<Partial<Record<string, string>>>;
 
 export const WindowsShellEnvironment = Context.Reference<WindowsShellEnvironmentReader>(
-  "@t3tools/shared/shell/WindowsShellEnvironment",
+  "@satslab/shared/shell/WindowsShellEnvironment",
   {
     defaultValue: () => readEnvironmentFromWindowsShell,
   },
 );
 
 export const CommandAvailability = Context.Reference<CommandAvailabilityChecker>(
-  "@t3tools/shared/shell/CommandAvailability",
+  "@satslab/shared/shell/CommandAvailability",
   {
     defaultValue: () => isCommandAvailable,
   },
@@ -505,7 +505,7 @@ interface CommandResolutionCacheEntry {
 }
 
 export const CommandResolutionCache = Context.Reference<Map<string, CommandResolutionCacheEntry>>(
-  "@t3tools/shared/shell/CommandResolutionCache",
+  "@satslab/shared/shell/CommandResolutionCache",
   {
     defaultValue: () => new Map(),
   },
@@ -539,7 +539,7 @@ const listPathDirectory = Effect.fnUntraced(function* (
 
 const PathDirectoryListings = Context.Reference<
   Cache.Cache<string, PathDirectoryListing, never, FileSystem.FileSystem> | undefined
->("@t3tools/shared/shell/PathDirectoryListings", { defaultValue: () => undefined });
+>("@satslab/shared/shell/PathDirectoryListings", { defaultValue: () => undefined });
 
 export const withPathDirectoryListings =
   /* Directory reads are cached inside one shell operation; a span for each lookup adds noise. */
@@ -786,7 +786,7 @@ function locateXcodeGitWithXcrun(env: NodeJS.ProcessEnv): string | undefined {
 }
 
 export const XcodeGitLocation = Context.Reference<XcodeGitLocator>(
-  "@t3tools/shared/shell/XcodeGitLocation",
+  "@satslab/shared/shell/XcodeGitLocation",
   { defaultValue: () => locateXcodeGitWithXcrun },
 );
 

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DESKTOP_UPDATE_RESTART_MARKER_FILE } from "@t3tools/contracts";
+import { DESKTOP_UPDATE_RESTART_MARKER_FILE } from "@satslab/contracts";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -41,8 +41,8 @@ describe("DesktopUpdates", () => {
   );
 
   it.effect("keeps the disabled reason available after configuration and channel changes", () => {
-    const harness = makeHarness({ env: { T3CODE_DISABLE_AUTO_UPDATE: "true" } });
-    const reason = "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    const harness = makeHarness({ env: { SORA_DISABLE_AUTO_UPDATE: "true" } });
+    const reason = "Automatic updates are disabled by the SORA_DISABLE_AUTO_UPDATE setting.";
 
     return Effect.scoped(
       Effect.gen(function* () {

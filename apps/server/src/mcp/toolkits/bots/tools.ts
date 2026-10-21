@@ -1,4 +1,4 @@
-import { BotDiscoveryInput, BotDiscoveryResult, OrchestratorMcpFailure } from "@t3tools/contracts";
+import { BotDiscoveryInput, BotDiscoveryResult, OrchestratorMcpFailure } from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 import { Tool, Toolkit } from "effect/ai";
 import * as BotChat from "../../../bots/BotChat.ts";
@@ -24,7 +24,7 @@ export const MemoryToolkit = Toolkit.make(
     parameters: Schema.Struct({ id: index }),
     success: Schema.String,
   }).annotate(Tool.Readonly, true),
-  Tool.make("t3_attachment_read", {
+  Tool.make("s3_attachment_read", {
     ...shared,
     description:
       "Read bytes of a non-image attachment belonging to this memory by attachment ID. Use utf8 for text or base64 for binary. Offsets and lengths are bytes; continue from nextOffset.",
@@ -47,9 +47,9 @@ export const MemoryToolkit = Toolkit.make(
 );
 
 export const BotDiscoveryToolkit = Toolkit.make(
-  Tool.make("t3_bot_list", {
+  Tool.make("s3_bot_list", {
     description:
-      "Discover active bots owned by this environment, optionally searching by name. Returns each bot's name, ID, and current threadId. Send a message with t3_thread_send using that threadId, or read its conversation with t3_thread_read. Pagination uses nextCursor. Messages appear as sent by another agent, just like messages between ordinary threads.",
+      "Discover active bots owned by this environment, optionally searching by name. Returns each bot's name, ID, and current threadId. Send a message with s3_thread_send using that threadId, or read its conversation with s3_thread_read. Pagination uses nextCursor. Messages appear as sent by another agent, just like messages between ordinary threads.",
     parameters: BotDiscoveryInput,
     success: BotDiscoveryResult,
     failure: OrchestratorMcpFailure,

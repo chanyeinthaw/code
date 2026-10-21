@@ -1,5 +1,5 @@
-import { isProviderSkillUserInvocable } from "@t3tools/client-runtime/providerSkills";
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+import { isProviderSkillUserInvocable } from "@satslab/client-runtime/providerSkills";
+import { formatProviderSkillDisplayName } from "@satslab/shared/inlineSkills";
 import {
   Extension,
   findChildren,
@@ -26,15 +26,15 @@ import type {
   AssistantCitation,
   ComposerContextClipboardFragment,
   ServerProviderSkill,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   serializeAssistantCitation,
   withAssistantCitationComment,
-} from "@t3tools/shared/assistantCitations";
+} from "@satslab/shared/assistantCitations";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
-} from "@t3tools/shared/composerContextClipboard";
+} from "@satslab/shared/composerContextClipboard";
 import {
   createContext,
   use,

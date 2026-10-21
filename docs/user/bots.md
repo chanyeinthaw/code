@@ -23,7 +23,7 @@ Codex 0.160.0 or newer, Claude Code, Pi, and local OpenCode support bot replies.
 Each Codex instance keeps its configured home, login, models, and composer options.
 Older Codex instances are disabled for bot chat. If the version cannot be verified, bot turns stop before inference starts.
 Other providers are unavailable for replies because their current integrations cannot enforce the memory tool policy. Your configured native MCP servers remain available.
-Files attached to a message are available through `t3_attachment_read`. Images use the provider's normal image input.
+Files attached to a message are available through `s3_attachment_read`. Images use the provider's normal image input.
 
 ## Coordinate work
 

@@ -1,4 +1,4 @@
-import type { BotIdentity } from "@t3tools/contracts";
+import type { BotIdentity } from "@satslab/contracts";
 import { ArrowRightLeftIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { Button } from "../ui/button";
 import { SettingsRow } from "../settings/settingsLayout";

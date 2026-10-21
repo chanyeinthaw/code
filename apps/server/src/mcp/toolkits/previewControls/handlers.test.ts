@@ -7,8 +7,8 @@ import {
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@t3tools/contracts";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+} from "@satslab/contracts";
+import { resolveProjectSettings } from "@satslab/shared/projectSettings";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
@@ -79,10 +79,10 @@ it.effect.each([
         ),
       );
       const listed = yield* toolkit
-        .handle("t3_preview_list", {})
+        .handle("s3_preview_list", {})
         .pipe(Stream.unwrap, Stream.runCollect, Effect.provide(layerDependencies));
       const closed = yield* toolkit
-        .handle("t3_preview_close", { tabId: tab.tabId })
+        .handle("s3_preview_close", { tabId: tab.tabId })
         .pipe(Stream.unwrap, Stream.runCollect, Effect.provide(layerDependencies));
       if (projectAccess) {
         expect(listed.at(-1)?.result).toMatchObject({ sessions: [tab], nextCursor: null });

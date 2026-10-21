@@ -9,16 +9,16 @@ import {
   type ServerLifecycleWelcomePayload,
   type ServerProvider,
   type ServerSettings,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   AVAILABLE_CONNECTION_STATE,
   presentEnvironmentConnection,
   type EnvironmentPresentation,
-} from "@t3tools/client-runtime/connection";
-import { createServerEnvironmentAtoms } from "@t3tools/client-runtime/state/server";
-import { createOutdatedServerUpdateCommand } from "@t3tools/client-runtime/state/outdatedServerUpdate";
-import { createEnvironmentServerConfigsAtom } from "@t3tools/client-runtime/state/shell";
-import { mergeWithDefaultKeybindings } from "@t3tools/shared/keybindings";
+} from "@satslab/client-runtime/connection";
+import { createServerEnvironmentAtoms } from "@satslab/client-runtime/state/server";
+import { createOutdatedServerUpdateCommand } from "@satslab/client-runtime/state/outdatedServerUpdate";
+import { createEnvironmentServerConfigsAtom } from "@satslab/client-runtime/state/shell";
+import { mergeWithDefaultKeybindings } from "@satslab/shared/keybindings";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 

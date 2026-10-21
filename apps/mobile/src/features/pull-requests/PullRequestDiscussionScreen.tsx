@@ -5,9 +5,9 @@ import { useNavigation, type StaticScreenProps } from "@react-navigation/native"
 import {
   type AtomCommandResult,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
-import type { PullRequestThreadComment } from "@t3tools/contracts";
+import type { PullRequestThreadComment } from "@satslab/contracts";
 import { useRef, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
 import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";

@@ -4,8 +4,8 @@ import {
   StoredOrchestrationThreadSnapshot,
   Persistence,
   makeStoredShellSnapshotEncoder,
-} from "@t3tools/client-runtime/platform";
-import { type EnvironmentId, ServerConfig, VcsListRefsResult } from "@t3tools/contracts";
+} from "@satslab/client-runtime/platform";
+import { type EnvironmentId, ServerConfig, VcsListRefsResult } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";

@@ -5,7 +5,7 @@ import {
   useRoute,
   type StaticScreenProps,
 } from "@react-navigation/native";
-import type { PullRequestChangeBreakdown } from "@t3tools/contracts";
+import type { PullRequestChangeBreakdown } from "@satslab/contracts";
 import { useState } from "react";
 import { Platform, View } from "react-native";
 import Animated from "react-native-reanimated";

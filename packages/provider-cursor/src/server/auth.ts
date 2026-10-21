@@ -3,7 +3,7 @@ import {
   ProviderSetupError,
   type ProviderAuthState,
   type ProviderInstanceId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Crypto from "effect/Crypto";
@@ -19,7 +19,7 @@ import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 
 import { Cursor, InMemoryCredentialStore } from "./sdk.ts";
-import type { ProviderAuthController } from "@t3tools/provider-core/server/auth";
+import type { ProviderAuthController } from "@satslab/provider-core/server/auth";
 
 const AUTH_TIMEOUT_MS = 300_000;
 
@@ -185,7 +185,7 @@ export const makeCursorAuth = Effect.fn("makeCursorAuth")(function* (options: Cu
             openBrowser: false,
             store: pendingStore,
             signal,
-            apiKeyName: `T3 Code - ${options.displayName}`,
+            apiKeyName: `Sora - ${options.displayName}`,
             onLoginUrl: (authorizationUrl) => {
               if (active === flow) Queue.offerUnsafe(urls, authorizationUrl);
             },
@@ -301,7 +301,7 @@ export const makeCursorAuth = Effect.fn("makeCursorAuth")(function* (options: Cu
 
   const controller: ProviderAuthController = {
     credentialBinding: options.credentialBinding ?? {
-      owner: "t3",
+      owner: "sora",
       key: `cursor:${options.instanceId}`,
     },
     isChangingCredentials: Effect.sync(() => operation !== "idle"),
@@ -449,7 +449,7 @@ export const makeCursorAuth = Effect.fn("makeCursorAuth")(function* (options: Cu
         Stream.map((current) => {
           const state = {
             ...current.state,
-            credentialOwner: "t3" as const,
+            credentialOwner: "sora" as const,
             methods: [
               {
                 id: "browser",

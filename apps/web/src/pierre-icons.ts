@@ -3,15 +3,15 @@ import {
   getBuiltInSpriteSheet,
   type FileTreeIcons,
 } from "@pierre/trees";
-import { VIDEO_FILE_EXTENSIONS } from "@t3tools/shared/video";
-import { fileIconPathForMimeType } from "@t3tools/shared/filePreview";
+import { VIDEO_FILE_EXTENSIONS } from "@satslab/shared/video";
+import { fileIconPathForMimeType } from "@satslab/shared/filePreview";
 
 export interface PierreIconResolution {
   name: string;
   token?: string;
 }
 
-const PIERRE_ICON_SPRITE_ID = "t3code-pierre-file-icon-sprite";
+const PIERRE_ICON_SPRITE_ID = "sora-pierre-file-icon-sprite";
 
 const T3_FILE_ICON_SPRITE = `
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true">

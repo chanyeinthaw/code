@@ -1,5 +1,5 @@
 import * as Arr from "effect/Array";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -16,7 +16,7 @@ import {
   ProviderInstanceId,
   RuntimeMode,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import {
   PersistenceDecodeError,
@@ -86,7 +86,7 @@ export class ProviderSessionRuntimeRepository extends Context.Service<
       input: DeleteProviderSessionRuntimeInput,
     ) => Effect.Effect<void, ProviderSessionRuntimeRepositoryError>;
   }
->()("t3/persistence/ProviderSessionRuntime/ProviderSessionRuntimeRepository") {}
+>()("@satslab/sora/persistence/ProviderSessionRuntime/ProviderSessionRuntimeRepository") {}
 
 const ProviderSessionRuntimeDbRowSchema = ProviderSessionRuntime.mapFields(
   Struct.assign({

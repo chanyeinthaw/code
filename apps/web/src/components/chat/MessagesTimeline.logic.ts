@@ -1,19 +1,19 @@
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-export { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-import { isLiveSubagentTurnItem } from "@t3tools/client-runtime/state/subagentRuntime";
+import { worktreeSetupAgentStarted } from "@satslab/client-runtime/worktree-setup";
+export { worktreeSetupAgentStarted } from "@satslab/client-runtime/worktree-setup";
+import { isLiveSubagentTurnItem } from "@satslab/client-runtime/state/subagentRuntime";
 import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
 import {
   assistantCitationLabel,
   collectAssistantCitations,
-} from "@t3tools/shared/assistantCitations";
+} from "@satslab/shared/assistantCitations";
 import { shallow } from "zustand/vanilla/shallow";
-import type { HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
-import { renderCodexDirectivesForCopy } from "@t3tools/shared/codexMarkdownDirectives";
+import type { HandoffTimelineRun } from "@satslab/client-runtime/handoff";
+import { renderCodexDirectivesForCopy } from "@satslab/shared/codexMarkdownDirectives";
 import {
   commandDisplayText,
   commandProgramName,
-} from "@t3tools/client-runtime/work-log/command-label";
+} from "@satslab/client-runtime/work-log/command-label";
 import {
   liveActivityToolStatus,
   normalizeCompactToolLabel,
@@ -23,8 +23,8 @@ import {
   toolGroupSummaryKind,
   contextCompactionTokenCounts,
   type ToolGroupSummaryKind,
-} from "@t3tools/client-runtime/work-log/presentation";
-export { toolGroupAction } from "@t3tools/client-runtime/work-log/presentation";
+} from "@satslab/client-runtime/work-log/presentation";
+export { toolGroupAction } from "@satslab/client-runtime/work-log/presentation";
 import {
   deriveRevertTurnCountByUserMessageId,
   formatDuration,
@@ -52,23 +52,23 @@ import {
   RunId,
   type ThreadId,
   type TurnItemId,
-} from "@t3tools/contracts";
-import type { ThreadRunSummary } from "@t3tools/client-runtime/state/shell";
+} from "@satslab/contracts";
+import type { ThreadRunSummary } from "@satslab/client-runtime/state/shell";
 import {
   resolveT3McpToolDefinition,
   type T3McpToolPresentation,
-} from "@t3tools/shared/t3McpToolPresentation";
-import { compactDynamicToolOutput } from "@t3tools/shared/toolOutput";
-import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@t3tools/shared/htmlRender";
-import { mcpAppReferencesEqual, type McpAppReference } from "@t3tools/shared/mcpApp";
-import { dynamicToolTitle } from "@t3tools/shared/toolActivity";
+} from "@satslab/shared/t3McpToolPresentation";
+import { compactDynamicToolOutput } from "@satslab/shared/toolOutput";
+import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@satslab/shared/htmlRender";
+import { mcpAppReferencesEqual, type McpAppReference } from "@satslab/shared/mcpApp";
+import { dynamicToolTitle } from "@satslab/shared/toolActivity";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 import {
   collectToolFilePaths,
   formatReadToolLabel,
   formatSearchToolLabel,
-} from "@t3tools/shared/toolActivity";
-import { isWindowsAbsolutePath } from "@t3tools/shared/path";
+} from "@satslab/shared/toolActivity";
+import { isWindowsAbsolutePath } from "@satslab/shared/path";
 
 function timelineEntryRunId(entry: TimelineEntry): RunId | null {
   if (entry.kind === "message") {
@@ -560,7 +560,7 @@ type MessagesTimelineRowContent =
       summaryKind: ToolGroupSummaryKind;
       toolSurface?: WorkLogEntry["toolSurface"];
       toolIcon?: WorkLogEntry["toolIcon"];
-      summaryToolIcon?: "browser" | "device" | "t3-code" | "pull-request";
+      summaryToolIcon?: "browser" | "device" | "sora" | "pull-request";
       hasFailure: boolean;
     }
   | {

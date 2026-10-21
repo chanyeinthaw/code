@@ -13,13 +13,13 @@ import {
   type OrchestrationV2AppThread,
   type OrchestrationV2Run,
   type OrchestrationV2ConversationMessage,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as DateTime from "effect/DateTime";
 import * as FileSystem from "effect/FileSystem";
 import { resolveAttachmentPath } from "../attachmentStore.ts";
 import * as Layer from "effect/Layer";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import * as ServerConfig from "../config.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import migration from "../persistence/Migrations/069_BotChat.ts";

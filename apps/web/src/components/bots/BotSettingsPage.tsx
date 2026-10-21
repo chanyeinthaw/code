@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ThreadId } from "@satslab/contracts";
 import { useBotRecords, useBotThreadContext } from "../../state/bots";
 import { useProjects, useQuietThreadShell } from "../../state/entities";
 import { useEnvironments } from "../../state/environments";
