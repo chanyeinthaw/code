@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/marketing",
+  "name": "@satslab/marketing",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,16 +7,19 @@
     "stage:install-scripts": "node scripts/stage-install-scripts.mjs",
     "dev": "node scripts/stage-install-scripts.mjs && astro dev",
     "build": "node scripts/stage-install-scripts.mjs && astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "deploy": "alchemy deploy"
   },
   "dependencies": {
-    "@t3tools/shared": "workspace:*",
+    "@satslab/shared": "workspace:*",
     "astro": "^7.3.5",
     "sharp": "0.35.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@vercel/config": "^0.3.0",
+    "alchemy": "catalog:",
+    "effect": "catalog:",
     "typescript": "~6.0.3"
   }
 }

@@ -1,5 +1,5 @@
-import { EnvironmentId, MessageId, ThreadId } from "@t3tools/contracts";
-import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
+import { EnvironmentId, MessageId, ThreadId } from "@satslab/contracts";
+import { serializeAssistantCitation } from "@satslab/shared/assistantCitations";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   workflow: null as unknown,
 }));
 
-vi.mock(import("@t3tools/client-runtime/state/thread-workflows"), async (importOriginal) => ({
+vi.mock(import("@satslab/client-runtime/state/thread-workflows"), async (importOriginal) => ({
   ...(await importOriginal()),
   deriveThreadQueueWorkflowState: (() => state.workflow) as never,
 }));

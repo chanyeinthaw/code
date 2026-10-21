@@ -1,4 +1,4 @@
-import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentId, ThreadId } from "@satslab/contracts";
 
 export interface CheckpointDiffTarget {
   readonly environmentId: EnvironmentId | null;

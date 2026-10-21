@@ -30,14 +30,14 @@ import {
   type ReviewDiffFileStat,
   type ReviewDiffPreviewSource,
   type VcsRef,
-} from "@t3tools/contracts";
-import { dedupeRemoteBranchesWithLocalMatches, normalizeGitRemoteUrl } from "@t3tools/shared/git";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { compactTraceAttributes } from "@t3tools/shared/observability";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
-import { resolveSpawnCommand } from "@t3tools/shared/shell";
-import { parseT3ProjectFile } from "@t3tools/shared/t3ProjectFile";
-import { resolveProjectFileBackedSetting } from "@t3tools/shared/projectSettings";
+} from "@satslab/contracts";
+import { dedupeRemoteBranchesWithLocalMatches, normalizeGitRemoteUrl } from "@satslab/shared/git";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { compactTraceAttributes } from "@satslab/shared/observability";
+import { decodeJsonResult } from "@satslab/shared/schemaJson";
+import { resolveSpawnCommand } from "@satslab/shared/shell";
+import { parseT3ProjectFile } from "@satslab/shared/t3ProjectFile";
+import { resolveProjectFileBackedSetting } from "@satslab/shared/projectSettings";
 import { gitCommandDuration, gitCommandsTotal, withMetrics } from "../observability/Metrics.ts";
 import * as GitVcsDriver from "./GitVcsDriver.ts";
 import { removeEmptyDirectory } from "./removeEmptyDirectory.ts";
@@ -674,7 +674,7 @@ const createTrace2Monitor = Effect.fnUntraced(function* (
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const traceFilePath = yield* fs.makeTempFileScoped({
-    prefix: `t3code-git-trace2-${process.pid}-`,
+    prefix: `sora-git-trace2-${process.pid}-`,
     suffix: ".json",
   });
   const hookStartByChildKey = new Map<string, { hookName: string; startedAtMs: number }>();
@@ -2396,7 +2396,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           );
           const indexPath = path.resolve(cwd, indexValue.trim());
           const directory = yield* fileSystem.makeTempDirectoryScoped({
-            prefix: "t3code-commit-index-",
+            prefix: "sora-commit-index-",
           });
           const tempIndexPath = path.join(directory, "index");
           const env = { GIT_INDEX_FILE: tempIndexPath } satisfies NodeJS.ProcessEnv;
@@ -2885,7 +2885,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       ? indexValue.trim()
       : path.resolve(cwd, indexValue.trim());
     const tempIndexPath = yield* fileSystem.makeTempFileScoped({
-      prefix: `t3code-review-index-${process.pid}-`,
+      prefix: `sora-review-index-${process.pid}-`,
     });
     const indexExists = yield* fileSystem.exists(indexPath);
     if (indexExists) {
@@ -3790,9 +3790,12 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
                 Effect.flatMap((contents) => {
                   const file = parseT3ProjectFile(contents);
                   return file === null
-                    ? Effect.logWarning("t3.json is invalid; initializing submodules recursively", {
-                        worktreePath,
-                      }).pipe(Effect.as(null))
+                    ? Effect.logWarning(
+                        "sora.json is invalid; initializing submodules recursively",
+                        {
+                          worktreePath,
+                        },
+                      ).pipe(Effect.as(null))
                     : Effect.succeed(file);
                 }),
                 Effect.orElseSucceed(() => null),
@@ -3800,7 +3803,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         );
     if (hasSubmodules && submoduleMode.value === "none" && progress?.onSubmodulesDisabled) {
       yield* progress.onSubmodulesDisabled({
-        source: submoduleMode.source === "t3.json" ? "t3.json" : "settings",
+        source: submoduleMode.source === "sora.json" ? "sora.json" : "settings",
       });
     }
     if (submoduleMode.value !== "none") {
@@ -3962,7 +3965,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         yield* executeGit(
           "GitVcsDriver.refreshCheckedOutBranch.keepPrevious",
           input.cwd,
-          ["update-ref", "refs/t3code/pre-refresh", headCommit],
+          ["update-ref", "refs/sora/pre-refresh", headCommit],
           { fallbackErrorDetail: "git failed to record the previous checkout commit" },
         );
       }

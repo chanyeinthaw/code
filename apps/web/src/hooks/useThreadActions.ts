@@ -3,10 +3,10 @@ import {
   scopeProjectRef,
   scopeThreadRef,
   scopedThreadKey,
-} from "@t3tools/client-runtime/environment";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { canSnooze, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
-import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
+} from "@satslab/client-runtime/environment";
+import { settlePromise, squashAtomCommandFailure } from "@satslab/client-runtime/state/runtime";
+import { canSnooze, threadWokeAt } from "@satslab/client-runtime/state/thread-settled";
+import { threadRuntimeCanArchive } from "@satslab/client-runtime/state/models";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
@@ -15,8 +15,8 @@ import {
   type ScopedThreadRef,
   ThreadId,
   sessionGrantsScope,
-} from "@t3tools/contracts";
-import { resolveWorktreeCleanup } from "@t3tools/shared/projectSettings";
+} from "@satslab/contracts";
+import { resolveWorktreeCleanup } from "@satslab/shared/projectSettings";
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/reactivity";
@@ -27,7 +27,7 @@ import { useComposerDraftStore } from "../composerDraftStore";
 import { environmentSession, readEnvironmentScope } from "../state/session";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { environmentServerConfigsAtom } from "../state/server";
-import { isScratchProject } from "@t3tools/client-runtime/state/projects";
+import { isScratchProject } from "@satslab/client-runtime/state/projects";
 import { threadEnvironment } from "../state/threads";
 import { vcsEnvironment } from "../state/vcs";
 import { useNewThreadHandler } from "./useHandleNewThread";

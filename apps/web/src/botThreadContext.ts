@@ -1,4 +1,4 @@
-import type { OrchestrationV2ThreadShell } from "@t3tools/contracts";
+import type { OrchestrationV2ThreadShell } from "@satslab/contracts";
 
 type BotThread = Pick<OrchestrationV2ThreadShell, "id" | "title" | "lineage" | "botId">;
 

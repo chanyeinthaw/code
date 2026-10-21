@@ -65,8 +65,8 @@ import {
   ReleasePackageManifestError,
   releasePackageFiles,
 } from "./update-release-package-versions.ts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { symlinksSupported } from "@satslab/shared/testing/symlinks";
 
 const encodeModuleUrl = Schema.encodeEffect(Schema.fromJsonString(Schema.String));
 const decodePackageVersion = Schema.decodeUnknownEffect(
@@ -86,7 +86,7 @@ const makeLinuxCliArchiveFixture = Effect.fn("test.makeLinuxCliArchiveFixture")(
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const contentRoot = path.join(input.root, "content");
   const members = [
-    `${input.stem}/t3`,
+    `${input.stem}/sora`,
     `${input.stem}/client/index.html`,
     `${input.stem}/node_modules/node-pty/package.json`,
     `${input.stem}/node_modules/node-pty/build/Release/pty.node`,
@@ -166,7 +166,7 @@ const makeWindowsPayloadFixture = Effect.fn("test.makeWindowsPayloadFixture")(fu
     path.join(resourcesDir, "resource-monitor/t3-resource-monitor.exe"),
     "monitor",
   );
-  const appExecutableName = "t3code.exe";
+  const appExecutableName = "sora.exe";
   yield* fs.writeFileString(path.join(packagedAppDir, appExecutableName), "electron");
   yield* fs.writeFileString(path.join(packagedAppDir, "chrome_crashpad_handler.exe"), "crashpad");
 
@@ -509,15 +509,15 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       assert.deepStrictEqual(release.publish, [
         {
           provider: "github",
-          owner: "pingdotgg",
-          repo: "t3code",
+          owner: "satslab",
+          repo: "sora",
           releaseType: "release",
         },
       ]);
     }).pipe(
       Effect.provide(
         ConfigProvider.layer(
-          ConfigProvider.fromEnv({ env: { GITHUB_REPOSITORY: "pingdotgg/t3code" } }),
+          ConfigProvider.fromEnv({ env: { GITHUB_REPOSITORY: "satslab/sora" } }),
         ),
       ),
     ),
@@ -775,7 +775,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
                 ConfigProvider.fromEnv({
                   env: {
                     npm_config_python: pythonPath,
-                    T3CODE_DESKTOP_REUSE_RESOURCE_MONITOR: "true",
+                    SORA_DESKTOP_REUSE_RESOURCE_MONITOR: "true",
                   },
                 }),
               ),
@@ -821,7 +821,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
               spawner,
               ConfigProvider.layer(
                 ConfigProvider.fromEnv({
-                  env: { T3CODE_DESKTOP_REUSE_RESOURCE_MONITOR: "true" },
+                  env: { SORA_DESKTOP_REUSE_RESOURCE_MONITOR: "true" },
                 }),
               ),
             ),
@@ -835,7 +835,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     ),
   );
 
-  // The fixture's t3code.exe is a text placeholder, not an executable. These
+  // The fixture's sora.exe is a text placeholder, not an executable. These
   // cases reach the native-load probe, so pin only that host-platform check to
   // Linux. Host-native paths and the real Windows tar/archive checks still run.
   it.effect("validates every ASAR-unpacked native in the packaged Windows payload", () =>
@@ -1270,7 +1270,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         const path = yield* Path.Path;
         const fixture = yield* makeWindowsPayloadFixture({
           copyUnpackedNatives: true,
-          serverEntrySource: 'import "t3code-deliberately-missing-package";\n',
+          serverEntrySource: 'import "sora-deliberately-missing-package";\n',
         });
         const error = yield* verifyPackagedBundleIsSelfContained({
           asarPath: path.join(fixture.packagedAppDir, "resources", WINDOWS_SERVER_ASAR_RESOURCE),
@@ -1278,7 +1278,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         }).pipe(Effect.flip);
 
         assert.instanceOf(error, BundleNotSelfContainedError);
-        assert.include(error.output, "t3code-deliberately-missing-package");
+        assert.include(error.output, "sora-deliberately-missing-package");
       }),
     ),
   );
@@ -1288,7 +1288,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       Effect.gen(function* () {
         const fixture = yield* makeWindowsPayloadFixture({
           copyUnpackedNatives: true,
-          serverEntrySource: 'import "t3code-deliberately-missing-package";\n',
+          serverEntrySource: 'import "sora-deliberately-missing-package";\n',
         });
         yield* validateWindowsPackagedPayload({
           stageDistDir: fixture.stageDistDir,
@@ -1309,23 +1309,23 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
 
   it("derives macOS passkey signing configuration from the Clerk publishable key", () => {
     const configuration = resolveMacPasskeySigningConfiguration({
-      T3CODE_APPLE_TEAM_ID: "abc1234567",
-      T3CODE_MACOS_PROVISIONING_PROFILE: "/tmp/t3code.provisionprofile",
+      SORA_APPLE_TEAM_ID: "abc1234567",
+      SORA_MACOS_PROVISIONING_PROFILE: "/tmp/sora.provisionprofile",
       T3CODE_CLERK_PUBLISHABLE_KEY: `pk_test_${btoa("example.clerk.accounts.dev$")}`,
     });
 
     assert.deepStrictEqual(configuration, {
-      appId: "com.t3tools.t3code",
+      appId: "xyz.satslab.sora",
       teamId: "ABC1234567",
       rpDomains: ["example.clerk.accounts.dev"],
-      provisioningProfilePath: "/tmp/t3code.provisionprofile",
+      provisioningProfilePath: "/tmp/sora.provisionprofile",
     });
   });
 
   it("normalizes explicit macOS passkey RP domains and renders required entitlements", () => {
     const configuration = resolveMacPasskeySigningConfiguration({
-      T3CODE_APPLE_TEAM_ID: "ABC1234567",
-      T3CODE_MACOS_PROVISIONING_PROFILE: "/tmp/t3code.provisionprofile",
+      SORA_APPLE_TEAM_ID: "ABC1234567",
+      SORA_MACOS_PROVISIONING_PROFILE: "/tmp/sora.provisionprofile",
       T3CODE_CLERK_PASSKEY_RP_DOMAINS:
         " Clerk.Example.com,example.clerk.accounts.dev,clerk.example.com ",
     });
@@ -1338,7 +1338,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       "clerk.example.com",
       "example.clerk.accounts.dev",
     ]);
-    assert.include(entitlements, "<string>ABC1234567.com.t3tools.t3code</string>");
+    assert.include(entitlements, "<string>ABC1234567.xyz.satslab.sora</string>");
     assert.include(entitlements, "<string>webcredentials:clerk.example.com</string>");
     assert.include(entitlements, "<string>webcredentials:example.clerk.accounts.dev</string>");
     assert.include(entitlements, "<key>com.apple.security.cs.allow-jit</key>");
@@ -1349,7 +1349,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
   });
 
   it("grants in-app browser passkey entitlements only when the provisioning profile does", () => {
-    const configuration = { appId: "com.t3tools.t3code", teamId: "ABC1234567" };
+    const configuration = { appId: "xyz.satslab.sora", teamId: "ABC1234567" };
     const profile = (entitlements: string, outside = "") =>
       `0\x82\x1f\x9a\x06\t*\x86H<?xml version="1.0"?><plist version="1.0"><dict>${outside}<key>Entitlements</key><dict>${entitlements}</dict></dict></plist>\x00\x01`;
     const teamWildcardGroups = `<key>keychain-access-groups</key>
@@ -1391,7 +1391,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         configuration,
       ),
       {
-        touchIdKeychainAccessGroup: "ABC1234567.com.t3tools.t3code.webauthn",
+        touchIdKeychainAccessGroup: "ABC1234567.xyz.satslab.sora.webauthn",
         browserPasskeys: true,
       },
     );
@@ -1407,7 +1407,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     );
     assert.match(
       entitlements,
-      /<key>keychain-access-groups<\/key>\s*<array>\s*<string>ABC1234567\.com\.t3tools\.t3code\.webauthn<\/string>\s*<\/array>/u,
+      /<key>keychain-access-groups<\/key>\s*<array>\s*<string>ABC1234567\.xyz\.satslab\.sora\.webauthn<\/string>\s*<\/array>/u,
     );
     assert.match(
       entitlements,
@@ -1426,20 +1426,20 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     };
 
     const missingProfileError = captureError({
-      T3CODE_APPLE_TEAM_ID: "ABC1234567",
+      SORA_APPLE_TEAM_ID: "ABC1234567",
       T3CODE_CLERK_PASSKEY_RP_DOMAINS: "example.clerk.accounts.dev",
     });
     assert.instanceOf(missingProfileError, MissingMacPasskeyProvisioningProfileError);
     assert.equal(
       missingProfileError.message,
-      "T3CODE_MACOS_PROVISIONING_PROFILE must point to an Associated Domains provisioning profile.",
+      "SORA_MACOS_PROVISIONING_PROFILE must point to an Associated Domains provisioning profile.",
     );
 
     const unsafeDomain =
       "https://domain-user:domain-secret@example.clerk.accounts.dev/path?token=query-secret";
     const invalidDomainError = captureError({
-      T3CODE_APPLE_TEAM_ID: "ABC1234567",
-      T3CODE_MACOS_PROVISIONING_PROFILE: "/tmp/t3code.provisionprofile",
+      SORA_APPLE_TEAM_ID: "ABC1234567",
+      SORA_MACOS_PROVISIONING_PROFILE: "/tmp/sora.provisionprofile",
       T3CODE_CLERK_PASSKEY_RP_DOMAINS: unsafeDomain,
     });
     assert.instanceOf(invalidDomainError, InvalidMacPasskeyRpDomainError);
@@ -1456,15 +1456,15 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     assert.throws(
       () =>
         resolveMacPasskeySigningConfiguration({
-          T3CODE_APPLE_TEAM_ID: "ABC1234567",
-          T3CODE_MACOS_PROVISIONING_PROFILE: "/tmp/t3code.provisionprofile",
+          SORA_APPLE_TEAM_ID: "ABC1234567",
+          SORA_MACOS_PROVISIONING_PROFILE: "/tmp/sora.provisionprofile",
           T3CODE_CLERK_PASSKEY_RP_DOMAINS: "example.clerk.accounts.dev:8443",
         }),
       /Invalid passkey RP domain/u,
     );
     const invalidPublishableKeyError = captureError({
-      T3CODE_APPLE_TEAM_ID: "ABC1234567",
-      T3CODE_MACOS_PROVISIONING_PROFILE: "/tmp/t3code.provisionprofile",
+      SORA_APPLE_TEAM_ID: "ABC1234567",
+      SORA_MACOS_PROVISIONING_PROFILE: "/tmp/sora.provisionprofile",
       T3CODE_CLERK_PUBLISHABLE_KEY: "pk_test_%",
     });
     assert.instanceOf(invalidPublishableKeyError, InvalidMacPasskeyPublishableKeyError);
@@ -1599,11 +1599,11 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
           ConfigProvider.layer(
             ConfigProvider.fromEnv({
               env: {
-                T3CODE_DESKTOP_SKIP_BUILD: "true",
-                T3CODE_DESKTOP_KEEP_STAGE: "true",
-                T3CODE_DESKTOP_SIGNED: "true",
-                T3CODE_DESKTOP_VERBOSE: "true",
-                T3CODE_DESKTOP_MOCK_UPDATES: "true",
+                SORA_DESKTOP_SKIP_BUILD: "true",
+                SORA_DESKTOP_KEEP_STAGE: "true",
+                SORA_DESKTOP_SIGNED: "true",
+                SORA_DESKTOP_VERBOSE: "true",
+                SORA_DESKTOP_MOCK_UPDATES: "true",
               },
             }),
           ),
@@ -1631,7 +1631,7 @@ it.effect.skipIf(!symlinksSupported)("rebases packaged links into the isolated t
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3code-copy-symlinks-" });
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: "sora-copy-symlinks-" });
     const source = path.join(root, "source");
     const destination = path.join(root, "destination");
     const packageDir = path.join(source, "node_modules/.pnpm/example@1/node_modules/example");

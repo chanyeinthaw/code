@@ -1,11 +1,11 @@
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { scopeProjectRef } from "@satslab/client-runtime/environment";
 import type {
   EnvironmentId,
   ModelSelection,
   BotId,
   ProjectId,
   ScopedProjectRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import type { ComposerThreadDraftState, DraftThreadEnvMode } from "../composerDraftStore";
 
 type ComposerModelSelectionState = Pick<

@@ -1,4 +1,4 @@
-import { unquoteGitPatchPath } from "@t3tools/shared/gitPatchPath";
+import { unquoteGitPatchPath } from "@satslab/shared/gitPatchPath";
 
 const ENTRY = "diff --git ";
 const QUOTE = '"';

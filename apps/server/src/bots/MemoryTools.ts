@@ -1,4 +1,4 @@
-import { BotChatError, type BotId } from "@t3tools/contracts";
+import { BotChatError, type BotId } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import type * as BotStorage from "./BotStorage.ts";
 import { nodeKey, renderView, validRange } from "./MemoryTree.ts";

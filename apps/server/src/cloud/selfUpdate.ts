@@ -6,8 +6,8 @@ import {
   type ServerSelfUpdateProgressStage,
   type ServerSelfUpdateResult,
   type ThreadId,
-} from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+} from "@satslab/contracts";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as Cause from "effect/Cause";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -23,7 +23,7 @@ import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
 import { HttpClient } from "effect/http";
 
-import { CLI_RELEASE_BASE_URL_ENV } from "@t3tools/shared/cliRelease";
+import { CLI_RELEASE_BASE_URL_ENV } from "@satslab/shared/cliRelease";
 
 import packageJson from "../../package.json" with { type: "json" };
 import * as ServerConfig from "../config.ts";
@@ -66,7 +66,7 @@ export class ServerSelfUpdate extends Context.Service<
       onHandoffAccepted?: () => Effect.Effect<void>,
     ) => Effect.Effect<never, ServerSelfUpdateError>;
   }
->()("t3/cloud/selfUpdate/ServerSelfUpdate") {}
+>()("@satslab/sora/cloud/selfUpdate/ServerSelfUpdate") {}
 
 export const withRunningThreadContinuation = Effect.fn(
   "cloud.server_self_update.withRunningThreadContinuation",
@@ -177,7 +177,7 @@ export const withRunningThreadContinuation = Effect.fn(
 /**
  * A server starting from the runtime its launcher settled on means runtimes left by earlier
  * updates can go. The boot service says so through its IPC context. The SSH launcher and the
- * install script's `t3` start this home's pinned runtime directly, without one.
+ * install script's `sora` start this home's pinned runtime directly, without one.
  */
 export const pruneRuntimesOnStart = Effect.fn("cloud.server_self_update.prune_on_start")(
   function* (input: { readonly baseDir: string; readonly managed: boolean }) {
@@ -196,7 +196,7 @@ export const pruneRuntimesOnStart = Effect.fn("cloud.server_self_update.prune_on
       keep: [packageJson.version],
     });
     if (removed.length > 0) {
-      yield* Effect.logInfo("Removed unused t3 runtimes.", { versions: removed });
+      yield* Effect.logInfo("Removed unused sora runtimes.", { versions: removed });
     }
     return removed;
   },
@@ -236,18 +236,18 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
         return yield* desktopAppUpdate.run(reportProgress);
       }
       return yield* failWith(
-        "This server is managed by the T3 Code desktop app on its machine; update the desktop app to update it.",
+        "This server is managed by the Sora desktop app on its machine; update the desktop app to update it.",
       );
     }
     if (capability === null) {
       return yield* failWith(
-        "Remote updates require the T3 Code background service. Run `t3 service install` on the server machine.",
+        "Remote updates require the Sora background service. Run `sora service install` on the server machine.",
       );
     }
 
     const targetVersion = input.targetVersion.trim();
     if (!isExactServiceVersion(targetVersion)) {
-      return yield* failWith(`'${targetVersion}' is not an exact t3 version.`);
+      return yield* failWith(`'${targetVersion}' is not an exact sora version.`);
     }
     if (yield* Ref.getAndSet(inFlight, true)) {
       return yield* failWith("A server update is already in progress.");
@@ -338,7 +338,7 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
         Effect.mapError((error) =>
           error._tag === "PinnedRuntimePreflightBlockedError"
             ? failWith(error.reason, error)
-            : failWith(`Could not prepare t3@${targetVersion}.`, error),
+            : failWith(`Could not prepare @satslab/sora@${targetVersion}.`, error),
         ),
       );
 

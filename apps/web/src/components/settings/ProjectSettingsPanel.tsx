@@ -1,6 +1,6 @@
 import { ProjectIdentitySettings } from "./ProjectIdentitySettings";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { AuthOrchestrationOperateScope, type EnvironmentId } from "@t3tools/contracts";
+import { AuthOrchestrationOperateScope, type EnvironmentId } from "@satslab/contracts";
 import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
@@ -8,9 +8,9 @@ import {
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { planProjectRemoval } from "@t3tools/client-runtime/state/projects";
+} from "@satslab/client-runtime/state/runtime";
+import { scopeProjectRef, scopeThreadRef } from "@satslab/client-runtime/environment";
+import { planProjectRemoval } from "@satslab/client-runtime/state/projects";
 import { AsyncResult } from "effect/reactivity";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as Cause from "effect/Cause";

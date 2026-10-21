@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
@@ -10,7 +10,7 @@ import { SettingsRow, SettingsSection } from "./settingsLayout";
 
 const DismissedEnvironmentIds = Schema.Array(Schema.String);
 
-/** Suggests `t3 doctor` on every machine whose database still holds at least 1 GiB of freed pages. */
+/** Suggests `sora doctor` on every machine whose database still holds at least 1 GiB of freed pages. */
 export function DatabaseStorageNotice({
   environments,
 }: {

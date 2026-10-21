@@ -2,7 +2,7 @@ import {
   normalizeProviderAccentColor,
   resolveProviderInstanceDisplayName,
   shouldShowInstanceBadge,
-} from "@t3tools/client-runtime/state/provider-instance-display";
+} from "@satslab/client-runtime/state/provider-instance-display";
 import type { MenuAction } from "@react-native-menu/menu";
 import type {
   ModelCapabilities,
@@ -10,12 +10,12 @@ import type {
   ProjectId,
   RuntimeMode,
   ServerConfig as T3ServerConfig,
-} from "@t3tools/contracts";
-import { resolveProjectProviderInstanceEnabled } from "@t3tools/contracts";
+} from "@satslab/contracts";
+import { resolveProjectProviderInstanceEnabled } from "@satslab/contracts";
 import {
   buildExplicitProviderOptionSelectionsFromDescriptors,
   getProviderOptionDescriptors,
-} from "@t3tools/shared/model";
+} from "@satslab/shared/model";
 
 export type ModelOption = {
   readonly key: string;

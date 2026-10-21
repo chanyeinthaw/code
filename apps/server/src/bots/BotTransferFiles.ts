@@ -1,4 +1,4 @@
-import { OrchestrationV2AppThread, OrchestrationV2DomainEvent } from "@t3tools/contracts";
+import { OrchestrationV2AppThread, OrchestrationV2DomainEvent } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";
@@ -53,5 +53,5 @@ const portableHistory = Effect.fn("BotTransferFiles.portableHistory")(function* 
 export class BotTransferFiles extends Context.Service<
   BotTransferFiles,
   { readonly portableHistory: typeof portableHistory }
->()("t3/bots/BotTransferFiles") {}
+>()("@satslab/sora/bots/BotTransferFiles") {}
 export const layer = Layer.succeed(BotTransferFiles, { portableHistory });

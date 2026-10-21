@@ -4,7 +4,7 @@ import {
   type PullRequestDetail,
   type PullRequestListEntry,
   type PullRequestRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useEffect, useEffectEvent, useState } from "react";
 
 import { usePullRequestChecksRefresh } from "~/hooks/usePullRequestChecksRefresh";

@@ -8,9 +8,9 @@ import * as PlatformError from "effect/PlatformError";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
-import { writeFileStringAtomically } from "@t3tools/shared/atomicWrite";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { hashTelemetryId } from "@t3tools/shared/telemetryId";
+import { writeFileStringAtomically } from "@satslab/shared/atomicWrite";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { hashTelemetryId } from "@satslab/shared/telemetryId";
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import { CLOUD_LINKED_USER_ID } from "../cloud/config.ts";
 import * as ServerConfig from "../config.ts";

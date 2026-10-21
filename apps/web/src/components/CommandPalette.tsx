@@ -3,10 +3,10 @@ import { useSelectedSettingsBot } from "./bots/useSelectedSettingsBot";
 import { validateSettingsScopeSearch } from "./settings/settingsScope";
 import { useBotThreadContext, useBots } from "../state/bots";
 
-import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
-import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
+import { threadPullRequestLinkMode } from "@satslab/client-runtime/thread-pull-request-compatibility";
+import { visibleThreadPullRequests } from "@satslab/shared/threadPullRequests";
 
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { scopeProjectRef, scopeThreadRef } from "@satslab/client-runtime/environment";
 import {
   canCreateProjectInEnvironment,
   getCloneDestinationBrowsePath,
@@ -24,21 +24,21 @@ import {
   sortAddProjectProviderSources,
   type AddProjectRemoteSource,
   type AddProjectRemoteSourceReadiness,
-} from "@t3tools/client-runtime/operations/projects";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { connectionStatusText } from "@t3tools/client-runtime/connection";
-import { resolveThreadReferenceCopyTarget } from "@t3tools/shared/threadReference";
+} from "@satslab/client-runtime/operations/projects";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
+import { connectionStatusText } from "@satslab/client-runtime/connection";
+import { resolveThreadReferenceCopyTarget } from "@satslab/shared/threadReference";
 import {
   canPreloadBrowsePath,
   createBrowseNavigationCoordinator,
   filterFilesystemBrowseEntries,
   getFilesystemBrowsePath,
-} from "@t3tools/client-runtime/state/filesystem";
+} from "@satslab/client-runtime/state/filesystem";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
@@ -49,7 +49,7 @@ import {
   SourceControlProviderKind,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,
@@ -111,7 +111,7 @@ import { useAtomCommand } from "../state/use-atom-command";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
 import { useScratchProject } from "../hooks/useScratchProject";
 import { useNewProject } from "../hooks/useNewProject";
-import { isScratchProject } from "@t3tools/client-runtime/state/projects";
+import { isScratchProject } from "@satslab/client-runtime/state/projects";
 import {
   useEnvironmentProviders,
   useEnvironments,
@@ -1609,7 +1609,7 @@ function OpenCommandPaletteDialog(props: {
         "grouping",
         "checkout",
         "remove",
-        "t3.json",
+        "sora.json",
       ],
       title: "Project settings",
       description: contextualProjectGroup.displayName,

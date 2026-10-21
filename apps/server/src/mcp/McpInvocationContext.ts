@@ -8,7 +8,7 @@ import {
   type RuntimeMode,
   type RunId,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 
@@ -59,7 +59,7 @@ export interface McpInvocationScope {
 export class McpInvocationContext extends Context.Service<
   McpInvocationContext,
   McpInvocationScope
->()("t3/mcp/McpInvocationContext") {}
+>()("@satslab/sora/mcp/McpInvocationContext") {}
 
 export type McpCapabilityError<C extends McpCapability> = C extends "preview"
   ? PreviewAutomationUnavailableError
@@ -110,7 +110,7 @@ export const requireThreadMcpCapability = <const C extends "preview" | "device">
 const threadCallerRequired = (operation: string) =>
   new OrchestratorMcpFailure({
     code: "thread_credential_required",
-    message: `${operation} acts as the calling T3 thread, so it needs an agent running inside T3 Code. This MCP client signed in from outside a thread.`,
+    message: `${operation} acts as the calling T3 thread, so it needs an agent running inside Sora. This MCP client signed in from outside a thread.`,
   });
 
 export type McpThreadInvocationScope = McpInvocationScope & { readonly thread: McpThreadCaller };

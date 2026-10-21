@@ -16,14 +16,14 @@ const layerTest = Layer.empty.pipe(
 const makeTempDir = Effect.gen(function* () {
   const fileSystem = yield* FileSystem.FileSystem;
   return yield* fileSystem.makeTempDirectoryScoped({
-    prefix: "t3code-project-file-",
+    prefix: "sora-project-file-",
   });
 });
 
 const writeProjectFile = Effect.fn("writeProjectFile")(function* (cwd: string, contents: string) {
   const fileSystem = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  yield* fileSystem.writeFileString(path.join(cwd, "t3.json"), contents).pipe(Effect.orDie);
+  yield* fileSystem.writeFileString(path.join(cwd, "sora.json"), contents).pipe(Effect.orDie);
 });
 
 it.layer(layerTest)("T3ProjectFileLoader", (it) => {

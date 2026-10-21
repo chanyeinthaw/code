@@ -1,4 +1,4 @@
-import type { ChatAttachment, OrchestrationV2ConversationMessage } from "@t3tools/contracts";
+import type { ChatAttachment, OrchestrationV2ConversationMessage } from "@satslab/contracts";
 
 export function botMessageText(
   message: Pick<OrchestrationV2ConversationMessage, "text" | "createdBy" | "senderThreadId">,
@@ -13,7 +13,7 @@ export function botInput(text: string, attachments: ReadonlyArray<ChatAttachment
     text:
       files.length === 0
         ? text
-        : `${text}\n\nAttachments for t3_attachment_read:\n${files.map((file) => `${file.id}: ${file.name} (${file.mimeType}, ${file.sizeBytes} bytes)`).join("\n")}`,
+        : `${text}\n\nAttachments for s3_attachment_read:\n${files.map((file) => `${file.id}: ${file.name} (${file.mimeType}, ${file.sizeBytes} bytes)`).join("\n")}`,
     attachments: attachments.filter((attachment) => attachment.type === "image"),
   };
 }

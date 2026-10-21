@@ -1,5 +1,5 @@
 import * as Context from "effect/Context";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -7,7 +7,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as SqlSchema from "effect/sql/SqlSchema";
 
-import { AuthEnvironmentScopes } from "@t3tools/contracts";
+import { AuthEnvironmentScopes } from "@satslab/contracts";
 
 import {
   type AuthPairingLinkRepositoryError,
@@ -104,7 +104,7 @@ export class AuthPairingLinkRepository extends Context.Service<
       input: GetAuthPairingLinkByCredentialInput,
     ) => Effect.Effect<Option.Option<AuthPairingLinkRecord>, AuthPairingLinkRepositoryError>;
   }
->()("t3/persistence/AuthPairingLinks/AuthPairingLinkRepository") {}
+>()("@satslab/sora/persistence/AuthPairingLinks/AuthPairingLinkRepository") {}
 
 function toPersistenceSqlOrDecodeError(
   sqlOperation: string,

@@ -7,12 +7,12 @@ import type {
   OrchestrationV2ThreadShellSnapshot,
   OrchestrationV2ShellStreamItem,
   OrchestrationV2StoredEvent,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   OrchestrationProjectShell as ProjectShellSchema,
   OrchestrationV2ThreadShell as ThreadShellSchema,
-} from "@t3tools/contracts";
-import * as NodeSqliteClient from "@t3tools/shared/nodeSqliteClient";
+} from "@satslab/contracts";
+import * as NodeSqliteClient from "@satslab/shared/nodeSqliteClient";
 import type * as Arr from "effect/Array";
 import type * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";

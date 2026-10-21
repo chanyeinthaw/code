@@ -7,7 +7,7 @@ import {
   type AgentSessionProjectCandidate,
   type AuthEnvironmentScope,
   type AuthSessionState,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -40,7 +40,7 @@ const state = vi.hoisted(() => ({
 // Session grants come from per-test atoms so a test can revoke or regrant mid-flow; the
 // real scope checks in ~/state/session read them through the app registry, which the
 // wizard is also rendered with.
-vi.mock(import("@t3tools/client-runtime/state/session"), async (original) => {
+vi.mock(import("@satslab/client-runtime/state/session"), async (original) => {
   const actual = await original();
   return {
     ...actual,
@@ -144,7 +144,7 @@ function session(scopes: ReadonlyArray<AuthEnvironmentScope>): AuthSessionState 
       policy: "remote-reachable",
       bootstrapMethods: ["one-time-token"],
       sessionMethods: ["bearer-access-token"],
-      sessionCookieName: "t3_session",
+      sessionCookieName: "sora_session",
     },
   };
 }
