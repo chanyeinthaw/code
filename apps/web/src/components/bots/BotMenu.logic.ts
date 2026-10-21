@@ -1,4 +1,4 @@
-import type { ContextMenuItem } from "@t3tools/contracts";
+import type { ContextMenuItem } from "@satslab/contracts";
 
 /**
  * The bot lifecycle menu shared by the sidebar item and the chat header. Pin comes first so the

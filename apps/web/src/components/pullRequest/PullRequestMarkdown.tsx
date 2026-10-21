@@ -1,7 +1,7 @@
 import { ExternalLinkIcon, PaperclipIcon } from "lucide-react";
-import { markdownImageSourceFragment } from "@t3tools/client-runtime/markdown-images";
-import { githubMediaFetchUrl } from "@t3tools/shared/githubMedia";
-import type { AssetResource, EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import { markdownImageSourceFragment } from "@satslab/client-runtime/markdown-images";
+import { githubMediaFetchUrl } from "@satslab/shared/githubMedia";
+import type { AssetResource, EnvironmentId, ScopedThreadRef } from "@satslab/contracts";
 import { createContext, useContext } from "react";
 import type { Options as ReactMarkdownOptions } from "react-markdown";
 

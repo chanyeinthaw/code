@@ -4,10 +4,10 @@ import {
   type ResolvedKeybindingsConfig,
   type ScopedThreadRef,
   type ThreadId,
-} from "@t3tools/contracts";
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
-import { projectScriptCwd, projectScriptRuntimeEnv } from "@t3tools/shared/projectScripts";
-import { resolveTerminalSessionLabel } from "@t3tools/shared/terminalLabels";
+} from "@satslab/contracts";
+import { scopeProjectRef } from "@satslab/client-runtime/environment";
+import { projectScriptCwd, projectScriptRuntimeEnv } from "@satslab/shared/projectScripts";
+import { resolveTerminalSessionLabel } from "@satslab/shared/terminalLabels";
 import { memo, useEffect, useState } from "react";
 import { useComposerDraftStore } from "../composerDraftStore";
 import { useStableCallback } from "../hooks/useStableCallback";

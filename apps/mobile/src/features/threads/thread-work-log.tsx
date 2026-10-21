@@ -14,7 +14,7 @@ import { ThreadCommandOutput, useCommandOutputStreaming } from "./thread-command
 import {
   getQuestionAnswerPreview,
   hasQuestionAnswer,
-} from "@t3tools/client-runtime/work-log/user-input";
+} from "@satslab/client-runtime/work-log/user-input";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { type AppSymbolName, SymbolView } from "../../components/ui/AppSymbol";
@@ -51,13 +51,13 @@ import {
   type RunId,
   type ThreadId,
   type ToolActivityIcon,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useAtomValue } from "@effect/atom-react";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { scopeThreadRef } from "@satslab/client-runtime/environment";
 import { environmentThreadDetails, threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { toolActivityFaviconUrl } from "@t3tools/shared/favicon";
-import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
+import { toolActivityFaviconUrl } from "@satslab/shared/favicon";
+import { isJavaScriptReplTool } from "@satslab/shared/toolActivity";
 import { useMarkdownCodeHighlight } from "./markdownCodeHighlightState";
 
 import { AppText as Text } from "../../components/ui/AppText";
@@ -75,7 +75,7 @@ import {
   toolCallLines,
   turnItemOutputImages,
   turnItemOutputText,
-} from "@t3tools/client-runtime/work-log/item-detail";
+} from "@satslab/client-runtime/work-log/item-detail";
 import { useTurnItemDetail } from "../../state/queries";
 import {
   resolveThreadWorkGroupInitialScroll,
@@ -87,9 +87,9 @@ import {
   toolGroupAction,
   type ToolGroupSummaryKind,
   workEntryViewedImagePath,
-} from "@t3tools/client-runtime/work-log/presentation";
-import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
-import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
+} from "@satslab/client-runtime/work-log/presentation";
+import { resolveWorkGroupScrollAnchor } from "@satslab/client-runtime/work-log/scroll-anchor";
+import { notificationChildThreadId } from "@satslab/client-runtime/state/thread-execution";
 import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText";
 import type { FilePreviewSource } from "../../components/FilePreviewModal";
 import { FilePreviewGallery } from "../../components/FilePreviewGallery";
@@ -114,13 +114,7 @@ export const THREAD_DISCLOSURE_TRANSITION_MS = 180;
 const WORK_LOG_LAYOUT_TRANSITION = LinearTransition.duration(THREAD_DISCLOSURE_TRANSITION_MS);
 const WORK_LOG_DETAIL_ENTER_TRANSITION = FadeIn.duration(140);
 const WORK_LOG_DETAIL_EXIT_TRANSITION = FadeOut.duration(120);
-type WorkContentIcon =
-  | AppSymbolName
-  | "browser"
-  | "computer"
-  | "device"
-  | "t3-code"
-  | "pull-request";
+type WorkContentIcon = AppSymbolName | "browser" | "computer" | "device" | "sora" | "pull-request";
 
 function WorkLogIcon(props: {
   readonly icon: WorkContentIcon;
@@ -129,7 +123,7 @@ function WorkLogIcon(props: {
   readonly highlighted?: boolean;
 }) {
   const colorClassName = props.highlighted ? "accent-foreground" : props.colorClassName;
-  if (props.icon === "t3-code") {
+  if (props.icon === "sora") {
     return (
       <T3Wordmark height={10} {...(colorClassName ? { colorClassName } : { color: props.color })} />
     );
@@ -1296,9 +1290,9 @@ export function ThreadWorkGroupToggle(props: {
   readonly iconSubtleColor: import("react-native").ColorValue;
   readonly summary: string;
   readonly summaryKind: ToolGroupSummaryKind;
-  readonly summaryToolIcon?: "browser" | "device" | "t3-code" | "pull-request" | "brain";
+  readonly summaryToolIcon?: "browser" | "device" | "sora" | "pull-request" | "brain";
   readonly themeAppearance: "light" | "dark";
-  readonly toolSurface?: import("@t3tools/contracts").ToolActivitySurface;
+  readonly toolSurface?: import("@satslab/contracts").ToolActivitySurface;
   readonly toolIcon?: ToolActivityIcon;
   readonly hasFailure: boolean;
   readonly shimmer: boolean;

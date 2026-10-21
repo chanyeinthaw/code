@@ -19,6 +19,6 @@ it("gives providers attachment IDs for selective reads and keeps images native",
   const input = botInput("Read the report", [image, file]);
   expect(input.attachments).toEqual([image]);
   expect(input.text).toContain("file-one: report.pdf (application/pdf, 256 bytes)");
-  expect(input.text).toContain("t3_attachment_read");
+  expect(input.text).toContain("s3_attachment_read");
   expect(botInput("Follow up", []).text).toBe("Follow up");
 });

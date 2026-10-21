@@ -3,7 +3,7 @@ import { createContext, useContext, useId, useState, type ReactNode } from "reac
 import { useNavigate } from "@tanstack/react-router";
 import { AtomRegistry } from "effect/reactivity";
 import * as Effect from "effect/Effect";
-import type { EnvironmentId, BotIdentity, BotId } from "@t3tools/contracts";
+import type { EnvironmentId, BotIdentity, BotId } from "@satslab/contracts";
 import { waitForThreadShell } from "../../state/entities";
 import { useEnvironments } from "../../state/environments";
 import {

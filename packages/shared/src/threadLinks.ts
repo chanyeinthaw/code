@@ -1,19 +1,20 @@
-import { ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
+import { ThreadId, type ScopedThreadRef } from "@satslab/contracts";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
-export const THREAD_LINK_PROTOCOL = "t3-thread";
+export const THREAD_LINK_PROTOCOL = "sora-thread";
 const THREAD_LINK_HREF_PREFIX = `${THREAD_LINK_PROTOCOL}://v1/`;
+const THREAD_LINK_PREFIXES = [THREAD_LINK_HREF_PREFIX, "t3-thread://v1/"];
 // Code comes first in the alternation so a link written inside a code span or fence is skipped.
 const THREAD_LINK_OUTSIDE_CODE =
-  /(?<fence>(`{3,}|~{3,})[\s\S]*?(?:\2|$))|(?<span>(`+)[^\n]*?\4)|\[[^\]\n]*\]\((?<href>t3-thread:\/\/v1\/[^\s)]+)\)/g;
+  /(?<fence>(`{3,}|~{3,})[\s\S]*?(?:\2|$))|(?<span>(`+)[^\n]*?\4)|\[[^\]\n]*\]\((?<href>(?:sora-thread|t3-thread):\/\/v1\/[^\s)]+)\)/g;
 
 const decodeThreadId = Schema.decodeUnknownOption(ThreadId);
 
 /** The id as written. Thread ids can hold percent escapes of their own, so it is not decoded. */
 export function parseThreadLinkHref(href: string): ThreadId | null {
-  if (!href.startsWith(THREAD_LINK_HREF_PREFIX)) return null;
-  return Option.getOrNull(decodeThreadId(href.slice(THREAD_LINK_HREF_PREFIX.length)));
+  const prefix = THREAD_LINK_PREFIXES.find((prefix) => href.startsWith(prefix));
+  return prefix === undefined ? null : Option.getOrNull(decodeThreadId(href.slice(prefix.length)));
 }
 
 export function percentDecodedThreadLinkId(threadId: ThreadId): ThreadId | null {
@@ -58,7 +59,7 @@ export function formatThreadLink(threadId: string, label: string): string {
 }
 
 export function hasThreadLinks(markdown: string): boolean {
-  return markdown.includes(`](${THREAD_LINK_HREF_PREFIX}`);
+  return THREAD_LINK_PREFIXES.some((prefix) => markdown.includes(`](${prefix}`));
 }
 
 export function relabelThreadLinks(

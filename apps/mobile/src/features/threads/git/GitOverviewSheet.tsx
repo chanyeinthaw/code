@@ -6,8 +6,8 @@ import {
   buildMenuItems,
   getGitActionDisabledReason,
   requiresDefaultBranchConfirmation,
-} from "@t3tools/client-runtime/state/vcs";
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/state/vcs";
+import { EnvironmentId, ThreadId } from "@satslab/contracts";
 import {
   CommonActions,
   StackActions,

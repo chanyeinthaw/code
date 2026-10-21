@@ -1,8 +1,8 @@
-import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
+import { resolvePathLinkTarget } from "@satslab/shared/fileLinks";
 import {
   isWorkspaceAudioPreviewPath,
   isWorkspaceVideoPreviewPath,
-} from "@t3tools/shared/filePreview";
+} from "@satslab/shared/filePreview";
 
 export interface FileBreadcrumb {
   readonly label: string;

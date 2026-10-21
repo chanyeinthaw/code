@@ -6,7 +6,7 @@ import {
   selectableProviderOptionChoices,
   REASONING_SELECT_DESCRIPTOR_IDS,
   ULTRATHINK_PROMPT_PREFIX,
-} from "@t3tools/client-runtime/model-traits";
+} from "@satslab/client-runtime/model-traits";
 import {
   type ModelSelection,
   type ProviderDriverKind,
@@ -15,14 +15,14 @@ import {
   type ProviderOptionSelection,
   type ScopedThreadRef,
   type ServerProviderModel,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   buildProviderOptionSelectionsFromDescriptors,
   getProviderOptionCurrentLabel,
   getProviderOptionDescriptors,
   isClaudeUltrathinkPrompt,
   normalizeModelSlug,
-} from "@t3tools/shared/model";
+} from "@satslab/shared/model";
 import { memo } from "react";
 import { BrainIcon } from "lucide-react";
 import {

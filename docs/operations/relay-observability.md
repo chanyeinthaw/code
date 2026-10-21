@@ -4,15 +4,15 @@
 
 The relay Alchemy stack owns a shared Axiom trace setup:
 
-- `t3-code-relay-traces-prod`, the OpenTelemetry trace dataset shared by the Worker, mobile app, and
+- `sora-relay-traces-prod`, the OpenTelemetry trace dataset shared by the Worker, mobile app, and
   first-party relay clients
-- `t3-code-relay-otel-ingest-prod`, the dataset-scoped Worker ingest token
-- `t3-code-mobile-otel-ingest-prod`, the dataset-scoped mobile ingest token
-- `t3-code-relay-client-otel-ingest-prod`, the dataset-scoped first-party relay-client ingest token
-- `t3-code-relay-recent-spans-prod`, a view of recent request and endpoint spans
+- `sora-relay-otel-ingest-prod`, the dataset-scoped Worker ingest token
+- `sora-mobile-otel-ingest-prod`, the dataset-scoped mobile ingest token
+- `sora-relay-client-otel-ingest-prod`, the dataset-scoped first-party relay-client ingest token
+- `sora-relay-recent-spans-prod`, a view of recent request and endpoint spans
 
 Alchemy stages append their sanitized stage name to isolate resources, for example
-`t3-code-relay-traces-dev-julius` for a personal stage.
+`sora-relay-traces-dev-julius` for a personal stage.
 
 Deploy from `infra/relay` with the normal Alchemy workflow:
 
@@ -29,7 +29,7 @@ Effect's OpenTelemetry exporter stores semantic HTTP attributes below the `attri
 For example:
 
 ```apl
-['t3-code-relay-traces-prod']
+['sora-relay-traces-prod']
 | where kind == 'server'
 | extend endpoint = column_ifexists('attributes.http.route', ''),
     customAttributes = column_ifexists('attributes.custom', dynamic({}))
@@ -90,19 +90,19 @@ Questions these answer:
 
 ```apl
 // Webhook outcomes per hour
-['t3-code-relay-traces-prod']
+['sora-relay-traces-prod']
 | where name == 'relay.hooks.forward'
 | summarize count() by bin(_time, 1h), outcome = tostring(['attributes.custom']['relay.hook.outcome'])
 
 // Inboxes stuck behind an unreachable environment, by endpoint
-['t3-code-relay-traces-prod']
+['sora-relay-traces-prod']
 | where name == 'HookInboxStore.deliverDue'
 | extend c = ['attributes.custom']
 | where tostring(c['relay.inbox.run_result']) == 'unreachable'
 | project trace_id, failures = toint(c['relay.inbox.consecutive_failures']),
     backlog = toint(c['relay.inbox.held_count'])
 | join kind=inner (
-    ['t3-code-relay-traces-prod']
+    ['sora-relay-traces-prod']
     | where name == 'relay.inbox.deliver'
     | project trace_id, endpoint = tostring(['attributes.custom']['relay.hook.endpoint_key'])
   ) on trace_id
@@ -111,7 +111,7 @@ Questions these answer:
 
 ## Alerts
 
-The stack provisions threshold monitors and a `t3-code-relay-health` dashboard from
+The stack provisions threshold monitors and a `sora-relay-health` dashboard from
 [`infra/relay/src/monitoring.ts`](../../infra/relay/src/monitoring.ts) when the deployment sets
 `RELAY_ALERT_NOTIFIER_ID`. Paging monitors go to that notifier and need two failing runs in a row.
 Warnings go to `RELAY_WARNING_NOTIFIER_ID` when it is set and are otherwise only visible in Axiom.

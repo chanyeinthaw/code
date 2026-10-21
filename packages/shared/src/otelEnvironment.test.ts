@@ -10,11 +10,10 @@ const load = (env: Record<string, string>) =>
   OtelEnvironment.load.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))));
 
 const SPEC_OFF =
-  "OTEL_SDK_DISABLED is set, so no telemetry is exported, whatever configured it; set T3CODE_OTEL_SDK_DISABLED=false to export anyway";
-const T3_OFF =
-  "T3CODE_OTEL_SDK_DISABLED is set, so no telemetry is exported, whatever configured it";
+  "OTEL_SDK_DISABLED is set, so no telemetry is exported, whatever configured it; set SORA_OTEL_SDK_DISABLED=false to export anyway";
+const T3_OFF = "SORA_OTEL_SDK_DISABLED is set, so no telemetry is exported, whatever configured it";
 const specIgnored = (value: string) =>
-  `OTEL_SDK_DISABLED=${value} was read as false; the OpenTelemetry specification recognizes only the string true, so use OTEL_SDK_DISABLED=true or T3CODE_OTEL_SDK_DISABLED to say it any other way`;
+  `OTEL_SDK_DISABLED=${value} was read as false; the OpenTelemetry specification recognizes only the string true, so use OTEL_SDK_DISABLED=true or SORA_OTEL_SDK_DISABLED to say it any other way`;
 
 describe("OtelEnvironment", () => {
   it.effect.each([
@@ -26,18 +25,18 @@ describe("OtelEnvironment", () => {
       disabled: false,
       warnings: [specIgnored("1")],
     },
-    { name: "t3 1", env: { T3CODE_OTEL_SDK_DISABLED: "1" }, disabled: true, warnings: [T3_OFF] },
+    { name: "t3 1", env: { SORA_OTEL_SDK_DISABLED: "1" }, disabled: true, warnings: [T3_OFF] },
     {
-      name: "t3 false overrides spec true",
-      env: { T3CODE_OTEL_SDK_DISABLED: "false", OTEL_SDK_DISABLED: "true" },
+      name: "sora false overrides spec true",
+      env: { SORA_OTEL_SDK_DISABLED: "false", OTEL_SDK_DISABLED: "true" },
       disabled: false,
       warnings: [],
     },
     {
-      name: "unreadable t3 warns and falls through",
-      env: { T3CODE_OTEL_SDK_DISABLED: "maybe", OTEL_SDK_DISABLED: "true" },
+      name: "unreadable sora warns and falls through",
+      env: { SORA_OTEL_SDK_DISABLED: "maybe", OTEL_SDK_DISABLED: "true" },
       disabled: true,
-      warnings: ["T3CODE_OTEL_SDK_DISABLED=maybe is not a yes or a no and was ignored", SPEC_OFF],
+      warnings: ["SORA_OTEL_SDK_DISABLED=maybe is not a yes or a no and was ignored", SPEC_OFF],
     },
   ])("$name", ({ env, disabled, warnings }) =>
     Effect.gen(function* () {
@@ -142,7 +141,7 @@ describe("OtelEnvironment", () => {
       {
         name: "the kill switch wins outright over a valid endpoint",
         env: {
-          T3CODE_OTEL_SDK_DISABLED: "true",
+          SORA_OTEL_SDK_DISABLED: "true",
           OTEL_EXPORTER_OTLP_ENDPOINT: "https://collector:4318/base",
         },
         traces: "Unset",
@@ -241,7 +240,7 @@ describe("OtelEnvironment", () => {
   describe("resolveSignalEndpoint", () => {
     const t3Export = {
       protocol: "http/json",
-      headers: { "x-key": "t3" },
+      headers: { "x-key": "sora" },
       exportIntervalMs: 5_000,
     } as const;
     const withLogs = (logs: OtelEnvironment.OtelSignal, disabled = false) => ({
@@ -257,14 +256,14 @@ describe("OtelEnvironment", () => {
     });
     it.each([
       {
-        name: "T3CODE_OTLP_*_URL wins over a signal the OTEL variables turned off",
+        name: "SORA_OTLP_*_URL wins over a signal the OTEL variables turned off",
         otel: withLogs(OtelEnvironment.OtelSignal.Off()),
         t3Url: "http://t3:4318/v1/logs",
         expected: {
           url: "http://t3:4318/v1/logs",
           export: t3Export,
           source: "environment" as const,
-          variable: "T3CODE_OTLP_LOGS_URL",
+          variable: "SORA_OTLP_LOGS_URL",
         },
       },
       {
@@ -367,7 +366,7 @@ describe("OtelEnvironment", () => {
           ConfigProvider.fromEnv({ env: { OTEL_RESOURCE_ATTRIBUTES: raw } }),
         );
         const otel = yield* OtelEnvironment.load.pipe(Effect.provide(layerEnv));
-        const resource = yield* OtlpResource.fromConfig({ serviceName: "t3" }).pipe(
+        const resource = yield* OtlpResource.fromConfig({ serviceName: "sora" }).pipe(
           Effect.provide(
             Layer.provide(
               OtelEnvironment.layerResourceAttributes(otel.resourceAttributes),
@@ -393,13 +392,13 @@ describe("isRelayTracingEnabled", () => {
     assert.isTrue(
       OtelEnvironment.isRelayTracingEnabled({
         OTEL_SDK_DISABLED: "true",
-        T3CODE_OTEL_SDK_DISABLED: "false",
+        SORA_OTEL_SDK_DISABLED: "false",
       }),
     );
     assert.isFalse(
       OtelEnvironment.isRelayTracingEnabled({
         OTEL_SDK_DISABLED: "false",
-        T3CODE_OTEL_SDK_DISABLED: "true",
+        SORA_OTEL_SDK_DISABLED: "true",
       }),
     );
   });
@@ -407,8 +406,8 @@ describe("isRelayTracingEnabled", () => {
   it.effect("product opt-out beats SDK enable without disabling user-configured tracing", () =>
     Effect.gen(function* () {
       const env = {
-        T3CODE_TELEMETRY_ENABLED: "false",
-        T3CODE_OTEL_SDK_DISABLED: "false",
+        SORA_TELEMETRY_ENABLED: "false",
+        SORA_OTEL_SDK_DISABLED: "false",
         OTEL_SDK_DISABLED: "true",
         OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "https://user.example.test/v1/traces",
       };

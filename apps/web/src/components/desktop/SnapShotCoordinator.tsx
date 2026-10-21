@@ -4,7 +4,7 @@ import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   type ScopedThreadRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import {

@@ -1,5 +1,5 @@
-import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
-import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { backgroundWorkHoldsCompletion } from "@satslab/shared/orchestrationV2PendingBackgroundWork";
+import { scopedThreadKey, scopeThreadRef } from "@satslab/client-runtime/environment";
 import { hasUnseenCompletion, resolveSidebarThreadStatus } from "../Sidebar.logic";
 import type { SidebarThreadSummary } from "../../types";
 

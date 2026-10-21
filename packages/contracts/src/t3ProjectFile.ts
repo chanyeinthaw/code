@@ -5,9 +5,9 @@ import { ThreadEnvMode, WorktreeSubmodules } from "./environment.ts";
 import { ProjectScriptIcon } from "./project.ts";
 import type { ProjectScopedServerSettingKey, ServerSettings } from "./settings.ts";
 
-export const T3_PROJECT_FILE_NAME = "t3.json";
+export const T3_PROJECT_FILE_NAME = "sora.json";
 
-export const T3_PROJECT_FILE_SCHEMA_URL = "https://t3.codes/schema/t3.json";
+export const T3_PROJECT_FILE_SCHEMA_URL = "https://sora.satslab.xyz/schema/sora.json";
 
 const T3_PROJECT_FILE_PATH_MAX_LENGTH = 512;
 const T3_PROJECT_FILE_MAX_SCRIPTS = 50;
@@ -25,10 +25,10 @@ const trimmedNonEmpty = (annotations: { readonly description: string }, maxLengt
 
 export const T3ProjectFileScript = Schema.Struct({
   name: trimmedNonEmpty({
-    description: "Display name for the script, shown in the T3 Code scripts menu.",
+    description: "Display name for the script, shown in the Sora scripts menu.",
   }),
   command: trimmedNonEmpty({
-    description: "Shell command executed in a T3 Code terminal at the project root.",
+    description: "Shell command executed in a Sora terminal at the project root.",
   }),
   icon: Schema.optionalKey(
     ProjectScriptIcon.annotate({
@@ -66,7 +66,7 @@ export const T3ProjectFileScript = Schema.Struct({
     }),
   ),
 }).annotate({
-  description: "A project script that team members can import into T3 Code.",
+  description: "A project script that team members can import into Sora.",
 });
 export type T3ProjectFileScript = typeof T3ProjectFileScript.Type;
 
@@ -80,7 +80,7 @@ export const T3ProjectFile = Schema.Struct({
     trimmedNonEmpty(
       {
         description:
-          'Workspace-relative path to the project icon (e.g. "assets/logo.svg"). Checked before T3 Code\'s built-in icon locations.',
+          'Workspace-relative path to the project icon (e.g. "assets/logo.svg"). Checked before Sora\'s built-in icon locations.',
       },
       T3_PROJECT_FILE_PATH_MAX_LENGTH,
     ),
@@ -88,33 +88,33 @@ export const T3ProjectFile = Schema.Struct({
   defaultThreadEnvMode: Schema.optionalKey(
     ThreadEnvMode.annotate({
       description:
-        'Where new threads start for this repository: "worktree" for a fresh git worktree, "local" for the current checkout. A per-project setting in T3 Code overrides this; when neither is set, the global default applies.',
+        'Where new threads start for this repository: "worktree" for a fresh git worktree, "local" for the current checkout. A per-project setting in Sora overrides this; when neither is set, the global default applies.',
     }),
   ),
   worktreeSubmodules: Schema.optionalKey(
     WorktreeSubmodules.annotate({
       description:
-        'How new worktrees populate git submodules: "recursive" (the default) initializes nested submodules too, "top-level" initializes only those declared by this repository, and "none" leaves every submodule empty for a setup script to handle. A project or environment setting in T3 Code overrides this.',
+        'How new worktrees populate git submodules: "recursive" (the default) initializes nested submodules too, "top-level" initializes only those declared by this repository, and "none" leaves every submodule empty for a setup script to handle. A project or environment setting in Sora overrides this.',
     }),
   ),
   scripts: Schema.optionalKey(
     Schema.Array(T3ProjectFileScript)
       .annotate({
-        description: "Project scripts shared with everyone who opens this repository in T3 Code.",
+        description: "Project scripts shared with everyone who opens this repository in Sora.",
       })
       .check(Schema.isMaxLength(T3_PROJECT_FILE_MAX_SCRIPTS)),
   ),
 }).annotate({
   title: "T3 project file",
   description:
-    "Checked-in project configuration for T3 Code (t3.json at the repository root). See https://t3.codes for documentation.",
+    "Checked-in project configuration for Sora (sora.json at the repository root). See https://sora.satslab.xyz for documentation.",
 });
 export type T3ProjectFile = typeof T3ProjectFile.Type;
 
 /**
  * A key here must be nullable on `ServerSettings` (null means inherit) so both
  * the project override and the environment value can defer to the file; `field`
- * names the t3.json field carrying the same value and `builtIn` is what applies
+ * names the sora.json field carrying the same value and `builtIn` is what applies
  * when every tier is unset.
  */
 export const PROJECT_FILE_BACKED_SETTINGS = {

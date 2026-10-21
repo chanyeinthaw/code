@@ -1,4 +1,4 @@
-import { OrchestratorMcpFailure } from "@t3tools/contracts";
+import { OrchestratorMcpFailure } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as MemoryAccess from "../../../bots/MemoryAccess.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
@@ -28,7 +28,7 @@ export const layer = McpToolAccess.toLayer(
           Effect.mapError(failure),
         ),
       ),
-      t3_attachment_read: McpToolAccess.readsAsCaller((input) =>
+      s3_attachment_read: McpToolAccess.readsAsCaller((input) =>
         caller.pipe(
           Effect.flatMap((scope) =>
             access.attachment(scope, {

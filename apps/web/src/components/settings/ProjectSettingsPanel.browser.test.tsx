@@ -2,7 +2,7 @@ import { RegistryContext } from "@effect/atom-react";
 import type {
   DeleteProjectInput,
   UpdateProjectInput,
-} from "@t3tools/client-runtime/state/projects";
+} from "@satslab/client-runtime/state/projects";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -12,9 +12,9 @@ import {
   ProviderInstanceId,
   type AuthEnvironmentScope,
   type AuthSessionState,
-} from "@t3tools/contracts";
-import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
-import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+} from "@satslab/contracts";
+import { DEFAULT_CLIENT_SETTINGS } from "@satslab/contracts/settings";
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@satslab/shared/keybindings";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -55,7 +55,7 @@ const state = vi.hoisted(() => ({
 }));
 
 // Session grants come from the server; each test drives them through these atoms.
-vi.mock(import("@t3tools/client-runtime/state/session"), async (original) => {
+vi.mock(import("@satslab/client-runtime/state/session"), async (original) => {
   const actual = await original();
   return {
     ...actual,

@@ -1,7 +1,7 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { isCommandAvailable, resolveSpawnCommand } from "@t3tools/shared/shell";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { isCommandAvailable, resolveSpawnCommand } from "@satslab/shared/shell";
 import * as Console from "effect/Console";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -134,7 +134,7 @@ export const hashBundle = Effect.fn("hashBundle")(function* (root: string) {
 });
 type FileSystemError = import("effect/PlatformError").PlatformError;
 
-const bundleId = "com.t3tools.t3code.dev";
+const bundleId = "xyz.satslab.sora.dev";
 const roots = Effect.gen(function* () {
   const path = yield* Path.Path;
   const repo = yield* path.fromFileUrl(new URL("../", import.meta.url));
@@ -181,7 +181,7 @@ const command = Effect.fn("nativeClient.command")(function* (
         ...environment,
         APP_VARIANT: "development",
         MOBILE_VERSION_POLICY: "appVersion",
-        T3CODE_IOS_PERSONAL_TEAM: "0",
+        SORA_IOS_PERSONAL_TEAM: "0",
         CI: "1",
         EXPO_NO_GIT_STATUS: "1",
       },
@@ -341,7 +341,7 @@ const main = Command.make(
       });
     const recordPath = path.join(
       home,
-      ".cache/t3code/native-clients",
+      ".cache/sora/native-clients",
       platform,
       `${yield* digest(device)}.json`,
     );
@@ -386,9 +386,9 @@ const main = Command.make(
             [
               "xcodebuild",
               "-workspace",
-              path.join(mobile, "ios/T3CodeDev.xcworkspace"),
+              path.join(mobile, "ios/SoraDev.xcworkspace"),
               "-scheme",
-              "T3CodeDev",
+              "SoraDev",
               "-configuration",
               "Debug",
               "-destination",
@@ -405,7 +405,7 @@ const main = Command.make(
               "simctl",
               "install",
               device,
-              path.join(output, "Build/Products/Debug-iphonesimulator/T3CodeDev.app"),
+              path.join(output, "Build/Products/Debug-iphonesimulator/SoraDev.app"),
             ],
             true,
           );

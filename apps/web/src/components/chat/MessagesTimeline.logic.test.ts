@@ -1,4 +1,4 @@
-import { ThreadId, type WorktreeSetupSnapshot } from "@t3tools/contracts";
+import { ThreadId, type WorktreeSetupSnapshot } from "@satslab/contracts";
 import {
   CheckpointRef,
   NodeId,
@@ -10,7 +10,7 @@ import {
   RuntimeRequestId,
   type OrchestrationV2ProjectedTurnItem,
   type OrchestrationV2TurnItem,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as DateTime from "effect/DateTime";
 import {
   deriveTimelineEntriesFromVisibleTurnItems,
@@ -21,8 +21,8 @@ import {
 import { makeStreamingTimelineFixture } from "../../test-fixtures";
 import type { TurnDiffSummary } from "../../types";
 import { describe, expect, it } from "vite-plus/test";
-import { EnvironmentId, MessageId, RunId } from "@t3tools/contracts";
-import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
+import { EnvironmentId, MessageId, RunId } from "@satslab/contracts";
+import { serializeAssistantCitation } from "@satslab/shared/assistantCitations";
 import {
   computeStableMessagesTimelineRows,
   computeMessageDurationStart,
@@ -260,7 +260,7 @@ describe("deriveMessagesTimelineRows", () => {
       toolSource: { key: "mcp:node_repl", name: "node repl", kind: "integration" as const },
       input: {
         title: "Restrict the breakpoint to Git actions",
-        code: "await sky.type_text({app:'T3 Code (Nightly)',text:'debug(ga.run)'});",
+        code: "await sky.type_text({app:'Sora (Nightly)',text:'debug(ga.run)'});",
       },
     };
     const entries = deriveTimelineEntriesFromVisibleTurnItems({
@@ -3116,7 +3116,7 @@ describe("linked timeline resources", () => {
               runId,
               type: "dynamic_tool",
               status: failed ? "failed" : status,
-              toolName: "t3-code.delegate_task",
+              toolName: "sora.delegate_task",
               input: { task: taskId === "b" ? "a" : taskId, role },
               ...(status === "completed"
                 ? {

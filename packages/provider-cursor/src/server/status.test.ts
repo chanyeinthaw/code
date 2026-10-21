@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import type { CursorSettings } from "../settings.ts";
 import { CursorSettings as CursorSettingsSchema } from "../settings.ts";
-import { createModelCapabilities } from "@t3tools/shared/model";
+import { createModelCapabilities } from "@satslab/shared/model";
 
 import {
   buildCursorCapabilitiesFromSdkModel,
@@ -222,12 +222,12 @@ describe("checkCursorProviderStatus", () => {
     {
       authenticationType: "browser" as const,
       message:
-        "Cursor needs a paid plan to run in T3 Code. Upgrade this account or sign in with a different one.",
+        "Cursor needs a paid plan to run in Sora. Upgrade this account or sign in with a different one.",
     },
     {
       authenticationType: "api-key" as const,
       message:
-        "Cursor needs a paid plan to run in T3 Code. Upgrade the account that owns CURSOR_API_KEY or use a key from a paid account.",
+        "Cursor needs a paid plan to run in Sora. Upgrade the account that owns CURSOR_API_KEY or use a key from a paid account.",
     },
   ])(
     "explains a rejected plan for $authenticationType authentication",

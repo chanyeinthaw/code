@@ -1,15 +1,15 @@
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@satslab/client-runtime/state/shell";
 import {
   type ModelSelection,
   repositoryGroupingKeyOf,
   type ServerProvider,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   buildNewThreadLink,
   parsePromptLinkRepository,
   PROMPT_LINK_MAX_PROMPT_LENGTH,
   type PromptLinkRepository,
-} from "@t3tools/shared/promptLinks";
+} from "@satslab/shared/promptLinks";
 
 import { type ComposerThreadTarget, useComposerDraftStore } from "~/composerDraftStore";
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";

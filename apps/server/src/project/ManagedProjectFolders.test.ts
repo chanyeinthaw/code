@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { CommandId, ProjectId, ThreadId, VcsProcessSpawnError } from "@t3tools/contracts";
+import { CommandId, ProjectId, ThreadId, VcsProcessSpawnError } from "@satslab/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -115,7 +115,7 @@ it.effect("offers nothing when the data dir sits inside a Git checkout", () =>
     const path = yield* Path.Path;
     const checkout = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-scratch-repo-" });
     yield* git(checkout, ["init", "--quiet"]);
-    const baseDir = path.join(checkout, ".t3");
+    const baseDir = path.join(checkout, ".sora");
     yield* fileSystem.makeDirectory(baseDir);
     yield* Effect.gen(function* () {
       const scratch = yield* ManagedProjectFolders.ManagedProjectFolders;

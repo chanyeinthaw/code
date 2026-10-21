@@ -1,6 +1,6 @@
-import { ServerProviderModel } from "@t3tools/contracts";
+import { ServerProviderModel } from "@satslab/contracts";
 import { MuseSettings } from "../settings.ts";
-import { resolveSpawnCommand } from "@t3tools/shared/shell";
+import { resolveSpawnCommand } from "@satslab/shared/shell";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -18,7 +18,7 @@ import {
   providerModelsFromSettings,
   spawnAndCollect,
   type ProviderProbeResult,
-} from "@t3tools/provider-core/server/snapshotProbe";
+} from "@satslab/provider-core/server/snapshotProbe";
 
 const MUSE_PRESENTATION = {
   displayName: "Muse Code",
@@ -47,7 +47,7 @@ export const makePendingMuseProvider = Effect.fn("makePendingMuseProvider")(func
       auth: { status: "unknown" },
       message: settings.enabled
         ? "Checking Muse Code CLI availability..."
-        : "Muse Code is disabled in T3 Code settings.",
+        : "Muse Code is disabled in Sora settings.",
     },
   });
 });

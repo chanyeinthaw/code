@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
 import type { ComponentProps } from "react";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@satslab/contracts";
 import { botCreate, botTransferActivate } from "../../state/bots";
 import { Button } from "../ui/button";
 

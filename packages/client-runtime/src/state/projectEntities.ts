@@ -5,8 +5,8 @@ import type {
   ProjectId,
   ScopedProjectRef,
   ServerConfig,
-} from "@t3tools/contracts";
-import { isBotProject } from "@t3tools/shared/botChat";
+} from "@satslab/contracts";
+import { isBotProject } from "@satslab/shared/botChat";
 import { Atom } from "effect/reactivity";
 
 import type { EnvironmentProject } from "./models.ts";

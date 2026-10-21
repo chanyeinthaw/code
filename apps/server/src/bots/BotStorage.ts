@@ -9,7 +9,7 @@ import {
   MemoryState,
   type RunId,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -322,6 +322,6 @@ const make = Effect.gen(function* () {
 });
 
 export class BotStorage extends Context.Service<BotStorage, Effect.Success<typeof make>>()(
-  "t3/bots/BotStorage",
+  "@satslab/sora/bots/BotStorage",
 ) {}
 export const layer = Layer.effect(BotStorage, make);

@@ -4,7 +4,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NetService from "@t3tools/shared/Net";
+import * as NetService from "@satslab/shared/Net";
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -12,8 +12,8 @@ import * as TestConsole from "effect/testing/TestConsole";
 import { Command } from "effect/cli";
 
 import { cli } from "../binCli.ts";
-import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import { symlinksSupported } from "@satslab/shared/testing/symlinks";
+import * as HostProcess from "@satslab/shared/HostProcess";
 
 // These force a failure with chmod, which Windows ignores for directories and
 // cannot use to make a file unreadable, so the failure never happens there.
@@ -24,7 +24,7 @@ const runCli = (args: ReadonlyArray<string>) =>
     Effect.provide(Layer.mergeAll(NodeServices.layer, NetService.layer, TestConsole.layer)),
   );
 
-const makeBaseDir = () => NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3code-theme-cli-"));
+const makeBaseDir = () => NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "sora-theme-cli-"));
 
 const settingsPathFor = (baseDir: string) => NodePath.join(baseDir, "userdata", "settings.json");
 
@@ -46,7 +46,7 @@ const writeSettings = (baseDir: string, settings: Record<string, unknown>) => {
   NodeFS.writeFileSync(settingsPathFor(baseDir), `${JSON.stringify(settings, null, 2)}\n`);
 };
 
-describe("t3 theme", () => {
+describe("sora theme", () => {
   it.effect("preserves settings it does not recognise", () =>
     Effect.gen(function* () {
       const baseDir = makeBaseDir();

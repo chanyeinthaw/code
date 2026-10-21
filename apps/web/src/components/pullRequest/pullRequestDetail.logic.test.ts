@@ -1,6 +1,6 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@satslab/contracts";
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
-import { serializeLegacyContextMessage } from "@t3tools/shared/composerContextLegacySend";
+import { serializeLegacyContextMessage } from "@satslab/shared/composerContextLegacySend";
 import {
   GitCommandError,
   ProjectId,
@@ -13,7 +13,7 @@ import {
   type PullRequestState,
   type RepositoryIdentity,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 import { formatInlineContextReference } from "~/lib/composerContextReferences";
 import { buildMessageContext, reviewCommentContextReference } from "~/lib/composerContextRecords";

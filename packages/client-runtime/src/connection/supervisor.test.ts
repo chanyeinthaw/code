@@ -1,4 +1,4 @@
-import { AuthStandardClientScopes, EnvironmentId, type ServerConfig } from "@t3tools/contracts";
+import { AuthStandardClientScopes, EnvironmentId, type ServerConfig } from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -879,7 +879,7 @@ describe("EnvironmentSupervisor", () => {
                   policy: "loopback-browser",
                   bootstrapMethods: ["one-time-token"],
                   sessionMethods: ["dpop-access-token"],
-                  sessionCookieName: "t3_session_test",
+                  sessionCookieName: "sora_session_test",
                 },
                 scopes: AuthStandardClientScopes,
               }),

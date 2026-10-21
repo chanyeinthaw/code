@@ -4,7 +4,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   ServerSettings,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 import { createModelSelection } from "./model.ts";
@@ -170,7 +170,7 @@ describe("resolveProjectSettings", () => {
   });
 });
 
-describe("resolveProjectSettings with a t3.json", () => {
+describe("resolveProjectSettings with a sora.json", () => {
   it("walks project override, environment value, file, then built-in for file-backed keys", () => {
     const file = { defaultThreadEnvMode: "worktree" as const };
     const fromOverride = resolveProjectSettings(
@@ -196,7 +196,7 @@ describe("resolveProjectSettings with a t3.json", () => {
 
     const fromFile = resolveProjectSettings(DEFAULT_SERVER_SETTINGS, projectId, null, file);
     expect(fromFile.settings.defaultThreadEnvMode).toBe("worktree");
-    expect(fromFile.sources.defaultThreadEnvMode).toBe("t3.json");
+    expect(fromFile.sources.defaultThreadEnvMode).toBe("sora.json");
 
     const builtIn = resolveProjectSettings(DEFAULT_SERVER_SETTINGS, projectId, null, null);
     expect(builtIn.settings.defaultThreadEnvMode).toBe("local");
@@ -211,7 +211,7 @@ describe("resolveProjectSettings with a t3.json", () => {
       file,
     );
     expect(nullOverride.settings.defaultThreadEnvMode).toBe("worktree");
-    expect(nullOverride.sources.defaultThreadEnvMode).toBe("t3.json");
+    expect(nullOverride.sources.defaultThreadEnvMode).toBe("sora.json");
     expect(
       resolveProjectSettings(DEFAULT_SERVER_SETTINGS, projectId, null, {}).sources
         .defaultThreadEnvMode,
@@ -258,7 +258,7 @@ describe("resolveNewThreadEnvMode", () => {
     expect(resolveNewThreadEnvMode({ ...newProject, newProjectsRoot: undefined })).toBe("worktree");
   });
 
-  it("lets a project override, or a t3.json the environment defers to, keep worktree mode", () => {
+  it("lets a project override, or a sora.json the environment defers to, keep worktree mode", () => {
     for (const projectSettings of [
       resolveProjectSettings(
         {

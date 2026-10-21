@@ -1,11 +1,11 @@
-import { PrimaryConnectionTarget } from "@t3tools/client-runtime/connection";
-import { createEnvironmentThreadShellAtoms } from "@t3tools/client-runtime/state/threads";
+import { PrimaryConnectionTarget } from "@satslab/client-runtime/connection";
+import { createEnvironmentThreadShellAtoms } from "@satslab/client-runtime/state/threads";
 import {
   applyShellStreamEvent,
   createEnvironmentSnapshotAtom,
   type EnvironmentShellState,
   type EnvironmentShellStatus,
-} from "@t3tools/client-runtime/state/shell";
+} from "@satslab/client-runtime/state/shell";
 import { makeThreadProjectionFixture } from "./test-fixtures";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
@@ -14,8 +14,8 @@ import {
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@t3tools/client-runtime/environment";
-import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
+} from "@satslab/client-runtime/environment";
+import { DEFAULT_UNIFIED_SETTINGS } from "@satslab/contracts/settings";
 import {
   defaultInstanceIdForDriver,
   DEFAULT_MODEL,
@@ -31,8 +31,8 @@ import {
   type ModelSelection,
   type PreviewAnnotationPayload,
   type ProviderOptionSelection,
-} from "@t3tools/contracts";
-import { createModelSelection } from "@t3tools/shared/model";
+} from "@satslab/contracts";
+import { createModelSelection } from "@satslab/shared/model";
 
 const CODEX_INSTANCE = ProviderInstanceId.make("codex");
 const CODEX_SECONDARY_INSTANCE = ProviderInstanceId.make("codex_secondary");

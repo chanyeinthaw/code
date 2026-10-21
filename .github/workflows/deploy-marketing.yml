@@ -1,0 +1,42 @@
+name: Deploy marketing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/marketing/**"
+      - "scripts/install.sh"
+      - "scripts/install.ps1"
+      - ".github/workflows/deploy-marketing.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sora-marketing-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 20
+    environment:
+      name: marketing-production
+      url: https://sora.satslab.xyz
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-tags: false
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+      - uses: ./.github/actions/setup-ci-deps
+      - name: Check marketing
+        run: vp run --filter @satslab/marketing typecheck
+      - name: Deploy marketing
+        working-directory: apps/marketing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node --run deploy -- --stage prod --yes
