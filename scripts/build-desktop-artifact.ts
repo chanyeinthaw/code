@@ -2507,41 +2507,6 @@ export const stageBrowserSecret = Effect.fn("stageBrowserSecret")(function* (inp
   );
 });
 
-const generateMacIconSet = Effect.fn("build-desktop-artifact.generateMacIconSet")(function* (
-  sourcePng: string,
-  targetIcns: string,
-  tmpRoot: string,
-  path: Path.Path,
-  verbose: boolean,
-) {
-  const fs = yield* FileSystem.FileSystem;
-  const iconsetDir = path.join(tmpRoot, "icon.iconset");
-  yield* fs.makeDirectory(iconsetDir, { recursive: true });
-
-  const iconSizes = [16, 32, 128, 256, 512] as const;
-  for (const size of iconSizes) {
-    yield* runCommand(
-      ChildProcess.make(
-        {},
-      )`sips -z ${size} ${size} ${sourcePng} --out ${path.join(iconsetDir, `icon_${size}x${size}.png`)}`,
-      { label: `sips icon ${size}x${size}`, verbose },
-    );
-
-    const retinaSize = size * 2;
-    yield* runCommand(
-      ChildProcess.make(
-        {},
-      )`sips -z ${retinaSize} ${retinaSize} ${sourcePng} --out ${path.join(iconsetDir, `icon_${size}x${size}@2x.png`)}`,
-      { label: `sips icon ${size}x${size}@2x`, verbose },
-    );
-  }
-
-  yield* runCommand(ChildProcess.make({})`iconutil -c icns ${iconsetDir} -o ${targetIcns}`, {
-    label: "iconutil icns",
-    verbose,
-  });
-});
-
 const stageMacIcons = Effect.fn("build-desktop-artifact.stageMacIcons")(function* (
   stageResourcesDir: string,
   sourcePng: string,
@@ -2556,19 +2521,15 @@ const stageMacIcons = Effect.fn("build-desktop-artifact.stageMacIcons")(function
     });
   }
 
-  const tmpRoot = yield* fs.makeTempDirectoryScoped({
-    prefix: "t3code-icon-build-",
-  });
-
-  const iconPngPath = path.join(stageResourcesDir, "icon.png");
-  const iconIcnsPath = path.join(stageResourcesDir, "icon.icns");
-
-  yield* runCommand(ChildProcess.make({})`sips -z 512 512 ${sourcePng} --out ${iconPngPath}`, {
-    label: "sips mac icon",
-    verbose,
-  });
-
-  yield* generateMacIconSet(sourcePng, iconIcnsPath, tmpRoot, path, verbose);
+  const repoRoot = yield* RepoRoot;
+  yield* runCommand(
+    ChildProcess.make(process.execPath, [
+      path.join(repoRoot, "scripts/build-macos-icons.mjs"),
+      sourcePng,
+      stageResourcesDir,
+    ]),
+    { label: "generate macOS icons", verbose },
+  );
 });
 
 export const stageDesktopDmgBackground = Effect.fn("stageDesktopDmgBackground")(function* (
@@ -2878,6 +2839,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   }
 
   if (platform === "mac") {
+    buildConfig.npmRebuild = false;
     const path = yield* Path.Path;
     const repoRoot = yield* RepoRoot;
     buildConfig.mac = {
@@ -3228,7 +3190,11 @@ export const stageWindowsServerSidecar = Effect.fn("stageWindowsServerSidecar")(
   }
 
   yield* Effect.log("[desktop-artifact] Installing server sidecar runtime externals...");
-  const installCommand = yield* resolveSpawnCommand("vp", [...STAGE_INSTALL_ARGS]);
+  const hostPlatform = yield* HostProcess.Platform;
+  const installCommand = yield* resolveSpawnCommand("vp", [
+    ...STAGE_INSTALL_ARGS,
+    ...(hostPlatform !== "win32" ? ["--ignore-scripts"] : []),
+  ]);
   yield* runCommand(
     ChildProcess.make(installCommand.command, installCommand.args, {
       cwd: serverStageDir,
@@ -3977,7 +3943,13 @@ const buildDesktopArtifactUnlocked = Effect.fn("buildDesktopArtifactUnlocked")(f
   }
 
   yield* Effect.log("[desktop-artifact] Installing staged production dependencies...");
-  const installCommand = yield* resolveSpawnCommand("vp", [...STAGE_INSTALL_ARGS]);
+  const installCommand = yield* resolveSpawnCommand("vp", [
+    ...STAGE_INSTALL_ARGS,
+    ...((options.platform === "mac" && hostPlatform !== "darwin") ||
+    (options.platform === "win" && hostPlatform !== "win32")
+      ? ["--ignore-scripts"]
+      : []),
+  ]);
   yield* runCommand(
     ChildProcess.make(installCommand.command, installCommand.args, {
       cwd: stageAppDir,

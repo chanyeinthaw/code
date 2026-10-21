@@ -1,6 +1,6 @@
 {
   "name": "@satslab/sora",
-  "version": "0.1.2",
+  "version": "0.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -88,5 +88,5 @@
   "engines": {
     "node": "^22.16 || ^23.11 || >=24.10"
   },
-  "upstreamVersion": "0.1.1"
+  "upstreamVersion": "0.1.2"
 }
