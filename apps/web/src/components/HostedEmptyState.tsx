@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/react";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@satslab/contracts";
 import { Link } from "@tanstack/react-router";
 import { CheckIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -43,7 +43,7 @@ export function HostedEmptyState() {
                 ? "Turn it back on, or connect a different computer."
                 : cloudEnabled
                   ? "Your agents run on your computer."
-                  : "Your agents run on your computer. Start T3 Code there first."}
+                  : "Your agents run on your computer. Start Sora there first."}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -88,7 +88,7 @@ function T3ConnectSteps() {
         )}
       </SetupStep>
       <SetupStep number={2}>
-        <RunOnComputer command="npx t3 connect" />
+        <RunOnComputer command="npx @satslab/sora connect" />
         {isSignedIn ? (
           <div className="mt-4 space-y-1.5">
             <CloudEnvironmentConnectRows
@@ -119,7 +119,7 @@ function PairingSteps() {
   return (
     <>
       <SetupStep number={1}>
-        <RunOnComputer command="npx t3 pair" />
+        <RunOnComputer command="npx @satslab/sora pair" />
       </SetupStep>
       <SetupStep number={2}>
         <Button render={<Link to="/settings/connections" />} size="sm">

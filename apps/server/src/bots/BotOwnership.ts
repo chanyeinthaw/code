@@ -8,7 +8,7 @@ import {
   BotTransfer,
   type BotId,
   type EnvironmentId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -368,6 +368,6 @@ const make = Effect.gen(function* () {
   };
 });
 export class BotOwnership extends Context.Service<BotOwnership, Effect.Success<typeof make>>()(
-  "t3/bots/BotOwnership",
+  "@satslab/sora/bots/BotOwnership",
 ) {}
 export const layer = Layer.effect(BotOwnership, make);

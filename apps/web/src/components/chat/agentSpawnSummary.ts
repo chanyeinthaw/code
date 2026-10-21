@@ -2,7 +2,7 @@ import {
   isActiveSubagentStatus,
   isTerminalSubagentStatus,
   type RuntimeSubagent,
-} from "@t3tools/client-runtime/state/subagentRuntime";
+} from "@satslab/client-runtime/state/subagentRuntime";
 
 export function deriveAgentSpawnSummary({
   agents,

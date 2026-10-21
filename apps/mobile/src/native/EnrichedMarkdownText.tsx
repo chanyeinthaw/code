@@ -1,9 +1,9 @@
-import { decodeComposerContextFragment } from "@t3tools/shared/composerContextClipboard";
+import { decodeComposerContextFragment } from "@satslab/shared/composerContextClipboard";
 import {
   collectComposerContextReferences,
   formatComposerContextHref,
   formatComposerContextReference,
-} from "@t3tools/shared/composerContextReferences";
+} from "@satslab/shared/composerContextReferences";
 import {
   markdownWithHtml,
   markdownWithInlineFileLinks,

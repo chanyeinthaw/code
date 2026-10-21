@@ -5,9 +5,9 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { AuthStandardClientScopes } from "@t3tools/contracts";
-import * as NetService from "@t3tools/shared/Net";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import { AuthStandardClientScopes } from "@satslab/contracts";
+import * as NetService from "@satslab/shared/Net";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
@@ -119,7 +119,7 @@ const withDescriptorServer = <A, E, R>(
     (server) => Effect.sync(() => server.close()),
   );
 
-describe("t3 pair", () => {
+describe("sora pair", () => {
   it.effect("publishes an IPv6-only server through Tailscale Serve when pairing", () =>
     withDescriptorServer(
       (origin) =>
@@ -220,7 +220,7 @@ describe("t3 pair", () => {
           readonly scopes: ReadonlyArray<string>;
         }>;
         assert.equal(credentials.length, 1);
-        assert.equal(credentials[0]?.label, "t3 pair");
+        assert.equal(credentials[0]?.label, "sora pair");
         assert.deepEqual(credentials[0]?.scopes, AuthStandardClientScopes);
       }),
     ).pipe(
@@ -283,7 +283,7 @@ describe("t3 pair", () => {
         const rendered = String(
           typeof error === "object" && error !== null && "cause" in error ? error.cause : error,
         );
-        assert.include(rendered, "No running T3 Code server found.");
+        assert.include(rendered, "No running Sora server found.");
       }),
     ).pipe(Effect.provide(NodeServices.layer)),
   );
@@ -313,13 +313,13 @@ describe("t3 pair", () => {
           runCli(["pair"]).pipe(
             Effect.provideService(HostProcess.WorkingDirectory, worktree),
             Effect.provide(
-              ConfigProvider.layer(ConfigProvider.fromEnv({ env: { T3CODE_HOME: sharedHome } })),
+              ConfigProvider.layer(ConfigProvider.fromEnv({ env: { SORA_HOME: sharedHome } })),
             ),
             Effect.flip,
           ),
         );
 
-        assert.include(String(error), "No running T3 Code server found.");
+        assert.include(String(error), "No running Sora server found.");
         assert.notInclude(String(error), sharedHome);
         assert.deepEqual(NodeFS.readdirSync(NodePath.join(sharedHome, "userdata")), [
           "server-runtime.json",
@@ -440,7 +440,7 @@ describe("auth scope options", () => {
       if (!CliError.isCliError(error) || error._tag !== "ShowHelp") {
         assert.fail(`Expected ShowHelp, got ${String(error)}`);
       }
-      assert.deepEqual(error.commandPath, ["t3", ...command]);
+      assert.deepEqual(error.commandPath, ["sora", ...command]);
       const scopeError = error.errors[0];
       if (scopeError?._tag !== "InvalidValue") {
         assert.fail(`Expected InvalidValue, got ${String(scopeError?._tag)}`);

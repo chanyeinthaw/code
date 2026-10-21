@@ -1,18 +1,18 @@
-import { buildProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { buildProjectGroups } from "@satslab/client-runtime/state/project-grouping";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
-} from "@t3tools/client-runtime/state/shell";
+} from "@satslab/client-runtime/state/shell";
 import {
   getThreadSortTimestamp,
   toSortableTimestamp,
-} from "@t3tools/client-runtime/state/thread-sort";
+} from "@satslab/client-runtime/state/thread-sort";
 import type {
   EnvironmentId,
   ScopedProjectRef,
   SidebarProjectGroupingMode,
   SidebarProjectSortOrder,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 

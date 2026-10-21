@@ -1,5 +1,5 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import { defineSourceControlDriver } from "@t3tools/source-control-core/server/driver";
+import { SourceControlProviderKind } from "@satslab/contracts";
+import { defineSourceControlDriver } from "@satslab/source-control-core/server/driver";
 import * as Effect from "effect/Effect";
 
 import * as GitCafePullRequestProvider from "./GitCafePullRequestProvider.ts";

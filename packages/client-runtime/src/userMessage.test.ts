@@ -19,7 +19,7 @@ describe("resolveUserMessagePresentation", () => {
     }
   });
 
-  it("attributes older server-sent restart continuations to T3 Code, not another agent", () => {
+  it("attributes older server-sent restart continuations to Sora, not another agent", () => {
     const text = "Note: the T3 server restarted.";
     expect(
       resolveUserMessagePresentation({
@@ -28,7 +28,7 @@ describe("resolveUserMessagePresentation", () => {
         creationSource: "server",
         text,
       }),
-    ).toMatchObject({ attribution: "t3code" });
+    ).toMatchObject({ attribution: "sora" });
     for (const creationSource of ["mcp", "provider"] as const) {
       expect(
         resolveUserMessagePresentation({ role: "user", createdBy: "agent", creationSource, text }),

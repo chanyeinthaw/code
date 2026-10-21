@@ -1,21 +1,21 @@
-import { resolveThreadWorkingStartedAt } from "@t3tools/client-runtime/state/models";
-import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
-import { threadPullRequestSearchTerms } from "@t3tools/shared/threadPullRequests";
+import { resolveThreadWorkingStartedAt } from "@satslab/client-runtime/state/models";
+import { backgroundWorkHoldsCompletion } from "@satslab/shared/orchestrationV2PendingBackgroundWork";
+import { threadPullRequestSearchTerms } from "@satslab/shared/threadPullRequests";
 import * as React from "react";
 import {
   isAtomCommandInterrupted,
   type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { defaultAnimateLayoutChanges, type AnimateLayoutChanges } from "@dnd-kit/sortable";
-import { threadSearchMatchKey } from "@t3tools/client-runtime/state/thread-search";
-import type { ContextMenuItem, EnvironmentId, ThreadId } from "@t3tools/contracts";
-import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@t3tools/contracts/settings";
+import { threadSearchMatchKey } from "@satslab/client-runtime/state/thread-search";
+import type { ContextMenuItem, EnvironmentId, ThreadId } from "@satslab/contracts";
+import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@satslab/contracts/settings";
 import type { AsyncResult } from "effect/reactivity";
-import { planPinnedReorder } from "@t3tools/client-runtime/state/thread-sort";
+import { planPinnedReorder } from "@satslab/client-runtime/state/thread-sort";
 import {
   effectiveSnoozed,
   type ThreadSnoozeShell,
-} from "@t3tools/client-runtime/state/thread-settled";
+} from "@satslab/client-runtime/state/thread-settled";
 import {
   getThreadSortTimestamp,
   sortThreads,
@@ -964,15 +964,15 @@ export function firstValidTimestampMs(
   return 0;
 }
 
-export { sortActiveThreadsByOrderKey as sortThreadsForSidebar } from "@t3tools/client-runtime/state/thread-sort";
+export { sortActiveThreadsByOrderKey as sortThreadsForSidebar } from "@satslab/client-runtime/state/thread-sort";
 export {
   isThreadWorking as isSidebarThreadWorking,
   sortInboxThreadsByReturn,
   sortWorkingThreadsBySend,
-} from "@t3tools/client-runtime/state/thread-inbox";
+} from "@satslab/client-runtime/state/thread-inbox";
 
-export { pinOrderKeyBetween } from "@t3tools/client-runtime/state/thread-sort";
-export { sortPinnedThreadsByOrderKey as sortPinnedThreadsForSidebar } from "@t3tools/client-runtime/state/thread-sort";
+export { pinOrderKeyBetween } from "@satslab/client-runtime/state/thread-sort";
+export { sortPinnedThreadsByOrderKey as sortPinnedThreadsForSidebar } from "@satslab/client-runtime/state/thread-sort";
 
 const EMPTY_CONTENT_MATCH_KEYS: ReadonlySet<string> = new Set<string>();
 

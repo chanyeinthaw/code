@@ -4,8 +4,8 @@ import {
   resolveEnvironmentMachineKind,
   type EnvironmentId,
   type ScopedThreadRef,
-} from "@t3tools/contracts";
-import { isAtomCommandInterrupted } from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/contracts";
+import { isAtomCommandInterrupted } from "@satslab/client-runtime/state/runtime";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEnvironments } from "../../state/environments";
 import { useBots, useLastBotId, type useBotThreadContext } from "../../state/bots";
@@ -145,9 +145,9 @@ function BotHeader({ bot, environmentId, subagentTitle, onOpenMenu }: BotHeaderP
       }
     >
       {!botSidebarVisible ? (
-        <span className="inline-flex shrink-0 items-baseline gap-1 text-sm font-medium tracking-tight">
-          <T3Wordmark aria-label="T3" className="h-[1cap] w-auto" />
-          <span className="text-muted-foreground">Code</span>
+        <span className="inline-flex shrink-0 items-center gap-2 text-sm font-medium tracking-tight">
+          <T3Wordmark aria-label="Sora" className="size-5 shrink-0 rounded-md" />
+          <span className="text-muted-foreground">Sora</span>
         </span>
       ) : null}
       <WorkspaceBreadcrumb ariaLabel="Bot breadcrumb" className="min-w-0 flex-1 overflow-hidden">

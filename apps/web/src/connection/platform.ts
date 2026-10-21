@@ -2,7 +2,7 @@ import {
   ClientCapabilities,
   PlatformConnectionSource,
   Persistence,
-} from "@t3tools/client-runtime/platform";
+} from "@satslab/client-runtime/platform";
 import {
   BearerConnectionCredential,
   BearerConnectionProfile,
@@ -18,11 +18,11 @@ import {
   PrimaryConnectionTarget,
   sshTargetKey,
   Wakeups,
-} from "@t3tools/client-runtime/connection";
-import { bootstrapRemoteBearerSession } from "@t3tools/client-runtime/authorization";
-import { fetchRemoteEnvironmentDescriptor } from "@t3tools/client-runtime/environment";
-import { managedRelayAccountChanges, managedRelaySessionAtom } from "@t3tools/client-runtime/relay";
-import { EnvironmentRpcRequestObserver } from "@t3tools/client-runtime/rpc";
+} from "@satslab/client-runtime/connection";
+import { bootstrapRemoteBearerSession } from "@satslab/client-runtime/authorization";
+import { fetchRemoteEnvironmentDescriptor } from "@satslab/client-runtime/environment";
+import { managedRelayAccountChanges, managedRelaySessionAtom } from "@satslab/client-runtime/relay";
+import { EnvironmentRpcRequestObserver } from "@satslab/client-runtime/rpc";
 import {
   AuthStandardClientScopes,
   type DesktopBridge,
@@ -31,7 +31,7 @@ import {
   type DesktopSshEnvironmentTarget,
   type EnvironmentId,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -303,7 +303,7 @@ export const prepareDesktopSshEnvironment = Effect.fn("web.connectionPlatform.ss
   },
 );
 
-const ANALYTICS_DEVICE_ID_KEY = "t3code:analytics-device-id";
+const ANALYTICS_DEVICE_ID_KEY = "sora:analytics-device-id";
 
 // Lives as long as this browser profile's site data. Storage can be blocked, which only drops the id.
 const analyticsDevice = {

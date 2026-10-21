@@ -16,9 +16,9 @@ import { ChildProcessSpawner } from "effect/process";
 import * as Metric from "effect/Metric";
 import { assert, it } from "@effect/vitest";
 
-import { CheckpointRef, GitCommandError, VcsProcessExitError } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
+import { CheckpointRef, GitCommandError, VcsProcessExitError } from "@satslab/contracts";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { symlinksSupported } from "@satslab/shared/testing/symlinks";
 import * as ServerConfig from "../config.ts";
 import { gitCommandDuration, gitCommandsTotal } from "../observability/Metrics.ts";
 import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
@@ -115,7 +115,7 @@ it.effect("lists the fetch and push URLs of a partial clone remote", () =>
       "set-url",
       "--push",
       "origin",
-      "git@github.com:octocat/t3code.git",
+      "git@github.com:octocat/sora.git",
     ]);
     yield* runGit(cwd, ["config", "remote.origin.promisor", "true"]);
     yield* runGit(cwd, ["config", "remote.origin.partialclonefilter", "blob:none"]);
@@ -125,7 +125,7 @@ it.effect("lists the fetch and push URLs of a partial clone remote", () =>
       {
         name: "origin",
         url: "https://github.com/pingdotgg/t3code.git",
-        pushUrl: Option.some("git@github.com:octocat/t3code.git"),
+        pushUrl: Option.some("git@github.com:octocat/sora.git"),
         isPrimary: true,
       },
     ]);
