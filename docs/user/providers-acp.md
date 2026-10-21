@@ -43,7 +43,7 @@ without expanding shell expressions.
 Registry agents always run on the machine that hosts your T3 Code server. That stays true when you
 connect through `app.t3.codes`, T3 Connect, or a relay.
 
-Agents install under `tools/<agent-id>/<version>/` inside T3 home. T3 Code verifies SHA-256 when the Registry entry
+Agents install under `tools/<agent-id>/<version>/` inside Sora home. T3 Code verifies SHA-256 when the Registry entry
 provides one; entries without a checksum retain the Registry's HTTPS distribution guarantee.
 Registry `npx` and `uvx` packages use T3-owned npm prefixes and Python tool directories at the exact
 version published by the Registry. Their commands are available in a new server terminal for

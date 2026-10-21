@@ -1,5 +1,5 @@
-import type { ScheduledTaskWebhookEndpoint } from "@t3tools/contracts";
-import { isLocalLoopbackHost } from "@t3tools/shared/hostClassification";
+import type { ScheduledTaskWebhookEndpoint } from "@satslab/contracts";
+import { isLocalLoopbackHost } from "@satslab/shared/hostClassification";
 
 export interface WebhookAddress {
   readonly address: string;

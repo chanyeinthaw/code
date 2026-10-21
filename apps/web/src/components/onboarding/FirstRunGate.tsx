@@ -103,7 +103,7 @@ export function FirstRunGate({
   // A workspace still counts as fresh when its only content is the server's own
   // cwd auto-bootstrap: web mode creates a project + thread from cwd at startup
   // (`autoBootstrapProjectFromCwd` defaults on there), so "no projects at all"
-  // would mean `npx t3` users never see the wizard.
+  // would mean `npx @satslab/sora` users never see the wizard.
   const serverCwd = serverConfig?.cwd ?? null;
   const primaryEnvironmentId = serverConfig?.environment.environmentId ?? null;
   const workspaceFresh =
@@ -201,7 +201,7 @@ function FirstRunRecovery({
         <p className="mt-2 text-sm text-muted-foreground">
           {settingsReadFailed
             ? "Your saved settings could not be loaded."
-            : "T3 Code could not confirm this workspace."}
+            : "Sora could not confirm this workspace."}
         </p>
         <Button
           className="mt-5"

@@ -1,8 +1,8 @@
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ThreadId } from "@satslab/contracts";
 import type {
   RelayAgentActivityAggregateState,
   RelayAgentActivityState,
-} from "@t3tools/contracts/relay";
+} from "@satslab/contracts/relay";
 import * as NodeCryptoLayer from "@effect/platform-node/NodeCrypto";
 import { describe, expect, it } from "@effect/vitest";
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Effect's Crypto has no generateKeyPairSync.

@@ -1,4 +1,4 @@
-import { ChatAttachment, BotChatError, type BotId, type BotTransfer } from "@t3tools/contracts";
+import { ChatAttachment, BotChatError, type BotId, type BotTransfer } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";
@@ -155,5 +155,5 @@ const make = Effect.gen(function* () {
 export class BotTransferFiles extends Context.Service<
   BotTransferFiles,
   Effect.Success<typeof make>
->()("t3/bots/BotTransferFiles") {}
+>()("@satslab/sora/bots/BotTransferFiles") {}
 export const layer = Layer.effect(BotTransferFiles, make);

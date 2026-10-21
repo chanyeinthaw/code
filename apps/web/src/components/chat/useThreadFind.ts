@@ -1,6 +1,6 @@
-import type { InlineSkill } from "@t3tools/shared/inlineSkills";
-import type { OrchestrationV2SearchThreadResult, ScopedThreadRef } from "@t3tools/contracts";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import type { InlineSkill } from "@satslab/shared/inlineSkills";
+import type { OrchestrationV2SearchThreadResult, ScopedThreadRef } from "@satslab/contracts";
+import { scopedThreadKey } from "@satslab/client-runtime/environment";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { orchestrationEnvironment } from "~/state/orchestration";

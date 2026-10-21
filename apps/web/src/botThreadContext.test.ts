@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { BotId, ThreadId } from "@t3tools/contracts";
+import { BotId, ThreadId } from "@satslab/contracts";
 import { resolveBotThreadContext } from "./botThreadContext";
 
 const rootId = ThreadId.make("memory-thread");

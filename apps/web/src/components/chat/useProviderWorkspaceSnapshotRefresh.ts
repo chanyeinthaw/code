@@ -2,12 +2,12 @@ import {
   type EnvironmentId,
   PROVIDER_WORKSPACE_SNAPSHOT_TTL_MS,
   type ServerProvider,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { type ProviderInstanceEntry } from "../../providerInstances";
 import {
   hasCompleteProviderWorkspaceSnapshot,
   hasCurrentProviderWorkspaceSnapshot,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@satslab/client-runtime/providerSkills";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useEffect, useEffectEvent, useRef, useState } from "react";

@@ -1,6 +1,6 @@
-import type { ThreadContextRecord, UserInputQuestion } from "@t3tools/contracts";
-import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
-import { formatThreadLink } from "@t3tools/shared/threadLinks";
+import type { ThreadContextRecord, UserInputQuestion } from "@satslab/contracts";
+import { replaceComposerContextReferences } from "@satslab/shared/composerContextReferences";
+import { formatThreadLink } from "@satslab/shared/threadLinks";
 
 import { collectInlineContextIds } from "./lib/composerContextReferences";
 

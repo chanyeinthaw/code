@@ -1,5 +1,5 @@
-import type { EnvironmentId } from "@t3tools/contracts";
-import { splitFilePathPosition } from "@t3tools/shared/fileLinks";
+import type { EnvironmentId } from "@satslab/contracts";
+import { splitFilePathPosition } from "@satslab/shared/fileLinks";
 
 import {
   shouldOpenMarkdownFileLinkInBrowserByDefault,

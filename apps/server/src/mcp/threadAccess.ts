@@ -7,7 +7,7 @@ import {
   type RuntimeMode,
   type ThreadId,
   type OrchestrationV2ThreadShell,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 
@@ -137,7 +137,7 @@ export const resolveProjectId = (context: Caller, projectId: ProjectId | undefin
           new OrchestratorMcpFailure({
             code: "target_required",
             message:
-              "Pass projectId: bots have no project of their own. t3_project_list shows them.",
+              "Pass projectId: bots have no project of their own. s3_project_list shows them.",
           }),
         )
       : context.caller !== undefined

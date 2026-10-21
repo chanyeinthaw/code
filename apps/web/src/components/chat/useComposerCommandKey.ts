@@ -3,7 +3,7 @@ import { type ComposerCommandItem } from "./ComposerCommandMenu";
 import {
   type ComposerDispatchMode,
   resolveComposerDispatchMode,
-} from "@t3tools/client-runtime/state/composer-dispatch";
+} from "@satslab/client-runtime/state/composer-dispatch";
 import { type ComposerPromptEditorHandle } from "../ComposerPromptEditor";
 import {
   type ComposerPromptHistoryPosition,
@@ -17,7 +17,7 @@ import {
   composerSubmissionIntentForKey,
 } from "../../composer-logic";
 import { type PendingUserInput } from "../../session-logic";
-import { type PreviewAnnotationPayload } from "@t3tools/contracts";
+import { type PreviewAnnotationPayload } from "@satslab/contracts";
 import { type ReviewCommentContext } from "../../reviewCommentContext";
 import { composerTargetKey } from "../../composerDraftStore";
 import { listContinuationForEnter, listIndentForTab } from "../../composer-list-continuation";

@@ -7,7 +7,7 @@ import {
   PullRequestListResult,
   pullRequestHostOf,
   resolvePullRequestAuthorFilter,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import type {
   ProjectId,
   RepositoryIdentity,
@@ -21,9 +21,9 @@ import type {
   PullRequestListFilters,
   PullRequestListState,
   PullRequestState,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
-import { sourceControlRepositorySelector } from "@t3tools/shared/sourceControl";
+import { sourceControlRepositorySelector } from "@satslab/shared/sourceControl";
 
 import { toSortableTimestamp } from "../../lib/threadSort";
 import type { PullRequestListSort } from "./pullRequestListPreferences";

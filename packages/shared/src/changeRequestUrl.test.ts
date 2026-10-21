@@ -1,4 +1,4 @@
-import { ProjectId } from "@t3tools/contracts";
+import { ProjectId } from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -12,9 +12,9 @@ import { normalizeThreadPullRequestKey } from "./threadPullRequests.ts";
 
 describe("parseChangeRequestUrl", () => {
   it("reads a GitHub pull request, lower-casing the repository", () => {
-    expect(parseChangeRequestUrl("https://github.com/T3Tools/T3Code/pull/123")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/T3Tools/Sora/pull/123")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       number: 123,
     });
   });
@@ -43,8 +43,8 @@ describe("parseChangeRequestUrl", () => {
 
   it("reads a GitLab merge request on any host, nested groups and all", () => {
     expect(
-      parseChangeRequestUrl("https://gitlab.com/t3tools/platform/t3code/-/merge_requests/42"),
-    ).toEqual({ host: "gitlab.com", repository: "t3tools/platform/t3code", number: 42 });
+      parseChangeRequestUrl("https://gitlab.com/t3tools/platform/sora/-/merge_requests/42"),
+    ).toEqual({ host: "gitlab.com", repository: "t3tools/platform/sora", number: 42 });
     expect(parseChangeRequestUrl("https://code.acme.test/team/project/-/merge_requests/9")).toEqual(
       { host: "code.acme.test", repository: "team/project", number: 9 },
     );
@@ -57,11 +57,11 @@ describe("parseChangeRequestUrl", () => {
       number: 5,
     });
     expect(
-      parseChangeRequestUrl("https://dev.azure.com/acme/platform/_git/t3code/pullrequest/17"),
-    ).toEqual({ host: "dev.azure.com", repository: "acme/platform/_git/t3code", number: 17 });
+      parseChangeRequestUrl("https://dev.azure.com/acme/platform/_git/sora/pullrequest/17"),
+    ).toEqual({ host: "dev.azure.com", repository: "acme/platform/_git/sora", number: 17 });
     expect(
-      parseChangeRequestUrl("https://acme.visualstudio.com/platform/_git/t3code/pullrequest/17"),
-    ).toEqual({ host: "acme.visualstudio.com", repository: "platform/_git/t3code", number: 17 });
+      parseChangeRequestUrl("https://acme.visualstudio.com/platform/_git/sora/pullrequest/17"),
+    ).toEqual({ host: "acme.visualstudio.com", repository: "platform/_git/sora", number: 17 });
   });
 
   it("reads Azure DevOps Server links and keeps servers on different ports distinct", () => {
@@ -91,25 +91,25 @@ describe("parseChangeRequestUrl", () => {
   });
 
   it("survives trailing segments, a trailing slash and a query string", () => {
-    expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/files?w=1")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/t3tools/sora/pull/123/files?w=1")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       number: 123,
     });
-    expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/t3tools/sora/pull/123/")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "t3tools/sora",
       number: 123,
     });
   });
 
   it("claims nothing it cannot be sure of", () => {
     for (const link of [
-      "https://github.com/t3tools/t3code/issues/123",
-      "https://github.com/t3tools/t3code/commit/0a1b2c3",
-      "https://github.com/t3tools/t3code",
-      "https://github.com/t3tools/t3code/pull/abc",
-      "https://gitlab.com/t3tools/t3code/-/issues/12",
+      "https://github.com/t3tools/sora/issues/123",
+      "https://github.com/t3tools/sora/commit/0a1b2c3",
+      "https://github.com/t3tools/sora",
+      "https://github.com/t3tools/sora/pull/abc",
+      "https://gitlab.com/t3tools/sora/-/issues/12",
       "https://blog.example.test/2026/updates/pull/3",
       "https://scm.example.test/tfs/Collection/Project/_git/Repo",
       "https://scm.example.test/tfs/Collection/Project/pullrequest/123",
@@ -117,7 +117,7 @@ describe("parseChangeRequestUrl", () => {
       "https://scm.example.test/tfs/Collection/Project/_git/Repo/pullrequest/0",
       "https://scm.example.test/tfs/Collection/Project/_git/Repo/pullrequest/9007199254740992",
       "ftp://scm.example.test/tfs/Collection/Project/_git/Repo/pullrequest/123",
-      "javascript:alert(1)//github.com/t3tools/t3code/pull/1",
+      "javascript:alert(1)//github.com/t3tools/sora/pull/1",
       "not a url",
     ]) {
       expect(parseChangeRequestUrl(link), link).toBeNull();

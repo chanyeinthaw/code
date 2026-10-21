@@ -2,7 +2,7 @@ import {
   type OrchestrationV2Actor,
   type OrchestrationV2CreationSource,
   ScheduledTaskId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 const LEGACY_AUTOMATION_PREFIX = /^\[Triggered by schedule task: [^\r\n]+\]\r?\n\r?\n/;
 const LEGACY_AUTOMATION_MESSAGE_ID = /^scheduled-task-message:(.+):\d+:(?:scheduled|manual)$/;
@@ -16,7 +16,7 @@ export function resolveUserMessagePresentation(message: {
   readonly scheduledTaskId?: ScheduledTaskId;
 }): {
   readonly text: string;
-  readonly attribution: "automation" | "agent" | "t3code" | null;
+  readonly attribution: "automation" | "agent" | "sora" | null;
   readonly scheduledTaskId: ScheduledTaskId | undefined;
 } {
   if (message.role !== "user") {
@@ -43,11 +43,7 @@ export function resolveUserMessagePresentation(message: {
   return {
     text: message.text,
     attribution:
-      message.createdBy !== "agent"
-        ? null
-        : message.creationSource === "server"
-          ? "t3code"
-          : "agent",
+      message.createdBy !== "agent" ? null : message.creationSource === "server" ? "sora" : "agent",
     scheduledTaskId: undefined,
   };
 }

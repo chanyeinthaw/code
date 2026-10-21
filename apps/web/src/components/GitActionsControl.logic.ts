@@ -2,10 +2,10 @@ import type {
   GitRunStackedActionResult,
   GitStackedAction,
   VcsStatusResult,
-} from "@t3tools/contracts";
-import { isTemporaryWorktreeBranch } from "@t3tools/shared/git";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import type { ChangeRequestTerminology } from "@t3tools/client-runtime/source-control-clients";
+} from "@satslab/contracts";
+import { isTemporaryWorktreeBranch } from "@satslab/shared/git";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
+import type { ChangeRequestTerminology } from "@satslab/client-runtime/source-control-clients";
 
 export type GitActionIconName = "commit" | "push" | "pr";
 
@@ -452,4 +452,4 @@ export function resolveLiveThreadBranchUpdate(input: {
   };
 }
 
-export { resolveAutoFeatureBranchName } from "@t3tools/shared/git";
+export { resolveAutoFeatureBranchName } from "@satslab/shared/git";

@@ -1,7 +1,7 @@
 import { Button } from "../../components/ui/Button";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import * as Dialog from "../../components/ui/Dialog";
-import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
+import type { EnvironmentId, ThreadId, TurnItemId } from "@satslab/contracts";
 import {
   makeMcpAppHost,
   McpAppHostRefusal,
@@ -10,16 +10,16 @@ import {
   type McpAppCallToolResult,
   type McpAppHost,
   type McpAppHostContext,
-} from "@t3tools/client-runtime/mcp-apps";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { CommandId, MessageId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/mcp-apps";
+import { scopeThreadRef } from "@satslab/client-runtime/environment";
+import { squashAtomCommandFailure } from "@satslab/client-runtime/state/runtime";
+import { CommandId, MessageId } from "@satslab/contracts";
 import {
   mcpAppAllowAttribute,
   mcpAppFileName,
   mcpAppReferencesEqual,
   type McpAppReference,
-} from "@t3tools/shared/mcpApp";
+} from "@satslab/shared/mcpApp";
 import * as Predicate from "effect/Predicate";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
@@ -275,7 +275,7 @@ export function ThreadMcpApp(props: {
         platform: "mobile",
         locale: Intl.DateTimeFormat().resolvedOptions().locale,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        userAgent: `t3-code/${Constants.expoConfig?.version ?? "0.0.0"}`,
+        userAgent: `sora/${Constants.expoConfig?.version ?? "0.0.0"}`,
         deviceCapabilities: { touch: true, hover: false },
         safeAreaInsets: isFullscreen
           ? { top: 0, right: current.insets.right, bottom: 0, left: current.insets.left }

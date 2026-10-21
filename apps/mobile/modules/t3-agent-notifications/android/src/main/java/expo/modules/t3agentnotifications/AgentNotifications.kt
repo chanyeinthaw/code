@@ -20,7 +20,7 @@ import expo.modules.notifications.service.ExpoFirebaseMessagingService
 
 class AgentMessagingService : ExpoFirebaseMessagingService() {
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
-    if (remoteMessage.data["t3_kind"] == "agent_activity") {
+    if (remoteMessage.data["sora_kind"] == "agent_activity") {
       AgentNotifications.receive(this, remoteMessage.data)
     } else {
       super.onMessageReceived(remoteMessage)
@@ -127,7 +127,7 @@ object AgentNotifications {
     val fresh = System.currentTimeMillis() - updatedAt in -MAX_MESSAGE_AGE_MS..MAX_MESSAGE_AGE_MS
     if (registered && fresh && NotificationManagerCompat.from(context).areNotificationsEnabled()) {
       channels(context)
-      val scheme = prefs.getString("scheme", "t3code") ?: "t3code"
+      val scheme = prefs.getString("scheme", "sora") ?: "sora"
       showAlert(context, prefs, scheme, data)
       updateActivity(context, prefs, scheme, data, updatedAt)
     }
