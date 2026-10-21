@@ -15,7 +15,7 @@ import {
   type ProviderOptionDescriptor,
   type ServerProvider,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -32,13 +32,13 @@ import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as ThreadManagementService from "../orchestration-v2/ThreadManagementService.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
-import { checkpointWorkspace } from "@t3tools/provider-testing/replayWorkspace";
+import * as McpProviderSessions from "@satslab/provider-core/server/McpProviderSessions";
+import { checkpointWorkspace } from "@satslab/provider-testing/replayWorkspace";
 import * as ProviderReplayHarness from "../orchestration-v2/testkit/ProviderReplayHarness.ts";
 import {
   decodeProviderReplayNdjson,
   materializeReplayTranscriptWorkspace,
-} from "@t3tools/provider-testing/replayTranscript";
+} from "@satslab/provider-testing/replayTranscript";
 import * as ProviderRegistryMock from "../provider/testUtils/providerRegistryMock.ts";
 import * as ProjectService from "../project/ProjectService.ts";
 import * as ScheduledTaskService from "../scheduledTasks/ScheduledTaskService.ts";
@@ -359,7 +359,7 @@ describe("orchestrator MCP toolkit", () => {
           const followupStartSequence = yield* orchestrator.getThreadEventSequence(
             delegated.childThreadId,
           );
-          const runningFollowupCall = yield* invoke("t3_thread_send", {
+          const runningFollowupCall = yield* invoke("s3_thread_send", {
             threadId: delegated.childThreadId,
             message: cancellationPrompt,
             clientRequestId: "delegated-child-replay-running-1",
@@ -387,7 +387,7 @@ describe("orchestrator MCP toolkit", () => {
               ),
             );
 
-          const queuedFollowupCall = yield* invoke("t3_thread_send", {
+          const queuedFollowupCall = yield* invoke("s3_thread_send", {
             threadId: delegated.childThreadId,
             message: queuedFollowupPrompt,
             mode: "queue",
@@ -450,7 +450,7 @@ describe("orchestrator MCP toolkit", () => {
           });
 
           const finalSequence = yield* orchestrator.getThreadEventSequence(delegated.childThreadId);
-          const interruptCall = yield* invoke("t3_thread_interrupt", {
+          const interruptCall = yield* invoke("s3_thread_interrupt", {
             threadId: delegated.childThreadId,
             runId: runningFollowup.runId,
             reason: "Allow the queued replay follow-up to run.",
@@ -558,7 +558,7 @@ describe("orchestrator MCP toolkit", () => {
           expect(finalStatus.latestTerminalResultContextTransferId).not.toBe(
             delegated.resultContextTransferId,
           );
-          const read = yield* invoke("t3_thread_read", {
+          const read = yield* invoke("s3_thread_read", {
             threadId: delegated.childThreadId,
             limit: 100,
           });

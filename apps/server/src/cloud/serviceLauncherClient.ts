@@ -1,5 +1,5 @@
-import type { ServerSelfUpdateOutcome } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import type { ServerSelfUpdateOutcome } from "@satslab/contracts";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -33,7 +33,7 @@ export class ServiceLauncherClientError extends Schema.TaggedError<ServiceLaunch
       case "decode-context":
         return "The service launcher supplied invalid startup context.";
       case "version-mismatch":
-        return "The service launcher started a different t3 version.";
+        return "The service launcher started a different sora version.";
       case "unmanaged":
         return "This server is not managed by the launcher.";
       case "send":
@@ -75,7 +75,7 @@ interface ServiceLauncherProcess {
 }
 
 export const ServiceLauncherHostProcess = Context.Reference<ServiceLauncherProcess>(
-  "t3/cloud/serviceLauncherHostProcess",
+  "@satslab/sora/cloud/serviceLauncherHostProcess",
   {
     defaultValue: () => ({
       connected: process.connected && process.send !== undefined,
@@ -106,7 +106,7 @@ export class ServiceLauncherClient extends Context.Service<
       ServiceLauncherClientError
     >;
   }
->()("t3/cloud/serviceLauncherClient") {}
+>()("@satslab/sora/cloud/serviceLauncherClient") {}
 
 const resolveStartup = Effect.fn("cloud.service_launcher_client.resolve_startup")(
   function* (options?: { readonly currentVersion?: string }) {
@@ -115,7 +115,7 @@ const resolveStartup = Effect.fn("cloud.service_launcher_client.resolve_startup"
     const currentVersion = options?.currentVersion ?? packageJson.version;
     // The launcher always spawns its child with an IPC channel, and Node does
     // not pass that channel on. Without one, the context was inherited from an
-    // ancestor (e.g. `t3 serve` run in a T3 terminal), so it describes someone else.
+    // ancestor (e.g. `sora serve` run in a T3 terminal), so it describes someone else.
     const rawContext = host.connected ? environment[SERVICE_LAUNCHER_CONTEXT_ENV] : undefined;
     const context = rawContext === undefined ? undefined : decodeServiceLauncherContext(rawContext);
 

@@ -6,7 +6,7 @@ import {
   type GitRunStackedActionResult,
   type OrchestrationV2ServerCommand as OrchestrationCommand,
   type OrchestrationProjectShell,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -143,7 +143,7 @@ describe("linkCreatedPullRequest", () => {
         result: prResult({
           status: "created",
           number: 42,
-          url: "https://github.com/t3tools/t3code/pull/42",
+          url: "https://github.com/t3tools/sora/pull/42",
         }),
         commandId,
       }).pipe(Effect.provide(layerDependenciesFor(dispatch)));
@@ -154,9 +154,9 @@ describe("linkCreatedPullRequest", () => {
           commandId: "server:pr-created-link:test",
           threadId: THREAD_ID,
           host: "github.com",
-          repository: "t3tools/t3code",
+          repository: "t3tools/sora",
           number: 42,
-          url: "https://github.com/t3tools/t3code/pull/42",
+          url: "https://github.com/t3tools/sora/pull/42",
           source: "created",
         },
       ]);

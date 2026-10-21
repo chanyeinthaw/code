@@ -7,8 +7,8 @@ import {
   hasRelayRoute,
   presentConnectionDiagnosis,
   type EnvironmentPresentation,
-} from "@t3tools/client-runtime/connection";
-import type { EnvironmentId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/connection";
+import type { EnvironmentId } from "@satslab/contracts";
 import Constants from "expo-constants";
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/reactivity";

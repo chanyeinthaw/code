@@ -1,4 +1,4 @@
-import type { MemoryMessage, OrchestrationV2TurnItem } from "@t3tools/contracts";
+import type { MemoryMessage, OrchestrationV2TurnItem } from "@satslab/contracts";
 import * as DateTime from "effect/DateTime";
 
 const toolContent = (item: OrchestrationV2TurnItem) => {

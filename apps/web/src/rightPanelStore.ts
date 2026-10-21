@@ -2,8 +2,8 @@ import {
   parseScopedThreadKey,
   scopedThreadKey,
   scopeThreadRef,
-} from "@t3tools/client-runtime/environment";
-import { EnvironmentId, RunId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
+} from "@satslab/client-runtime/environment";
+import { EnvironmentId, RunId, ThreadId, type ScopedThreadRef } from "@satslab/contracts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -82,7 +82,7 @@ export type RightPanelSurface =
     }
   | { id: "pull-requests"; kind: "pull-requests" };
 
-const RIGHT_PANEL_STORAGE_KEY = "t3code:right-panel-state:v2";
+const RIGHT_PANEL_STORAGE_KEY = "sora:right-panel-state:v2";
 const RIGHT_PANEL_STORAGE_VERSION = 14;
 
 export const PULL_REQUESTS_PANEL_REF = scopeThreadRef(
