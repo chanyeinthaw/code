@@ -1,6 +1,6 @@
-import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
-import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
-import { resolveFilesystemReadAccess } from "@t3tools/client-runtime/state/filesystem";
+import { formatFilePathForClipboard } from "@satslab/client-runtime/media-actions";
+import { resolvePathLinkTarget } from "@satslab/shared/fileLinks";
+import { resolveFilesystemReadAccess } from "@satslab/client-runtime/state/filesystem";
 import { environmentSession } from "../../state/session";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -8,14 +8,14 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import { EnvironmentId, type ProjectReadFileResult, ThreadId } from "@t3tools/contracts";
-import { videoMimeType } from "@t3tools/shared/video";
+import { EnvironmentId, type ProjectReadFileResult, ThreadId } from "@satslab/contracts";
+import { videoMimeType } from "@satslab/shared/video";
 import {
   isWorkspaceBrowserPreviewPath,
   isWorkspaceImagePreviewPath,
   mediaMimeTypeFromExtension,
-} from "@t3tools/shared/filePreview";
-import { mediaFileReference } from "@t3tools/client-runtime/media-reference";
+} from "@satslab/shared/filePreview";
+import { mediaFileReference } from "@satslab/client-runtime/media-reference";
 
 import { ScreenContent } from "../../components/ui/ScreenContent";
 import { AudioFilePreview } from "./AudioFilePreview";

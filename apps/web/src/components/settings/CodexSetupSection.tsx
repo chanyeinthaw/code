@@ -1,20 +1,20 @@
-import { AuthProvidersManageScope } from "@t3tools/contracts";
+import { AuthProvidersManageScope } from "@satslab/contracts";
 import { useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import type {
   ChatGptHandoffInput,
   ChatGptTransferredProfile,
   EnvironmentId,
   ProviderInstanceId,
   ServerProvider,
-} from "@t3tools/contracts";
-import { codexAuthHandoffUrl } from "@t3tools/shared/codexAuthHandoff";
-import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
-import { isLoopbackHost } from "@t3tools/shared/preview";
+} from "@satslab/contracts";
+import { codexAuthHandoffUrl } from "@satslab/shared/codexAuthHandoff";
+import { providerAuthReturnUrl } from "@satslab/shared/providerAuthReturnUrl";
+import { isLoopbackHost } from "@satslab/shared/preview";
 import { CheckIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
 import {
   Children,
@@ -549,8 +549,8 @@ function ManagedCodexSetup({
         : installation?.phase === "verifying"
           ? "Checking Codex."
           : installed
-            ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by T3 Code"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
-            : (installation?.message ?? "T3 Code downloads and manages Codex for you.");
+            ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by Sora"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
+            : (installation?.message ?? "Sora downloads and manages Codex for you.");
   const accountDescription = finishingSignIn ? (
     "Finishing sign-in..."
   ) : installActive ? (
@@ -627,7 +627,7 @@ function ManagedCodexSetup({
   const callbackCompletion =
     !handoff && auth?.phase === "waiting" && url ? (
       <div className="flex w-full flex-col gap-3 text-xs leading-relaxed text-muted-foreground">
-        <p>If sign-in doesn't return to T3 Code, paste the URL from the final localhost page.</p>
+        <p>If sign-in doesn't return to Sora, paste the URL from the final localhost page.</p>
         <form
           className="flex flex-col gap-2 sm:flex-row sm:items-center"
           onSubmit={(event) => {
@@ -1003,7 +1003,7 @@ export function CodexManagedRuntimeFields({
     <>
       <SettingsRow
         title="Binary path"
-        description="Selected by T3 Code."
+        description="Selected by Sora."
         control={
           <div className="w-full sm:w-80">
             <Input

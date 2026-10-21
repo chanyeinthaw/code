@@ -8,9 +8,9 @@ import type {
   PullRequestMergeMethod,
   PullRequestMergeability,
   PullRequestState,
-} from "@t3tools/contracts";
-import { TrimmedNonEmptyString } from "@t3tools/contracts";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
+} from "@satslab/contracts";
+import { TrimmedNonEmptyString } from "@satslab/contracts";
+import { decodeJsonResult } from "@satslab/shared/schemaJson";
 
 import { azureDevOpsPullRequestWebUrl } from "./azureDevOpsPullRequests.ts";
 

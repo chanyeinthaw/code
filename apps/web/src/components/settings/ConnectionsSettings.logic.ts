@@ -19,7 +19,7 @@ import {
   type DesktopSshEnvironmentTarget,
   type DesktopUpdateState,
   type DesktopWslState,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   getDesktopUpdateDownloadedVersion,
   resolveDesktopUpdateButtonAction,

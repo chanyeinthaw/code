@@ -1,8 +1,8 @@
 import { uuidv4 } from "../../lib/uuid";
 import { useNavigation } from "@react-navigation/native";
-import type { EnvironmentThreadSearchMatch } from "@t3tools/client-runtime/state/thread-search";
-import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
-import { threadPullRequestSearchTerms } from "@t3tools/shared/threadPullRequests";
+import type { EnvironmentThreadSearchMatch } from "@satslab/client-runtime/state/thread-search";
+import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@satslab/contracts";
+import { threadPullRequestSearchTerms } from "@satslab/shared/threadPullRequests";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,

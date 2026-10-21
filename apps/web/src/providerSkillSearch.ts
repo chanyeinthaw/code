@@ -1,14 +1,14 @@
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
-import type { ServerProviderSkill } from "@t3tools/contracts";
+import { formatProviderSkillDisplayName } from "@satslab/shared/inlineSkills";
+import type { ServerProviderSkill } from "@satslab/contracts";
 import {
   dedupeProviderSkillsByName,
   isProviderSkillUserInvocable,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@satslab/client-runtime/providerSkills";
 import {
   insertRankedSearchResult,
   normalizeSearchQuery,
   scoreQueryMatch,
-} from "@t3tools/shared/searchRanking";
+} from "@satslab/shared/searchRanking";
 
 export function scoreProviderSkill(skill: ServerProviderSkill, query: string): number | null {
   const normalizedName = skill.name.toLowerCase();

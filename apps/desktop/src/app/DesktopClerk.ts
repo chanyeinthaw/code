@@ -8,13 +8,13 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 
-import { codexAuthDeliveryUrl, readCodexAuthHandoff } from "@t3tools/shared/codexAuthHandoff";
+import { codexAuthDeliveryUrl, readCodexAuthHandoff } from "@satslab/shared/codexAuthHandoff";
 import { receiveCodexAuthCallback, CodexAuthCallbackError } from "./CodexAuthCallback.ts";
 import * as ElectronShell from "../electron/ElectronShell.ts";
-import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
-import { promptLinkAppPath } from "@t3tools/shared/promptLinks";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { clerkFrontendApiHostnameFromPublishableKey } from "@t3tools/shared/relayAuth";
+import { providerAuthReturnUrl } from "@satslab/shared/providerAuthReturnUrl";
+import { promptLinkAppPath } from "@satslab/shared/promptLinks";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { clerkFrontendApiHostnameFromPublishableKey } from "@satslab/shared/relayAuth";
 import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as ElectronProtocol from "../electron/ElectronProtocol.ts";
 import * as ElectronWindow from "../electron/ElectronWindow.ts";
@@ -22,7 +22,7 @@ import * as DesktopUserData from "./DesktopUserData.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
 import * as DesktopWebLinks from "./DesktopWebLinks.ts";
 
-declare const __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__: string | undefined;
+declare const __SORA_BUILD_CLERK_PUBLISHABLE_KEY__: string | undefined;
 
 export class DesktopClerkBridgeInitializationError extends Schema.TaggedError<DesktopClerkBridgeInitializationError>()(
   "DesktopClerkBridgeInitializationError",
@@ -62,7 +62,7 @@ export class DesktopClerk extends Context.Service<
       | Scope.Scope
     >;
   }
->()("@t3tools/desktop/app/DesktopClerk") {}
+>()("@satslab/desktop/app/DesktopClerk") {}
 
 function resolveDesktopClerkFrontendApiHostname(
   publishableKey: string | undefined,
@@ -78,9 +78,9 @@ function resolveDesktopClerkFrontendApiHostname(
 }
 
 export const desktopClerkFrontendApiHostname = resolveDesktopClerkFrontendApiHostname(
-  typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
+  typeof __SORA_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
     ? undefined
-    : __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__,
+    : __SORA_BUILD_CLERK_PUBLISHABLE_KEY__,
 );
 
 function createDesktopClerkBridge(stateDir: string, isDevelopment: boolean) {
@@ -179,13 +179,21 @@ export const make = Effect.gen(function* () {
       };
       const resumeProviderAuth = (value: string | undefined) => {
         const destination = providerAuthReturnUrl(value);
-        const expectedOrigin = `${ElectronProtocol.getDesktopScheme(environment.isDevelopment)}://app`;
-        if (!destination?.startsWith(`${expectedOrigin}/`)) return false;
+        if (!destination) return false;
+        const url = new URL(destination);
+        if (
+          !ElectronProtocol.getDesktopLinkSchemes(environment.isDevelopment).includes(
+            url.protocol.slice(0, -1),
+          )
+        )
+          return false;
+        url.protocol = `${ElectronProtocol.getDesktopScheme(environment.isDevelopment)}:`;
+        const canonicalDestination = url.href;
         void runPromise(
           Effect.gen(function* () {
             const mainWindow = yield* electronWindow.currentMainOrFirst;
             if (Option.isNone(mainWindow)) return;
-            yield* Effect.promise(() => mainWindow.value.loadURL(destination));
+            yield* Effect.promise(() => mainWindow.value.loadURL(canonicalDestination));
             yield* electronWindow.reveal(mainWindow.value);
           }).pipe(
             Effect.catchCause((cause) =>

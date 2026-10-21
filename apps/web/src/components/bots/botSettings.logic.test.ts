@@ -1,4 +1,4 @@
-import { BotId, EnvironmentId, ProjectId, ThreadId, type BotIdentity } from "@t3tools/contracts";
+import { BotId, EnvironmentId, ProjectId, ThreadId, type BotIdentity } from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 import type {
   SidebarProjectSnapshot,

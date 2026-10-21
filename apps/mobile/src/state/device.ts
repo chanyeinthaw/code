@@ -1,6 +1,6 @@
-import { createDeviceEnvironmentAtoms } from "@t3tools/client-runtime/state/device";
-import { resolveDeviceHubAccess } from "@t3tools/client-runtime/state/deviceHubAccess";
-import type { EnvironmentId } from "@t3tools/contracts";
+import { createDeviceEnvironmentAtoms } from "@satslab/client-runtime/state/device";
+import { resolveDeviceHubAccess } from "@satslab/client-runtime/state/deviceHubAccess";
+import type { EnvironmentId } from "@satslab/contracts";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Atom } from "effect/reactivity";

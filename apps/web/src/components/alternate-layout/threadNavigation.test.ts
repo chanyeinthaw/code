@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { EnvironmentId, ProjectId, ThreadId, BotId } from "@t3tools/contracts";
+import { EnvironmentId, ProjectId, ThreadId, BotId } from "@satslab/contracts";
 import { resolveThreadsNavigationHref } from "./threadNavigation";
 
 const environmentId = EnvironmentId.make("environment");

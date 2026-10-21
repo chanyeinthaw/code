@@ -1,4 +1,4 @@
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
 import { useAtomCommand } from "~/state/use-atom-command";
 import type {
   EnvironmentId,
@@ -7,7 +7,7 @@ import type {
   PullRequestRef,
   PullRequestReviewThread,
   ScopedThreadRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   ArrowDownUpIcon,
   ChevronDownIcon,
@@ -369,7 +369,7 @@ function Section({
 
 const COMMENT_PAGE = 10;
 
-const COMMENT_FILTER_STORAGE_KEY = "t3code:pull-request-comment-filter:v1";
+const COMMENT_FILTER_STORAGE_KEY = "sora:pull-request-comment-filter:v1";
 const CommentFilterSchema = Schema.Struct({ bots: Schema.Boolean, resolved: Schema.Boolean });
 const DEFAULT_COMMENT_FILTER: typeof CommentFilterSchema.Type = { bots: false, resolved: false };
 

@@ -4,15 +4,15 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
-import type { ServerInstallation } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { isCommandAvailable } from "@t3tools/shared/shell";
+import type { ServerInstallation } from "@satslab/contracts";
+import * as HostProcess from "@satslab/shared/HostProcess";
+import { isCommandAvailable } from "@satslab/shared/shell";
 
 import packageJson from "../../package.json" with { type: "json" };
 
 export type CliRunner = "npx" | "pnpm dlx" | "bunx";
 
-/** Detection is best-effort; callers must fail closed to a plain `t3` command. */
+/** Detection is best-effort; callers must fail closed to a plain `sora` command. */
 function detectCliRunner(entryPath: string): CliRunner | null {
   const path = entryPath.replaceAll("\\", "/");
   if (path.includes("/_npx/")) {
@@ -34,22 +34,22 @@ function detectCliRunner(entryPath: string): CliRunner | null {
 const InstallManifest = Schema.Struct({
   name: Schema.String,
   version: Schema.String,
-  bin: Schema.optionalKey(Schema.Struct({ t3: Schema.String })),
+  bin: Schema.optionalKey(Schema.Struct({ sora: Schema.String })),
 });
 const decodeInstallManifest = Schema.decodeUnknownEffect(Schema.fromJsonString(InstallManifest));
 
 /**
- * The script this CLI was started through: the `t3` npm launcher that
+ * The script this CLI was started through: the `sora` npm launcher that
  * downloaded and ran this executable (it names itself in
- * `T3CODE_NPM_LAUNCHER_PATH`), or the Node entry script of a build run from
+ * `SORA_NPM_LAUNCHER_PATH`), or the Node entry script of a build run from
  * source. A standalone executable has none and reports its own path.
  *
  * The variable is inherited by everything the server spawns, so a launcher
- * counts only when its package is this exact version: a different `t3` run
+ * counts only when its package is this exact version: a different `sora` run
  * from an agent's shell must not claim to be the npm install.
  */
 const resolveEntryPath = Effect.gen(function* () {
-  const npmLauncher = (yield* HostProcess.Environment).T3CODE_NPM_LAUNCHER_PATH?.trim();
+  const npmLauncher = (yield* HostProcess.Environment).SORA_NPM_LAUNCHER_PATH?.trim();
   if (npmLauncher) {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
@@ -58,7 +58,7 @@ const resolveEntryPath = Effect.gen(function* () {
       .pipe(Effect.flatMap(decodeInstallManifest), Effect.option);
     if (
       Option.isSome(manifest) &&
-      manifest.value.name === "t3" &&
+      manifest.value.name === "@satslab/sora" &&
       manifest.value.version === packageJson.version
     ) {
       return npmLauncher;
@@ -73,7 +73,9 @@ export const resolveServerInstallation = Effect.gen(function* () {
   const path = yield* Path.Path;
   const platform = yield* HostProcess.Platform;
   const entry = yield* fs.realPath(yield* resolveEntryPath);
-  const match = /^(.*)\/lib\/node_modules\/t3\/(?:dist\/bin\.mjs|bin\/t3\.mjs)$/.exec(entry);
+  const match = /^(.*)\/lib\/node_modules\/@satslab\/sora\/(?:dist\/bin\.mjs|bin\/sora\.mjs)$/.exec(
+    entry,
+  );
   if (!match) {
     const runner = detectCliRunner(entry);
     return runner === null
@@ -89,25 +91,25 @@ export const resolveServerInstallation = Effect.gen(function* () {
   )
     return null;
 
-  const packageRoot = path.join(prefix, "lib/node_modules/t3");
+  const packageRoot = path.join(prefix, "lib/node_modules/@satslab/sora");
   const manifest = yield* fs
     .readFileString(path.join(packageRoot, "package.json"))
     .pipe(Effect.flatMap(decodeInstallManifest));
-  if (manifest.name !== "t3" || !manifest.bin) return null;
-  const bin = yield* fs.realPath(path.join(packageRoot, manifest.bin.t3));
-  const globalBin = yield* fs.realPath(path.join(prefix, "bin/t3"));
+  if (manifest.name !== "@satslab/sora" || !manifest.bin) return null;
+  const bin = yield* fs.realPath(path.join(packageRoot, manifest.bin.sora));
+  const globalBin = yield* fs.realPath(path.join(prefix, "bin/sora"));
   if (globalBin !== bin || bin !== entry) return null;
   return { kind: "npm-global", prefix } satisfies ServerInstallation;
 }).pipe(Effect.orElseSucceed(() => null));
 
 /**
- * The literal spec the user typed (e.g. `t3@nightly`) is resolved away before
+ * The literal spec the user typed (e.g. `@satslab/sora@nightly`) is resolved away before
  * our process starts, so re-derive it from the running version: nightly builds
  * re-suggest the nightly channel, anything else suggests the bare package.
  */
 function suggestedPackageSpec(version: string): string {
   const channel = /^[^-+]+-(nightly|preview)\./.exec(version)?.[1];
-  return channel === undefined ? "t3" : `t3@${channel}`;
+  return channel === undefined ? "@satslab/sora" : `@satslab/sora@${channel}`;
 }
 
 function formatCliCommand(input: {
@@ -117,7 +119,7 @@ function formatCliCommand(input: {
 }): string {
   const runner = detectCliRunner(input.entryPath);
   if (runner === null) {
-    return `t3 ${input.subcommand}`;
+    return `sora ${input.subcommand}`;
   }
   return `${runner} ${suggestedPackageSpec(input.version)} ${input.subcommand}`;
 }
@@ -147,14 +149,14 @@ const hostShellWord = (platform: NodeJS.Platform, value: string) =>
   platform === "win32" ? powershellWord(value) : shellWord(value);
 
 /**
- * The launcher a person can type to run this install when `t3` is not on
- * PATH: the desktop app's `t3` shim, which the app and the shim itself name in
- * `T3CODE_CLI_PATH`, or a standalone binary's own path. Script installs (a
- * repo checkout) have no single launcher and keep plain `t3`.
+ * The launcher a person can type to run this install when `sora` is not on
+ * PATH: the desktop app's `sora` shim, which the app and the shim itself name in
+ * `SORA_CLI_PATH`, or a standalone binary's own path. Script installs (a
+ * repo checkout) have no single launcher and keep plain `sora`.
  */
 const resolveInstallLauncher = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-  const shim = (yield* HostProcess.Environment).T3CODE_CLI_PATH?.trim();
+  const shim = (yield* HostProcess.Environment).SORA_CLI_PATH?.trim();
   if (shim && (yield* fs.exists(shim).pipe(Effect.orElseSucceed(() => false)))) {
     return Option.some(shim);
   }
@@ -164,7 +166,7 @@ const resolveInstallLauncher = Effect.gen(function* () {
 });
 
 /**
- * `t3 <subcommand> <args>` for a person to run on this host: `t3` when it is
+ * `sora <subcommand> <args>` for a person to run on this host: `sora` when it is
  * on PATH, the package runner this process came from, or else the absolute
  * path of the launcher for this install, such as the one the desktop app
  * installs. `args` are quoted for the host's shell: POSIX, or PowerShell on
@@ -178,8 +180,8 @@ export const resolveHostCliCommand = Effect.fn("invocation.resolveHostCliCommand
   const withArgs = (prefix: string) =>
     [prefix, ...args.map((arg) => hostShellWord(platform, arg))].join(" ");
   const command = yield* resolveCliCommand(subcommand);
-  if (command !== `t3 ${subcommand}`) return { command: withArgs(command), launcher: false };
-  if (yield* isCommandAvailable("t3")) return { command: withArgs(command), launcher: false };
+  if (command !== `sora ${subcommand}`) return { command: withArgs(command), launcher: false };
+  if (yield* isCommandAvailable("sora")) return { command: withArgs(command), launcher: false };
   const launcher = yield* resolveInstallLauncher;
   if (Option.isNone(launcher)) return { command: withArgs(command), launcher: false };
   // PowerShell runs a quoted path only through the call operator.
@@ -190,7 +192,7 @@ export const resolveHostCliCommand = Effect.fn("invocation.resolveHostCliCommand
 
 /**
  * `sudo` resets PATH on most distributions, which drops a user-installed Node
- * (nvm, fnm, a tarball) and with it `npx` or a global `t3`, so the command
+ * (nvm, fnm, a tarball) and with it `npx` or a global `sora`, so the command
  * carries PATH through unless Node is on root's PATH too. An absolute launcher
  * needs neither.
  */

@@ -1,4 +1,4 @@
-import { selectBotIdentities, type BotIdentity, type EnvironmentId } from "@t3tools/contracts";
+import { selectBotIdentities, type BotIdentity, type EnvironmentId } from "@satslab/contracts";
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 
 export function resolveBotSettingsIdentity(

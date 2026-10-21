@@ -1,4 +1,4 @@
-import { AuthPreviewOperateScope } from "@t3tools/contracts";
+import { AuthPreviewOperateScope } from "@satslab/contracts";
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { useAtomValue } from "@effect/atom-react";
 import { useEffect } from "react";
@@ -136,7 +136,7 @@ function ChatRouteGlobalShortcuts() {
             stackedThreadToast({
               type: "info",
               title: "Preview is desktop-only",
-              description: "Open T3 Code in the desktop app to use the in-app preview.",
+              description: "Open Sora in the desktop app to use the in-app preview.",
             }),
           );
           return;

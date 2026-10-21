@@ -1,11 +1,11 @@
 import { findRevealRef } from "./markdownFindContext";
-import { type MessageId, type ServerProviderSkill, ThreadId } from "@t3tools/contracts";
-import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
+import { type MessageId, type ServerProviderSkill, ThreadId } from "@satslab/contracts";
+import { resolveUserMessagePresentation } from "@satslab/client-runtime/user-message";
 import { Link } from "@tanstack/react-router";
 import { useQuietThreadShell } from "../../state/entities";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
-import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@satslab/shared/composerContextReferences";
 import { memo, use, useState, type ReactNode } from "react";
 import {
   createMessageAttachmentPreviewProjector,
@@ -52,12 +52,12 @@ import {
   resolveUserMessageContext,
   selectedMessageContextFragment,
 } from "~/lib/composerContextRecords";
-import { collectComposerContextReferences } from "@t3tools/shared/composerContextReferences";
+import { collectComposerContextReferences } from "@satslab/shared/composerContextReferences";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
   encodeComposerContextFragment,
-} from "@t3tools/shared/composerContextClipboard";
+} from "@satslab/shared/composerContextClipboard";
 import { chatMarkdownClipboardPayload } from "../../markdown-clipboard";
 import type { ChatMarkdownContextReference } from "../ChatMarkdown";
 import { cn } from "~/lib/utils";
@@ -154,10 +154,7 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
   const bodyMounted = expanded || ctx.findActive;
 
   return (
-    <div className={cn(
-        "group flex min-w-0 flex-col gap-1",
-        folded ? "items-start px-1 py-0.5" : "items-end",
-      )} data-user-message-attribution="automation">
+    <div className="group flex flex-col items-end gap-1" data-user-message-attribution="automation">
       {row.message.inputIntent === "steer" ||
       row.message.inputIntent === "promoted_queued_to_steer" ? (
         <UserMessageIntentMarker intent={row.message.inputIntent} />
@@ -189,12 +186,7 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
       </div>
       <UserMessageProjectedStatus row={row} />
       {expanded ? (
-        <div
-          className={cn(
-            "flex w-full items-center text-xs tabular-nums opacity-0 transition-opacity duration-200 pointer-coarse:opacity-100 focus-within:opacity-100 group-hover:opacity-100",
-            folded ? "justify-start" : "max-w-[80%] justify-end pe-1",
-          )}
-        >
+        <div className="flex w-full max-w-[80%] items-center justify-end pe-1 text-xs tabular-nums opacity-0 transition-opacity duration-200 pointer-coarse:opacity-100 focus-within:opacity-100 group-hover:opacity-100">
           <div className="flex shrink-0 items-center gap-2">
             {scheduledTaskId ? (
               <Link
@@ -430,12 +422,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
       )}
       data-user-message-attribution={folded ? "agent" : undefined}
     >
-      {userMessage.attribution === "t3code" ? (
-        <p
-          className="me-1 text-2xs text-muted-foreground/70"
-          data-user-message-attribution="t3code"
-        >
-          Sent by T3 Code
+      {userMessage.attribution === "sora" ? (
+        <p className="me-1 text-2xs text-muted-foreground/70" data-user-message-attribution="sora">
+          Sent by Sora
         </p>
       ) : null}
       {row.message.inputIntent === "steer" ||

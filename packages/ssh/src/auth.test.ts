@@ -5,7 +5,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 
 import { buildSshChildEnvironment, isSshAuthFailure } from "./auth.ts";
 
@@ -42,7 +42,7 @@ describe("ssh auth", () => {
       assert.equal(env.SSH_ASKPASS, askpassPath);
       assert.equal(env.SSH_ASKPASS_REQUIRE, "force");
       assert.equal(env.T3_SSH_AUTH_SECRET, "super-secret");
-      assert.equal(env.DISPLAY, "t3code");
+      assert.equal(env.DISPLAY, "sora");
       assert.equal(yield* fs.exists(askpassPath), true);
       assert.include(yield* fs.readFileString(askpassPath), 'printf "%s\\n" "$T3_SSH_AUTH_SECRET"');
     }).pipe(

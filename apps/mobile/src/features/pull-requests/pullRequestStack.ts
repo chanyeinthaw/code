@@ -1,4 +1,4 @@
-import type { PullRequestRef, PullRequestStack, ThreadPullRequestLink } from "@t3tools/contracts";
+import type { PullRequestRef, PullRequestStack, ThreadPullRequestLink } from "@satslab/contracts";
 
 export function pullRequestStackMerge(stack: PullRequestStack, number: number) {
   const position = stack.layers.findIndex((layer) => layer.number === number);

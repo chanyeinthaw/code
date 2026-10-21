@@ -7,7 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
 import * as Electron from "electron";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 
 import * as DesktopEarlyElectronStartup from "./DesktopEarlyElectronStartup.ts";
 import { resolveDesktopAppBranding } from "./DesktopEnvironment.ts";
@@ -47,7 +47,7 @@ export class DesktopPreReadyElectronOptions extends Context.Service<
     readonly linux: DesktopEarlyElectronStartup.EarlyLinuxElectronOptions | null;
     readonly linuxPasswordStoreCommandLine: string | null;
   }
->()("@t3tools/desktop/app/DesktopPreReadyPlatform/DesktopPreReadyElectronOptions") {}
+>()("@satslab/desktop/app/DesktopPreReadyPlatform/DesktopPreReadyElectronOptions") {}
 
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
@@ -110,7 +110,7 @@ export const make = Effect.gen(function* () {
               appVersion: Electron.app.getVersion(),
             }).displayName,
             execTarget: process.env.APPIMAGE?.trim() || process.execPath,
-            scheme: ElectronProtocol.getDesktopScheme(linux.isDevelopment),
+            schemes: ElectronProtocol.getDesktopLinkSchemes(linux.isDevelopment),
             ...(iconPath === undefined ? {} : { iconPath }),
           }),
           "utf8",

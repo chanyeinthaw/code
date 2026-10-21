@@ -10,7 +10,7 @@ import {
   NodeId,
   type OrchestrationV2AppThread,
   type OrchestrationV2DomainEvent,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as BotTransferFiles from "./BotTransferFiles.ts";

@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@t3tools/contracts";
+import type { ScopedThreadRef } from "@satslab/contracts";
 import { Navigate, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useBotThreadContext } from "../../state/bots";

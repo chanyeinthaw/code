@@ -6,7 +6,7 @@ import type {
   PullRequestMergeMethod,
   PullRequestRef,
   ScopedThreadRef,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import {
   ArrowUpRightIcon,
   BookOpenIcon,

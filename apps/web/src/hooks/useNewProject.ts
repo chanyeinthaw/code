@@ -1,13 +1,13 @@
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { scopeProjectRef } from "@satslab/client-runtime/environment";
 import {
   getNewProjectRepository,
   type NewProjectPublishTarget,
-} from "@t3tools/client-runtime/operations/projects";
+} from "@satslab/client-runtime/operations/projects";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/state/runtime";
+import type { EnvironmentId } from "@satslab/contracts";
 
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { waitForProject } from "~/state/entities";
