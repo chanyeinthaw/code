@@ -1,12 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off - Profile directory names use synchronous SHA-256 hashing.
-import { botCodexDisabledReason } from "@t3tools/shared/botChat";
+import { botCodexDisabledReason } from "@satslab/shared/botChat";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as NodeCrypto from "node:crypto";
 
 // Global AGENTS.md is loaded independently of project_doc_max_bytes.

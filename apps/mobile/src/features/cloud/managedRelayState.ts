@@ -4,13 +4,13 @@ import {
   deregisterManagedRelayEnvironment,
   managedRelaySessionAtom,
   readManagedRelaySnapshotState,
-} from "@t3tools/client-runtime/relay";
+} from "@satslab/client-runtime/relay";
 import {
   createAtomCommandScheduler,
   createRuntimeCommand,
-} from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentId } from "@t3tools/contracts";
-import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
+} from "@satslab/client-runtime/state/runtime";
+import type { EnvironmentId } from "@satslab/contracts";
+import type { RelayClientEnvironmentRecord } from "@satslab/contracts/relay";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { useCallback, useEffect } from "react";
 

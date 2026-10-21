@@ -4,7 +4,7 @@ import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import type * as AcpSchema from "effect-acp/compat";
 
-import { responsePayloads } from "@t3tools/shared/mcpResponsePayloads";
+import { responsePayloads } from "@satslab/shared/mcpResponsePayloads";
 
 const MAX_CONNECTIONS = 16;
 const MAX_MESSAGE_BYTES = 8 * 1024 * 1024;
@@ -128,7 +128,7 @@ export const makeAcpMcpOverAcpBridge = Effect.fn("AcpMcpOverAcpBridge.make")(fun
             () => response.body?.cancel().catch(() => undefined) ?? Promise.resolve(),
           );
           return yield* Effect.fail(
-            new AcpMcpOverAcpError(`T3 Code MCP endpoint responded with HTTP ${response.status}.`),
+            new AcpMcpOverAcpError(`Sora MCP endpoint responded with HTTP ${response.status}.`),
           );
         }
         const payloads = [...(yield* Stream.runCollect(responsePayloads(response, bridgeError)))];
@@ -164,7 +164,7 @@ export const makeAcpMcpOverAcpBridge = Effect.fn("AcpMcpOverAcpBridge.make")(fun
       if (!response.ok && response.status !== 404) {
         return yield* Effect.fail(
           new AcpMcpOverAcpError(
-            `T3 Code MCP endpoint rejected disconnect with HTTP ${response.status}.`,
+            `Sora MCP endpoint rejected disconnect with HTTP ${response.status}.`,
           ),
         );
       }
@@ -177,7 +177,7 @@ export const makeAcpMcpOverAcpBridge = Effect.fn("AcpMcpOverAcpBridge.make")(fun
 
   return {
     connect: Effect.fn("mcpOverAcpBridge.connect")(function* (request) {
-      if (request.serverId !== "t3-code") {
+      if (request.serverId !== "sora") {
         return yield* Effect.fail(
           new AcpMcpOverAcpError(`Unknown ACP MCP server "${request.serverId}".`),
         );

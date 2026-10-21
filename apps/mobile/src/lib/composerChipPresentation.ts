@@ -1,6 +1,6 @@
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { imageMimeType } from "@t3tools/shared/image";
-import { videoMimeType } from "@t3tools/shared/video";
+import { formatAttachmentSize } from "@satslab/client-runtime/state/attachments";
+import { imageMimeType } from "@satslab/shared/image";
+import { videoMimeType } from "@satslab/shared/video";
 
 import type { CONTEXT_CHIP_ICON_SOURCES } from "./contextChipIcons.generated";
 import { resolveMarkdownFileIcon, type MarkdownFileIcon } from "./markdownLinks";

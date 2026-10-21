@@ -1,4 +1,4 @@
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@satslab/shared/HostProcess";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -62,17 +62,17 @@ function formatServiceChange(
   result: Extract<ServiceReconcileResult, { readonly changed: true }>,
 ): string {
   if (result.plan.handedOff === true) {
-    return `Handed the T3 Code service switch to t3@${packageJson.version} to a separate systemd unit, since this session runs inside the service and disconnects when it restarts.\nResult: ${result.plan.logPath}`;
+    return `Handed the Sora service switch to @satslab/sora@${packageJson.version} to a separate systemd unit, since this session runs inside the service and disconnects when it restarts.\nResult: ${result.plan.logPath}`;
   }
-  return `${result.previouslyInstalled ? "Updated" : "Installed"} T3 Code service with t3@${packageJson.version}.\nLogs: ${result.plan.logPath}`;
+  return `${result.previouslyInstalled ? "Updated" : "Installed"} Sora service with @satslab/sora@${packageJson.version}.\nLogs: ${result.plan.logPath}`;
 }
 
 function formatServiceStatus(status: BootService.BootServiceStatus, cliVersion: string): string {
   if (!status.supported) {
-    return "T3 Code service\n  Status: unavailable on this machine\n  Supported on: Linux with systemd, macOS with launchd";
+    return "Sora service\n  Status: unavailable on this machine\n  Supported on: Linux with systemd, macOS with launchd";
   }
   if (!status.installed) {
-    return "T3 Code service\n  Status: not installed\n  Next: Run `t3 service install`.";
+    return "Sora service\n  Status: not installed\n  Next: Run `sora service install`.";
   }
   const installedVersion = status.installedVersion ?? cliVersion;
   const problems = (status.problems ?? []).map(
@@ -84,21 +84,21 @@ function formatServiceStatus(status: BootService.BootServiceStatus, cliVersion: 
     compareExactServiceVersions(status.installedVersion, cliVersion) > 0
   ) {
     return [
-      "T3 Code service",
-      `  Status: installed · t3@${installedVersion} (newer than this t3@${cliVersion} CLI)`,
+      "Sora service",
+      `  Status: installed · @satslab/sora@${installedVersion} (newer than this @satslab/sora@${cliVersion} CLI)`,
       `  Unit: ${status.unitPath}`,
       `  Logs: ${status.logPath}`,
       ...problems,
-      `  Next: Run \`t3 update ${installedVersion}\` to match it, or pass \`--allow-downgrade\` to \`t3 service install\` explicitly.`,
+      `  Next: Run \`sora update ${installedVersion}\` to match it, or pass \`--allow-downgrade\` to \`sora service install\` explicitly.`,
     ].join("\n");
   }
   return [
-    "T3 Code service",
-    `  Status: ${status.current ? `installed · t3@${installedVersion}` : "needs an update or repair"}`,
+    "Sora service",
+    `  Status: ${status.current ? `installed · @satslab/sora@${installedVersion}` : "needs an update or repair"}`,
     `  Unit: ${status.unitPath}`,
     `  Logs: ${status.logPath}`,
     ...problems,
-    ...(status.current ? [] : ["  Next: Run `t3 service install` to repair it."]),
+    ...(status.current ? [] : ["  Next: Run `sora service install` to repair it."]),
   ].join("\n");
 }
 
@@ -120,7 +120,7 @@ const serviceReconcileFlags = {
 };
 
 const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pipe(
-  Command.withDescription("Install T3 Code as a background service for this user."),
+  Command.withDescription("Install Sora as a background service for this user."),
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
@@ -128,7 +128,7 @@ const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pip
         const result = yield* reconcileService({ allowDowngrade: flags.allowDowngrade });
         if (!result.changed) {
           yield* Console.log(
-            `T3 Code service is already installed with t3@${packageJson.version}.`,
+            `Sora service is already installed with @satslab/sora@${packageJson.version}.`,
           );
           return;
         }
@@ -139,18 +139,18 @@ const serviceInstallCommand = Command.make("install", serviceReconcileFlags).pip
 );
 
 const serviceUpdateCommand = Command.make("update", serviceReconcileFlags).pipe(
-  Command.withDescription("Deprecated. Run `t3 update` to move to a newer release."),
+  Command.withDescription("Deprecated. Run `sora update` to move to a newer release."),
   Command.unlisted,
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
       Effect.gen(function* () {
         yield* Console.log(
-          "`t3 service update` is deprecated: run `t3 update` to move to a newer release, or `t3 service install` to repair the service. Repairing now.",
+          "`sora service update` is deprecated: run `sora update` to move to a newer release, or `sora service install` to repair the service. Repairing now.",
         );
         const result = yield* reconcileService({ allowDowngrade: flags.allowDowngrade });
         if (!result.changed) {
-          yield* Console.log(`T3 Code service is already using t3@${packageJson.version}.`);
+          yield* Console.log(`Sora service is already using @satslab/sora@${packageJson.version}.`);
           return;
         }
         yield* Console.log(formatServiceChange(result));
@@ -161,7 +161,7 @@ const serviceUpdateCommand = Command.make("update", serviceReconcileFlags).pipe(
 
 const serviceRestartCommand = Command.make("restart", projectLocationFlags).pipe(
   Command.withDescription(
-    "Restart the background service. Picks up a version installed by `t3 update` that was not restarted at the time.",
+    "Restart the background service. Picks up a version installed by `sora update` that was not restarted at the time.",
   ),
   Command.withHandler((flags) =>
     runServiceCommand(
@@ -171,13 +171,15 @@ const serviceRestartCommand = Command.make("restart", projectLocationFlags).pipe
         const status = yield* service.status;
         const outcome = yield* service.restart;
         const onVersion =
-          status.installedVersion === undefined ? "" : ` on t3@${status.installedVersion}`;
+          status.installedVersion === undefined
+            ? ""
+            : ` on @satslab/sora@${status.installedVersion}`;
         yield* Console.log(
           outcome === "restarted"
-            ? `Restarted the T3 Code service${onVersion}.`
+            ? `Restarted the Sora service${onVersion}.`
             : outcome === "queued"
-              ? `Queued a restart of the T3 Code service${onVersion}. This session runs inside the service and disconnects when it goes down.\nLogs: ${status.logPath}`
-              : "T3 Code service is not installed.",
+              ? `Queued a restart of the Sora service${onVersion}. This session runs inside the service and disconnects when it goes down.\nLogs: ${status.logPath}`
+              : "Sora service is not installed.",
         );
       }),
     ),
@@ -185,7 +187,7 @@ const serviceRestartCommand = Command.make("restart", projectLocationFlags).pipe
 );
 
 const serviceUninstallCommand = Command.make("uninstall", projectLocationFlags).pipe(
-  Command.withDescription("Stop and remove the T3 Code background service."),
+  Command.withDescription("Stop and remove the Sora background service."),
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
@@ -193,7 +195,7 @@ const serviceUninstallCommand = Command.make("uninstall", projectLocationFlags).
         const service = yield* BootService.BootService;
         const removed = yield* service.uninstall;
         yield* Console.log(
-          removed ? "Removed the T3 Code service." : "T3 Code service is not installed.",
+          removed ? "Removed the Sora service." : "Sora service is not installed.",
         );
       }),
     ),
@@ -201,7 +203,7 @@ const serviceUninstallCommand = Command.make("uninstall", projectLocationFlags).
 );
 
 const serviceStatusCommand = Command.make("status", projectLocationFlags).pipe(
-  Command.withDescription("Show whether the T3 Code background service is installed."),
+  Command.withDescription("Show whether the Sora background service is installed."),
   Command.withHandler((flags) =>
     runServiceCommand(
       flags,
@@ -223,7 +225,7 @@ export const offerServiceDuringOnboarding = Effect.gen(function* () {
     return "skipped" as const;
   }
   if (installed && current) {
-    yield* Console.log("T3 Code is already set up to run in the background on this machine.");
+    yield* Console.log("Sora is already set up to run in the background on this machine.");
     return "ready" as const;
   }
   for (const problem of status.problems ?? []) {
@@ -235,7 +237,7 @@ export const offerServiceDuringOnboarding = Effect.gen(function* () {
     compareExactServiceVersions(status.installedVersion, packageJson.version) > 0
   ) {
     yield* Console.log(
-      `A newer t3@${status.installedVersion} background service is installed. Leaving it unchanged.`,
+      `A newer @satslab/sora@${status.installedVersion} background service is installed. Leaving it unchanged.`,
     );
     return "skipped" as const;
   }
@@ -243,11 +245,11 @@ export const offerServiceDuringOnboarding = Effect.gen(function* () {
   const wanted = yield* Prompt.run(
     Prompt.Confirm({
       message: installed
-        ? "The installed T3 Code service needs an update or repair. Update it now?"
+        ? "The installed Sora service needs an update or repair. Update it now?"
         : platform === "darwin"
-          ? "Run T3 Code in the background whenever you log in to this Mac? " +
+          ? "Run Sora in the background whenever you log in to this Mac? " +
             "It stays reachable through T3 Connect while you are logged in."
-          : "Run T3 Code in the background whenever this machine boots? " +
+          : "Run Sora in the background whenever this machine boots? " +
             "It stays reachable through T3 Connect even after you log out.",
       initial: true,
     }),
@@ -296,7 +298,7 @@ export const recoverServiceOnboardingOffer = <R>(
   );
 
 export const serviceCommand = Command.make("service").pipe(
-  Command.withDescription("Manage the T3 Code background service."),
+  Command.withDescription("Manage the Sora background service."),
   Command.withSubcommands([
     serviceInstallCommand,
     serviceRestartCommand,

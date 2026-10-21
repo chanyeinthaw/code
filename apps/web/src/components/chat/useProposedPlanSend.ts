@@ -4,20 +4,20 @@ import {
   type ModelSelection,
   type ProviderInteractionMode,
   type RuntimeMode,
-} from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+} from "@satslab/contracts";
+import { scopeThreadRef } from "@satslab/client-runtime/environment";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
-} from "@t3tools/client-runtime/state/shell";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { truncate } from "@t3tools/shared/String";
+} from "@satslab/client-runtime/state/shell";
+import { scopedThreadKey } from "@satslab/client-runtime/environment";
+import { truncate } from "@satslab/shared/String";
 import { useNavigate } from "@tanstack/react-router";
 import type { Dispatch, SetStateAction } from "react";
 import { newMessageId, newThreadId } from "~/lib/utils";

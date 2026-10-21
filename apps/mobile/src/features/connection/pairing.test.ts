@@ -26,7 +26,7 @@ describe("extractPairingUrlFromQrPayload", () => {
   it("unwraps mobile deep links that carry an encoded pairing url", () => {
     expect(
       extractPairingUrlFromQrPayload(
-        "t3code://pair?pairingUrl=https%3A%2F%2Fremote.example.com%2Fpair%23token%3Dpairing-token",
+        "sora://pair?pairingUrl=https%3A%2F%2Fremote.example.com%2Fpair%23token%3Dpairing-token",
       ),
     ).toBe("https://remote.example.com/pair#token=pairing-token");
   });
@@ -44,3 +44,13 @@ describe("parsePairingUrl", () => {
     });
   });
 });
+
+it.each(["sora", "sora-dev", "sora-preview", "t3code", "t3code-dev", "t3code-preview"])(
+  "reads pairing QR payloads through %s",
+  (scheme) => {
+    const pairing = "https://host.example/pair#token=example";
+    expect(
+      extractPairingUrlFromQrPayload(`${scheme}://pair?pairingUrl=${encodeURIComponent(pairing)}`),
+    ).toBe(pairing);
+  },
+);

@@ -1,4 +1,4 @@
-import { parsePullRequestQuery } from "@t3tools/client-runtime/pull-request-query";
+import { parsePullRequestQuery } from "@satslab/client-runtime/pull-request-query";
 import {
   pullRequestHostOf,
   type EnvironmentId,
@@ -8,7 +8,7 @@ import {
   type PullRequestListResult,
   type PullRequestListState,
   type SourceControlProviderKind,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { useState } from "react";
 
 import { useAllEnvironmentShellsBootstrapped, useProjects } from "~/state/entities";

@@ -9,4 +9,4 @@ export {
   isUnsupportedWindowsProjectPath,
   normalizeProjectPathForComparison,
   resolveProjectPathForDispatch,
-} from "@t3tools/client-runtime/state/projects";
+} from "@satslab/client-runtime/state/projects";

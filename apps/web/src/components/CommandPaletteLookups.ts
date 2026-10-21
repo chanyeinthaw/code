@@ -3,7 +3,7 @@ import {
   type EnvironmentId,
   type ProjectId,
   resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
 import { useClientSettings } from "../hooks/useSettings";

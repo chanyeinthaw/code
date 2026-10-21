@@ -1,8 +1,8 @@
 import {
   createFilesystemEnvironmentAtoms,
   resolveFilesystemReadAccess,
-} from "@t3tools/client-runtime/state/filesystem";
-import type { EnvironmentId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/state/filesystem";
+import type { EnvironmentId } from "@satslab/contracts";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 import { useEnvironmentPresentation } from "./presentation";

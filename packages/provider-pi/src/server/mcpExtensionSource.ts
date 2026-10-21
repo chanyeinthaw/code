@@ -1,16 +1,16 @@
 /**
- * Do not import t3code modules from the string body. The Pi process resolves
+ * Do not import sora modules from the string body. The Pi process resolves
  * `@earendil-works/pi-coding-agent` and `typebox` from the user's pi install.
  */
-import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@t3tools/provider-core/server/orchestrationInstructions";
+import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@satslab/provider-core/server/orchestrationInstructions";
 
-export const PI_T3_MCP_EXTENSION_FILENAME = "pi-t3-mcp-extension.ts";
+export const PI_SORA_MCP_EXTENSION_FILENAME = "pi-sora-mcp-extension.ts";
 
-export const T3_MCP_URL_ENV = "T3_MCP_URL";
-export const T3_MCP_BEARER_ENV = "T3_MCP_BEARER_TOKEN";
-export const T3_PI_MEMORY_CHAT_ENV = "T3_PI_BOT_CHAT";
-export const T3_PI_RUNTIME_MODE_ENV = "T3_PI_RUNTIME_MODE";
-export const T3_PI_MCP_EXTENSION_PATH_ENV = "T3_PI_MCP_EXTENSION_PATH";
+export const SORA_MCP_URL_ENV = "SORA_MCP_URL";
+export const SORA_MCP_BEARER_ENV = "SORA_MCP_BEARER_TOKEN";
+export const SORA_PI_MEMORY_CHAT_ENV = "SORA_PI_BOT_CHAT";
+export const SORA_PI_RUNTIME_MODE_ENV = "SORA_PI_RUNTIME_MODE";
+export const SORA_PI_MCP_EXTENSION_PATH_ENV = "SORA_PI_MCP_EXTENSION_PATH";
 
 /**
  * Pi tools whose confirmations the bridge raises as file-change approvals.
@@ -18,17 +18,17 @@ export const T3_PI_MCP_EXTENSION_PATH_ENV = "T3_PI_MCP_EXTENSION_PATH";
  */
 export const PI_FILE_CHANGE_TOOLS = ["edit", "write"] as const;
 
-export const PI_T3_MCP_EXTENSION_SOURCE = `\
+export const PI_SORA_MCP_EXTENSION_SOURCE = `\
 import { stripFrontmatter, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import { Type } from "typebox";
 
-const URL_ENV = ${JSON.stringify(T3_MCP_URL_ENV)};
-const TOKEN_ENV = ${JSON.stringify(T3_MCP_BEARER_ENV)};
-const MEMORY_CHAT_ENV = ${JSON.stringify(T3_PI_MEMORY_CHAT_ENV)};
-const RUNTIME_MODE_ENV = ${JSON.stringify(T3_PI_RUNTIME_MODE_ENV)};
-const EXTENSION_PATH_ENV = ${JSON.stringify(T3_PI_MCP_EXTENSION_PATH_ENV)};
+const URL_ENV = ${JSON.stringify(SORA_MCP_URL_ENV)};
+const TOKEN_ENV = ${JSON.stringify(SORA_MCP_BEARER_ENV)};
+const MEMORY_CHAT_ENV = ${JSON.stringify(SORA_PI_MEMORY_CHAT_ENV)};
+const RUNTIME_MODE_ENV = ${JSON.stringify(SORA_PI_RUNTIME_MODE_ENV)};
+const EXTENSION_PATH_ENV = ${JSON.stringify(SORA_PI_MCP_EXTENSION_PATH_ENV)};
 const ORCHESTRATION_INSTRUCTIONS = ${JSON.stringify(T3_CODE_ORCHESTRATION_INSTRUCTIONS.trim())};
 const PROTOCOL = "2025-06-18";
 const READ_ONLY_TOOLS = new Set(["read", "grep", "find", "ls"]);
@@ -222,7 +222,7 @@ function createMcpClient(endpoint: string, token: string) {
         {
           protocolVersion: PROTOCOL,
           capabilities: {},
-          clientInfo: { name: "t3-pi-mcp", version: "1.0.0" },
+          clientInfo: { name: "sora-pi-mcp", version: "1.0.0" },
         },
         signal,
       );
@@ -337,7 +337,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
       { signal: ctx.signal },
     );
     if (!approved) {
-      return { block: true, reason: \`\${event.toolName} was declined in T3 Code.\` };
+      return { block: true, reason: \`\${event.toolName} was declined in Sora.\` };
     }
   });
 
@@ -346,7 +346,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
   if (endpoint === undefined || token === undefined) {
     pi.on("session_start", async (_event, ctx) => {
       ctx.ui.notify(
-        "t3-code MCP unavailable: T3_MCP_URL or T3_MCP_BEARER_TOKEN is missing.",
+        "sora MCP unavailable: SORA_MCP_URL or SORA_MCP_BEARER_TOKEN is missing.",
         "warning",
       );
     });
@@ -366,7 +366,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
   const registerTools = () => {
     // Preserve public names for saved loadouts and tool selectors. Hidden
     // canonical names reserve ownership against Pi's configured MCP servers.
-    const prefixes = supportsExposure ? ["mcp__t3-code__", "mcp__t3_code__"] : ["mcp__t3-code__"];
+    const prefixes = supportsExposure ? ["mcp__sora__", "mcp__t3_code__"] : ["mcp__sora__"];
     readOnlyMcpTools.clear();
     for (const tool of catalog) {
       const name = tool.name;
@@ -389,12 +389,12 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
             );
             const content = mcpModelContent(result);
             if (isMcpToolError(result) && !content.some((part) => part.type === "text" && part.text.length > 0)) {
-              content.push({ type: "text", text: "MCP tool t3-code/" + name + " returned an error" });
+              content.push({ type: "text", text: "MCP tool sora/" + name + " returned an error" });
             }
             return {
               content,
               structuredContent: mcpScriptResult(result),
-              details: { server: "t3-code", tool: name },
+              details: { server: "sora", tool: name },
               ...(isMcpToolError(result) ? { isError: true } : {}),
             };
           },
@@ -437,7 +437,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
     // Pi still applies --tools/--exclude-tools to this active loadout.
     const required = [
       ...(hasToolSearch ? ["tool_search"] : []),
-      ...(ctx.model?.api === "openai-completions" ? catalog.map((tool) => "mcp__t3-code__" + tool.name) : []),
+      ...(ctx.model?.api === "openai-completions" ? catalog.map((tool) => "mcp__sora__" + tool.name) : []),
     ];
     const missing = required.filter((name) => !active.includes(name));
     if (missing.length > 0) pi.setActiveTools([...active, ...missing]);
@@ -452,7 +452,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
       await ensureStarted();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      ctx.ui.notify(\`t3-code MCP unavailable: \${message}\`, "warning");
+      ctx.ui.notify(\`sora MCP unavailable: \${message}\`, "warning");
     }
   });
 
@@ -463,7 +463,7 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
     const sections = event.systemPromptOptions?.sections;
     if (sections && typeof sections === "object" && event.systemPromptOptions?.forceSystemPrompt === undefined) {
       // A full prompt override bypasses Pi's later section rendering.
-      sections.t3_code_orchestration = ORCHESTRATION_INSTRUCTIONS;
+      sections.sora_code_orchestration = ORCHESTRATION_INSTRUCTIONS;
       return undefined;
     }
     return { systemPrompt: event.systemPrompt + "\\n\\n" + ORCHESTRATION_INSTRUCTIONS };

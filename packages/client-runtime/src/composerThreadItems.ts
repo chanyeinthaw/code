@@ -1,4 +1,4 @@
-import type { BotId, EnvironmentId, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
+import type { BotId, EnvironmentId, ScopedThreadRef, ThreadId } from "@satslab/contracts";
 
 const COMPOSER_THREAD_RESULT_LIMIT = 5;
 

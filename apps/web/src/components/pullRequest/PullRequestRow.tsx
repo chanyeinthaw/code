@@ -1,5 +1,5 @@
-import type { PullRequestAction } from "@t3tools/contracts";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import type { PullRequestAction } from "@satslab/contracts";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
 import { SearchIcon } from "lucide-react";
 import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
 import { PullRequestStackPopover } from "./PullRequestStackPopover";

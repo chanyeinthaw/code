@@ -1,4 +1,4 @@
-import { parsePullRequestQuery } from "@t3tools/client-runtime/pull-request-query";
+import { parsePullRequestQuery } from "@satslab/client-runtime/pull-request-query";
 import {
   ProjectId,
   resolvePullRequestAuthorFilter,
@@ -6,7 +6,7 @@ import {
   type PullRequestListEntry,
   type PullRequestListInput,
   type PullRequestListResult,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import type { PullRequestListControls } from "../../persistence/mobile-preferences";
 
 export const PR_LIST_PAGE_SIZE = 30;

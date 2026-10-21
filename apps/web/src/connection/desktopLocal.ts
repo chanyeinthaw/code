@@ -1,9 +1,9 @@
-import type { ConnectionTarget } from "@t3tools/client-runtime/connection";
+import type { ConnectionTarget } from "@satslab/client-runtime/connection";
 import {
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   type DesktopBridge,
   type DesktopEnvironmentBootstrap,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 
 /**
  * Keep this the one source of truth: the producer (`connection/platform.ts`) mints ids via

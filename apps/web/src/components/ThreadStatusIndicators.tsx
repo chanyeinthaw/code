@@ -2,11 +2,11 @@ import {
   scopeProjectRef,
   scopedThreadKey,
   scopeThreadRef,
-} from "@t3tools/client-runtime/environment";
+} from "@satslab/client-runtime/environment";
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
 import { useStableCallback } from "~/hooks/useStableCallback";
 
-import { pullRequestDetailToVcsStatus } from "@t3tools/client-runtime/state/pull-requests";
+import { pullRequestDetailToVcsStatus } from "@satslab/client-runtime/state/pull-requests";
 import {
   resolveEnvironmentMachineKind,
   type EnvironmentId,
@@ -14,7 +14,7 @@ import {
   type ThreadLinkedPullRequest,
   type ThreadPullRequestLink,
   type VcsStatusResult,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { Atom } from "effect/reactivity";
 import { FolderGit2Icon, TerminalIcon } from "lucide-react";
 import { useEnvironment, usePrimaryEnvironmentId } from "../state/environments";
@@ -27,7 +27,7 @@ import {
   resolveThreadPullRequestChains,
   type ThreadPullRequestBadge,
   visibleThreadPullRequests,
-} from "@t3tools/shared/threadPullRequests";
+} from "@satslab/shared/threadPullRequests";
 import { useRender } from "@base-ui/react/use-render";
 import { type ReactNode, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
 import { cn } from "../lib/utils";
@@ -39,7 +39,7 @@ import { linkedPullRequestDetailAtom, useSharedPullRequestSummary } from "../sta
 import { useThreadRunningTerminalIds } from "../state/terminalSessions";
 import { vcsEnvironment } from "../state/vcs";
 import { useUiStateStore } from "../uiStateStore";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@satslab/client-runtime/source-control-clients";
 import {
   pullRequestMatchesSearchQuery,
   resolveThreadLastVisitedAt,
@@ -150,7 +150,7 @@ export function linkedPullRequestSnapshotStatus(
 export {
   resolveThreadPullRequestBadge,
   type ThreadPullRequestBadge,
-} from "@t3tools/shared/threadPullRequests";
+} from "@satslab/shared/threadPullRequests";
 
 export interface ThreadPullRequestBadgePresentation {
   readonly Icon: PullRequestGlyphIcon;
