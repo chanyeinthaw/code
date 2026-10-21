@@ -11,7 +11,7 @@ import {
   ProviderInstanceId,
   RunId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -138,9 +138,9 @@ const callSnapshot = (args: Record<string, unknown>) => callTool("preview_snapsh
 const layerRecordingTools = (calls: Array<unknown>) => {
   const RecordingToolkit = Toolkit.make(
     OrchestratorToolkit.tools.delegate_task,
-    OrchestratorToolkit.tools.t3_thread_read,
-    OrchestratorToolkit.tools.t3_thread_wait,
-    ProjectToolkit.tools.t3_project_update,
+    OrchestratorToolkit.tools.s3_thread_read,
+    OrchestratorToolkit.tools.s3_thread_wait,
+    ProjectToolkit.tools.s3_project_update,
   );
   const record = McpToolAccess.reads((params: unknown) =>
     Effect.sync(() => calls.push(params)).pipe(
@@ -153,9 +153,9 @@ const layerRecordingTools = (calls: Array<unknown>) => {
     RecordingToolkit,
     McpToolAccess.toLayer(RecordingToolkit, {
       delegate_task: record,
-      t3_thread_read: record,
-      t3_thread_wait: record,
-      t3_project_update: record,
+      s3_thread_read: record,
+      s3_thread_wait: record,
+      s3_project_update: record,
     }),
   ).pipe(
     Layer.provideMerge(McpServer.McpServer.layer),
@@ -354,7 +354,7 @@ it.effect("refuses preview tools to a client outside a thread before they run", 
       );
     expect(click.isError).toBe(true);
     expect(click.content).toEqual([
-      { type: "text", text: expect.stringContaining("needs an agent running inside T3 Code") },
+      { type: "text", text: expect.stringContaining("needs an agent running inside Sora") },
     ]);
   }).pipe(Effect.provide(layerTest)),
 );
@@ -363,12 +363,12 @@ it.effect("decodes null optional arguments the way it decodes omitted ones", () 
   const calls: Array<unknown> = [];
   return Effect.gen(function* () {
     const thread = { threadId: "thread-null-arguments" };
-    yield* callTool("t3_thread_read", thread);
-    yield* callTool("t3_thread_read", { ...thread, afterPosition: null, view: null });
+    yield* callTool("s3_thread_read", thread);
+    yield* callTool("s3_thread_read", { ...thread, afterPosition: null, view: null });
     yield* callTool("delegate_task", { task: "Inspect", target: {} });
     yield* callTool("delegate_task", { task: "Inspect", title: null, target: { model: null } });
     // A null the schema declares keeps its meaning: here it clears the project icon.
-    yield* callTool("t3_project_update", { projectId: "project-1", projectIcon: null });
+    yield* callTool("s3_project_update", { projectId: "project-1", projectIcon: null });
 
     expect(calls).toHaveLength(5);
     expect(calls[1]).toEqual(calls[0]);
@@ -378,25 +378,25 @@ it.effect("decodes null optional arguments the way it decodes omitted ones", () 
 });
 
 it.effect(
-  "clamps t3_thread_read page sizes above their maximum instead of rejecting the call",
+  "clamps s3_thread_read page sizes above their maximum instead of rejecting the call",
   () => {
     const calls: Array<unknown> = [];
     return Effect.gen(function* () {
       const thread = { threadId: "thread-clamped-arguments" };
       // Codex never shows the model these bounds, so an over-large page must still read.
-      yield* callTool("t3_thread_read", {
+      yield* callTool("s3_thread_read", {
         ...thread,
         limit: 150,
         runLimit: 80,
         maxCharsPerItem: 60_000,
       });
-      yield* callTool("t3_thread_read", {
+      yield* callTool("s3_thread_read", {
         ...thread,
         limit: 100,
         runLimit: 50,
         maxCharsPerItem: 50_000,
       });
-      yield* callTool("t3_thread_read", { ...thread, limit: 7, runLimit: 1, maxCharsPerItem: 1 });
+      yield* callTool("s3_thread_read", { ...thread, limit: 7, runLimit: 1, maxCharsPerItem: 1 });
 
       expect(calls).toEqual([
         { ...thread, limit: 100, runLimit: 50, maxCharsPerItem: 50_000 },
@@ -408,12 +408,12 @@ it.effect(
 );
 
 it.effect.each(["limit", "runLimit", "maxCharsPerItem"])(
-  "still rejects a t3_thread_read %s below its minimum",
+  "still rejects a s3_thread_read %s below its minimum",
   (field) => {
     const calls: Array<unknown> = [];
     return Effect.gen(function* () {
       // Zero is a different request than one item, so it fails rather than answering another question.
-      const rejected = yield* callTool("t3_thread_read", {
+      const rejected = yield* callTool("s3_thread_read", {
         threadId: "thread-below-minimum",
         [field]: 0,
       }).pipe(Effect.flip);
@@ -896,10 +896,10 @@ it.effect(
         const ordinary = yield* list("/mcp", "ordinaryToken");
         const memoryTools = yield* list("/bot-mcp", "botToken");
         expect(ordinary).toContain('"ordinary_probe"');
-        expect(ordinary).not.toContain('"t3_attachment_read"');
+        expect(ordinary).not.toContain('"s3_attachment_read"');
         expect(memoryTools).toContain('"zoom"');
         expect(memoryTools).toContain('"date"');
-        expect(memoryTools).toContain('"t3_attachment_read"');
+        expect(memoryTools).toContain('"s3_attachment_read"');
         expect(memoryTools).toContain('"ordinary_probe"');
       }),
     ).pipe(Effect.provide(NodeHttpServer.layerTest)),

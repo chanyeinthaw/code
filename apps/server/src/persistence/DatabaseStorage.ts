@@ -1,4 +1,4 @@
-import type { DatabaseStorageStatus } from "@t3tools/contracts";
+import type { DatabaseStorageStatus } from "@satslab/contracts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
@@ -29,7 +29,7 @@ export class DatabaseStorage extends Context.Service<
     /** Current file accounting, re-published after each maintenance pass. Null until first read. */
     readonly status: Stream.Stream<DatabaseStorageStatus | null>;
   }
->()("t3/persistence/DatabaseStorage") {}
+>()("@satslab/sora/persistence/DatabaseStorage") {}
 
 /**
  * Deletes superseded history every few hours and hands freed pages back to
@@ -46,12 +46,12 @@ const make = Effect.gen(function* () {
   const statusRef = yield* SubscriptionRef.make<DatabaseStorageStatus | null>(null);
 
   // The notice shows this verbatim; quote for the host's shell. Desktop
-  // installs have no `t3` on PATH, so the command names their launcher.
+  // installs have no `sora` on PATH, so the command names their launcher.
   const { command: compactCommand } = yield* resolveHostCliCommand("doctor", [
     "--base-dir",
     config.baseDir,
   ]);
-  // `t3 doctor --base-dir` repairs <baseDir>/userdata. A dev server without
+  // `sora doctor --base-dir` repairs <baseDir>/userdata. A dev server without
   // an explicit home keeps its state in <baseDir>/dev instead, so there the
   // command would target the live install; publish no status at all.
   const doctorTargetsThisDatabase =

@@ -1,6 +1,6 @@
-import { botChatProviderDisabledReason } from "@t3tools/shared/botChat";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import type { UnifiedSettings } from "@t3tools/contracts";
+import { botChatProviderDisabledReason } from "@satslab/shared/botChat";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
+import type { UnifiedSettings } from "@satslab/contracts";
 import type { Dispatch } from "react";
 import type { ComposerThreadTarget, DraftSessionState } from "../../composerDraftStore";
 import { useStableCallback } from "../../hooks/useStableCallback";
@@ -12,9 +12,9 @@ import {
   type ThreadId,
   ProviderInteractionMode,
   RuntimeMode,
-} from "@t3tools/contracts";
-import { deriveThreadRuntime } from "@t3tools/client-runtime/state/thread-execution";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+} from "@satslab/contracts";
+import { deriveThreadRuntime } from "@satslab/client-runtime/state/thread-execution";
+import { scopeThreadRef } from "@satslab/client-runtime/environment";
 import { type SetStateAction } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toastManager } from "../ui/toast";

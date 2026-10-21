@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId, ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, ProviderInstanceId, ThreadId } from "@satslab/contracts";
 import { buildBotSystemPrompt } from "./botInstructions.ts";
 
 const runtime = { harness: "Pi", model: "provider/custom", reasoningEffort: "high" };
@@ -26,8 +26,8 @@ describe("memory provider instructions", () => {
     expect(prompt).toContain("link_pull_request");
     expect(prompt).toContain("html_render");
     expect(prompt.endsWith("act directly when explicitly asked.")).toBe(true);
-    expect(prompt).not.toContain("## T3 Code collaborative browser");
-    expect(prompt).not.toContain("## T3 Code devices");
+    expect(prompt).not.toContain("## Sora collaborative browser");
+    expect(prompt).not.toContain("## Sora devices");
   });
 
   it("adds browser and device guidance only when available", () => {
@@ -36,8 +36,8 @@ describe("memory provider instructions", () => {
       runtime,
       mcpSession: { ...session, browserToolsAvailable: true, capabilities: new Set(["device"]) },
     });
-    expect(prompt).toContain("## T3 Code collaborative browser");
-    expect(prompt).toContain("## T3 Code devices");
+    expect(prompt).toContain("## Sora collaborative browser");
+    expect(prompt).toContain("## Sora devices");
   });
 
   it("preserves memory and runtime identity without claiming MCP orchestration is available", () => {
@@ -48,6 +48,6 @@ describe("memory provider instructions", () => {
     });
     expect(prompt).toContain("Frozen view");
     expect(prompt).toContain("through the Pi harness");
-    expect(prompt).not.toContain("## T3 Code orchestration");
+    expect(prompt).not.toContain("## Sora orchestration");
   });
 });

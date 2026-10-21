@@ -18,8 +18,8 @@ import {
   resolveEnvironmentMachineKind,
   type BotIdentity,
   type ContextMenuItem,
-} from "@t3tools/contracts";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+} from "@satslab/contracts";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
 import { botReset, useBots, useBotThreadContext, useBotThreadShells } from "../../state/bots";
 import { useEnvironments } from "../../state/environments";
 import { useStableCallback } from "../../hooks/useStableCallback";

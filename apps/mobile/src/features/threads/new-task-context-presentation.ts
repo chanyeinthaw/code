@@ -1,6 +1,6 @@
-import { sanitizeNewRefName } from "@t3tools/shared/git";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
-import { resolveSendEnvMode } from "@t3tools/shared/projectSettings";
+import { sanitizeNewRefName } from "@satslab/shared/git";
+import { parseChangeRequestUrl } from "@satslab/shared/changeRequestUrl";
+import { resolveSendEnvMode } from "@satslab/shared/projectSettings";
 import type { ComposerDraftWorkspaceSelection } from "../../state/use-composer-drafts";
 
 type WorkspaceMode = "local" | "worktree";

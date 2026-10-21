@@ -1,10 +1,10 @@
 import { findRevealRef } from "./markdownFindContext";
-import { type MessageId, type ServerProviderSkill, ThreadId } from "@t3tools/contracts";
-import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
+import { type MessageId, type ServerProviderSkill, ThreadId } from "@satslab/contracts";
+import { resolveUserMessagePresentation } from "@satslab/client-runtime/user-message";
 import { Link } from "@tanstack/react-router";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
-import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@satslab/shared/composerContextReferences";
 import { memo, use, useState, type ReactNode } from "react";
 import {
   createMessageAttachmentPreviewProjector,
@@ -49,12 +49,12 @@ import {
   resolveUserMessageContext,
   selectedMessageContextFragment,
 } from "~/lib/composerContextRecords";
-import { collectComposerContextReferences } from "@t3tools/shared/composerContextReferences";
+import { collectComposerContextReferences } from "@satslab/shared/composerContextReferences";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
   encodeComposerContextFragment,
-} from "@t3tools/shared/composerContextClipboard";
+} from "@satslab/shared/composerContextClipboard";
 import { chatMarkdownClipboardPayload } from "../../markdown-clipboard";
 import type { ChatMarkdownContextReference } from "../ChatMarkdown";
 import { cn } from "~/lib/utils";
@@ -386,12 +386,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
         isAgentMessage ? "items-start px-1 py-0.5" : "items-end",
       )}
     >
-      {userMessage.attribution === "t3code" ? (
-        <p
-          className="me-1 text-2xs text-muted-foreground/70"
-          data-user-message-attribution="t3code"
-        >
-          Sent by T3 Code
+      {userMessage.attribution === "sora" ? (
+        <p className="me-1 text-2xs text-muted-foreground/70" data-user-message-attribution="sora">
+          Sent by Sora
         </p>
       ) : isAgentMessage ? (
         <p className="me-1 text-2xs text-muted-foreground/70" data-user-message-attribution="agent">

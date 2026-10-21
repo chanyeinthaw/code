@@ -1,5 +1,5 @@
-import type { EnvironmentThread } from "@t3tools/client-runtime/state/shell";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentThread } from "@satslab/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@satslab/client-runtime/state/shell";
 import type { ComposerThreadTarget } from "../../composerDraftStore";
 import type { ComposerHandleRef } from "../../composerHandleContext";
 import type { SessionPhase } from "../../types";
@@ -11,13 +11,13 @@ import {
   type ScopedThreadRef,
   type ThreadId,
   type RunId,
-} from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+} from "@satslab/contracts";
+import { scopeThreadRef } from "@satslab/client-runtime/environment";
 import { useNavigate } from "@tanstack/react-router";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/client-runtime/state/runtime";
 import { readLocalApi } from "../../localApi";
 import { findRevertCheckpoint } from "../../session-logic";
 import { type ChatMessage } from "../../types";

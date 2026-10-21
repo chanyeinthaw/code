@@ -1,0 +1,87 @@
+name: Cross-build Sora release
+description: Build target binaries and Electron packages on Linux.
+inputs:
+  platform:
+    required: true
+  arch:
+    required: true
+  rust-target:
+    required: true
+  version:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install packaging tools
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang lld llvm libsecret-1-dev pkg-config imagemagick zip
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ inputs.rust-target }}
+    - name: Install Windows cross compiler
+      if: inputs.platform == 'win'
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-xwin@0.23.1
+    - name: Configure macOS cross linker
+      if: inputs.platform == 'mac'
+      shell: bash
+      run: bash scripts/setup-macos-cross.sh
+    - name: Load T3 Connect public configuration
+      shell: bash
+      run: cp .env.example .env
+    - name: Set version and build native resource monitor
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        PLATFORM: ${{ inputs.platform }}
+        RUST_TARGET: ${{ inputs.rust-target }}
+      run: |
+        set -euo pipefail
+        node scripts/update-release-package-versions.ts "$VERSION"
+        if [[ "$PLATFORM" == win ]]; then
+          cargo xwin build --locked --release --manifest-path native/resource-monitor/Cargo.toml --target "$RUST_TARGET"
+        else
+          cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml --target "$RUST_TARGET"
+        fi
+    - name: Build CLI executable and archive
+      shell: bash
+      env:
+        VP_NODE_VERSION: "26.8.2"
+        PLATFORM: ${{ inputs.platform }}
+        ARCH: ${{ inputs.arch }}
+        VERSION: ${{ inputs.version }}
+        RUST_TARGET: ${{ inputs.rust-target }}
+      run: |
+        set -euo pipefail
+        target="$PLATFORM-$ARCH"
+        resource_key="$target"
+        binary=t3-resource-monitor
+        if [[ "$PLATFORM" == mac ]]; then target="darwin-$ARCH"; resource_key="$target"; fi
+        if [[ "$PLATFORM" == win ]]; then resource_key="win32-$ARCH"; binary="$binary.exe"; fi
+        node apps/server/scripts/cli.ts build-exe --target "$target" --verbose
+        mkdir -p "$RUNNER_TEMP/cli-monitor/$resource_key"
+        cp "native/resource-monitor/target/$RUST_TARGET/release/$binary" "$RUNNER_TEMP/cli-monitor/$resource_key/$binary"
+        args=()
+        if [[ "$PLATFORM" == mac ]]; then args+=(--defer-mac-signing); fi
+        node scripts/build-cli-archive.ts --platform "$PLATFORM" --arch "$ARCH" --version "$VERSION" --resource-monitor-dir "$RUNNER_TEMP/cli-monitor" --output-dir release-cli "${args[@]}"
+    - name: Build Electron package
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        ARCH: ${{ inputs.arch }}
+        VERSION: ${{ inputs.version }}
+        SORA_DESKTOP_REUSE_RESOURCE_MONITOR: "true"
+        CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      run: |
+        set -euo pipefail
+        args=()
+        case "$PLATFORM" in
+          mac) target=zip ;;
+          linux) target=AppImage ;;
+          win) target=nsis; args+=(--wsl-runtime "$PWD/wsl-runtime/sora-$VERSION-linux-x64.tar.gz") ;;
+          *) exit 1 ;;
+        esac
+        node scripts/build-desktop-artifact.ts --platform "$PLATFORM" --target "$target" --arch "$ARCH" --build-version "$VERSION" --skip-build --output-dir release --verbose "${args[@]}"

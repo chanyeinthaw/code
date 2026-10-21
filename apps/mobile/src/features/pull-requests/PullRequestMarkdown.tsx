@@ -1,4 +1,4 @@
-import { splitPullRequestBody } from "@t3tools/client-runtime/pull-request-markdown";
+import { splitPullRequestBody } from "@satslab/client-runtime/pull-request-markdown";
 import type { ReactNode } from "react";
 import { View } from "react-native";
 import { useProject } from "../../state/entities";
@@ -8,9 +8,9 @@ import {
   PullRequestMediaContext,
   usePullRequestMediaUrl,
 } from "./PullRequestMedia";
-import { videoMimeType } from "@t3tools/shared/video";
+import { videoMimeType } from "@satslab/shared/video";
 import { createContext, useContext, useCallback, useMemo, useState } from "react";
-import { githubMarkdownLinks } from "@t3tools/shared/githubMarkdownLinks";
+import { githubMarkdownLinks } from "@satslab/shared/githubMarkdownLinks";
 
 import { useOpenPullRequest } from "../../native/useOpenPullRequest";
 import { SelectableMarkdownText } from "../../native/SelectableMarkdownText";

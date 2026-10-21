@@ -1,10 +1,10 @@
 import type {
   EnvironmentPresentation,
   PreparedConnection,
-} from "@t3tools/client-runtime/connection";
-import { PrimaryConnectionTarget } from "@t3tools/client-runtime/connection";
-import type { ServerConfig } from "@t3tools/contracts";
-import { EnvironmentId } from "@t3tools/contracts";
+} from "@satslab/client-runtime/connection";
+import { PrimaryConnectionTarget } from "@satslab/client-runtime/connection";
+import type { ServerConfig } from "@satslab/contracts";
+import { EnvironmentId } from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/reactivity";

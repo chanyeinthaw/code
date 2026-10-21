@@ -3,7 +3,7 @@ import {
   BotChatError,
   type BotId,
   type ProviderInstanceId,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -84,5 +84,5 @@ const make = Effect.gen(function* () {
 export class MemoryCompaction extends Context.Service<
   MemoryCompaction,
   Effect.Success<typeof make>
->()("t3/bots/MemoryCompaction") {}
+>()("@satslab/sora/bots/MemoryCompaction") {}
 export const layer = Layer.effect(MemoryCompaction, make);
