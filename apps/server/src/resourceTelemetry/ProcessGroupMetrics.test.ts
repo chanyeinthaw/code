@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import type { ResourceTelemetryProcess } from "@t3tools/contracts";
+import type { ResourceTelemetryProcess } from "@satslab/contracts";
 
 import { groupProcesses } from "./ProcessGroupMetrics.ts";
 

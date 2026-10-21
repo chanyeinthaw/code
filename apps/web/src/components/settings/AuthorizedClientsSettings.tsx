@@ -1,4 +1,4 @@
-import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@satslab/shared/authScopeOptions";
 import { PlusIcon, QrCodeIcon } from "lucide-react";
 import { type ReactNode, memo, useId, useState } from "react";
 import {
@@ -12,8 +12,8 @@ import {
   type AuthGrantScope,
   type AuthPairingCredentialResult,
   type AdvertisedEndpoint,
-} from "@t3tools/contracts";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+} from "@satslab/contracts";
+import { settlePromise } from "@satslab/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
 
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";

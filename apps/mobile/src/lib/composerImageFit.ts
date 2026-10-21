@@ -1,11 +1,11 @@
 import {
   downscalableImageMimeType,
   fitImageAttachmentSize,
-} from "@t3tools/client-runtime/image-attachment-size";
+} from "@satslab/client-runtime/image-attachment-size";
 import {
   IMAGE_DIMENSIONS_HEADER_BYTES,
   readImageDimensions,
-} from "@t3tools/shared/imageDimensions";
+} from "@satslab/shared/imageDimensions";
 
 const PHOTO_JPEG_QUALITY = 0.85;
 

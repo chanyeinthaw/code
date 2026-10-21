@@ -1,11 +1,11 @@
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { scopeProjectRef } from "@satslab/client-runtime/environment";
 import {
   EnvironmentId,
   BotId,
   ProjectId,
   ProviderInstanceId,
   type ModelSelection,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { describe, expect, it } from "vite-plus/test";
 import {
   resolveThreadActionProjectRef,

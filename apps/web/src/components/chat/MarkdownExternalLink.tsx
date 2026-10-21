@@ -1,4 +1,4 @@
-import { faviconUrlForOrigin } from "@t3tools/shared/favicon";
+import { faviconUrlForOrigin } from "@satslab/shared/favicon";
 import { GlobeIcon } from "lucide-react";
 import { Children, Fragment, memo, useState, type ReactNode } from "react";
 

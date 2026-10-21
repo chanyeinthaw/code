@@ -3,7 +3,7 @@ import {
   type PullRequestCheck,
   PullRequestComment,
   ThreadPullRequestWatch,
-} from "@t3tools/contracts";
+} from "@satslab/contracts";
 import { assert, describe, it } from "@effect/vitest";
 
 import {

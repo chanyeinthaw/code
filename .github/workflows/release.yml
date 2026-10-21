@@ -247,7 +247,7 @@ jobs:
         uses: ./.github/actions/setup-ci-deps
 
       - name: Ensure Electron runtime is installed
-        run: vp run --filter @t3tools/desktop ensure:electron
+        run: vp run --filter @satslab/desktop ensure:electron
 
       - name: Check
         run: vp check
@@ -277,7 +277,7 @@ jobs:
         uses: ./.github/actions/setup-ci-deps
 
       - name: Ensure Electron runtime is installed
-        run: vp run --filter @t3tools/desktop ensure:electron
+        run: vp run --filter @satslab/desktop ensure:electron
 
       - uses: ./.github/actions/setup-apt-mirrors
 
@@ -287,7 +287,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config build-essential
 
       - name: Test
-        run: vp run --parallel --concurrency-limit 4 --filter '!t3' --filter '!@t3tools/monorepo' --filter '!@t3tools/web' test
+        run: vp run --parallel --concurrency-limit 4 --filter '!t3' --filter '!@satslab/monorepo' --filter '!@satslab/web' test
 
   # Web browser tests time out when they share a runner with the other package
   # suites: Chromium gets too little CPU and diff workers miss their 10s start budget.
@@ -334,7 +334,7 @@ jobs:
           fi
 
       - name: Test
-        run: vp run --filter @t3tools/web test
+        run: vp run --filter @satslab/web test
 
   # Server test files run one at a time, so more small runners beat fewer big ones.
   test_server:
@@ -362,7 +362,7 @@ jobs:
 
       # No Electron setup here: `t3` (apps/server) has no Electron dependency
       # and none of its tests touch the runtime. Only the non-server `test`
-      # job, which covers @t3tools/desktop, needs the download.
+      # job, which covers @satslab/desktop, needs the download.
       - name: Install Chromium for server browser integration tests
         run: node apps/server/node_modules/playwright-core/cli.js install --with-deps --only-shell chromium
 
@@ -525,7 +525,7 @@ jobs:
       - name: Install bundle dependencies
         env:
           pnpm_config_cache_dir: ${{ runner.temp }}/pnpm-metadata
-        run: vp install --filter=t3... --filter=@t3tools/web... --filter=@t3tools/desktop... --filter=@t3tools/scripts...
+        run: vp install --filter=t3... --filter=@satslab/web... --filter=@satslab/desktop... --filter=@satslab/scripts...
 
       - name: Download relay client tracing config
         uses: actions/download-artifact@v8
@@ -546,13 +546,13 @@ jobs:
 
       - uses: ./.github/actions/setup-apt-mirrors
 
-      # @t3tools/desktop#build compiles the Linux browser secret helper on a
+      # @satslab/desktop#build compiles the Linux browser secret helper on a
       # Linux host before packing, and that needs libsecret headers.
       - name: Install browser secret helper build libraries
         run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config
 
-      # Runs t3#build (which depends on @t3tools/web#build) and
-      # @t3tools/desktop#build, so apps/server/dist holds the server bundle
+      # Runs t3#build (which depends on @satslab/web#build) and
+      # @satslab/desktop#build, so apps/server/dist holds the server bundle
       # plus the web client and apps/desktop/dist-electron the Electron main.
       # The release channel is already stable, nightly, or preview. Builds in
       # other repositories report "dev" telemetry.
@@ -770,7 +770,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
+              - --filter=@satslab/scripts...
 
       - name: Download all desktop artifacts
         uses: actions/download-artifact@v8
@@ -967,7 +967,7 @@ jobs:
           run-install: |
             args:
               - --filter=t3...
-              - --filter=@t3tools/scripts...
+              - --filter=@satslab/scripts...
 
       - name: Build the npm launcher
         run: node scripts/build-npm-launcher.ts --version "${{ needs.preflight.outputs.version }}" --output-dir npm-packages
@@ -1030,8 +1030,8 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
-              - --filter=@t3tools/web...
+              - --filter=@satslab/scripts...
+              - --filter=@satslab/web...
 
       - name: Download relay client tracing config
         uses: actions/download-artifact@v8
@@ -1205,7 +1205,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/marketing...
+              - --filter=@satslab/marketing...
 
       - id: deploy
         name: Build staged deployment
@@ -1335,8 +1335,8 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
-              - --filter=@t3tools/oxlint-plugin-t3code...
+              - --filter=@satslab/scripts...
+              - --filter=@satslab/oxlint-plugin-t3code...
 
       - id: update_versions
         name: Update version strings
@@ -1400,7 +1400,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
+              - --filter=@satslab/scripts...
 
       - name: Read published release notes
         if: needs.preflight.outputs.is_prerelease == 'true'

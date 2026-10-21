@@ -1,4 +1,4 @@
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
+import { DEFAULT_SERVER_SETTINGS } from "@satslab/contracts";
 import { SettingResetButton, SettingsRow, SettingsSection } from "../settings/settingsLayout";
 import { searchableSetting } from "../settings/settingsSearch";
 import {

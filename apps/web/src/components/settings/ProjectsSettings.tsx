@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useBotRecords, useBotThreadShells } from "../../state/bots";
 import { resolveLegacyBotSettingsIdentity } from "../bots/botSettings.logic";
-import { EnvironmentId } from "@t3tools/contracts";
+import { EnvironmentId } from "@satslab/contracts";
 import { LayersIcon } from "lucide-react";
 
 import { Button } from "../ui/button";

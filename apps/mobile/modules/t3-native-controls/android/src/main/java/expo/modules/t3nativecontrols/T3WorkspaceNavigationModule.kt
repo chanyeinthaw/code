@@ -261,7 +261,7 @@ class T3WorkspaceNavigationView(
             },
           ) {
             Icon(
-              painterResource(R.drawable.t3_menu),
+              painterResource(R.drawable.sora_menu),
               contentDescription = null,
               tint = Color(unselectedColor),
             )
@@ -304,7 +304,7 @@ class T3WorkspaceNavigationView(
         Modifier.padding(start = (FAB_SIZE - ICON_SIZE) / 2).clipToBounds(),
         verticalAlignment = Alignment.CenterVertically,
       ) {
-        Icon(painterResource(R.drawable.t3_new_thread), contentDescription = null)
+        Icon(painterResource(R.drawable.sora_new_thread), contentDescription = null)
         Text(
           "New thread",
           Modifier.padding(start = 12.dp).alpha(labelAlpha(fraction)).clearAndSetSemantics {},
@@ -366,9 +366,9 @@ class T3WorkspaceNavigationView(
   @Composable
   private fun tabIconPainter(tab: String) = painterResource(
     when (tab) {
-      "threads" -> R.drawable.t3_chats
-      "pullRequests" -> R.drawable.t3_pull_requests
-      else -> R.drawable.t3_settings
+      "threads" -> R.drawable.sora_chats
+      "pullRequests" -> R.drawable.sora_pull_requests
+      else -> R.drawable.sora_settings
     }
   )
 

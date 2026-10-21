@@ -1,10 +1,10 @@
-import { SourceControlProviderKind, type ThreadPullRequestWatch } from "@t3tools/contracts";
+import { SourceControlProviderKind, type ThreadPullRequestWatch } from "@satslab/contracts";
 import { assert, describe, it } from "@effect/vitest";
 import * as Schema from "effect/Schema";
 import {
   ForgejoComment,
   forgejoComment,
-} from "@t3tools/source-control-forgejo/server/forgejoPullRequestJson";
+} from "@satslab/source-control-forgejo/server/forgejoPullRequestJson";
 
 import { evaluatePullRequestWatch as evaluate } from "./pullRequestWatch.ts";
 
