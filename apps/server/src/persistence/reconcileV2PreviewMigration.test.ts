@@ -50,6 +50,8 @@ describe("V2 preview upgrade", () => {
         [68, "ShellStopRequestIndex"],
         [69, "BotChat"],
         [70, "BotProjects"],
+        [71, "OutgoingWebhooks"],
+        [72, "OutgoingWebhookEndpointUrl"],
       ]);
       assert.deepStrictEqual(yield* runMigrations(), []);
       assert.deepStrictEqual(yield* sql`SELECT * FROM orchestration_v2_legacy_imports`, imports);
@@ -143,6 +145,8 @@ describe("V2 preview upgrade", () => {
         [68, "ShellStopRequestIndex"],
         [69, "BotChat"],
         [70, "BotProjects"],
+        [71, "OutgoingWebhooks"],
+        [72, "OutgoingWebhookEndpointUrl"],
       ]);
     }).pipe(Effect.provide(NodeSqliteClient.layer({ filename: ":memory:" }))),
   );
@@ -161,3 +165,19 @@ describe("V2 preview upgrade", () => {
     }).pipe(Effect.provide(NodeSqliteClient.layer({ filename: ":memory:" }))),
   );
 });
+
+it.effect(
+  "adds endpoint visibility without exposing or rewriting existing webhook destinations",
+  () =>
+    Effect.gen(function* () {
+      const sql = yield* SqlClient.SqlClient;
+      yield* runMigrations({ toMigrationInclusive: 71 });
+      yield* sql`INSERT INTO outgoing_webhooks
+      (id, name, enabled, events_json, template, preview_length, endpoint_origin, header_names_json, created_at, updated_at)
+      VALUES ('legacy-webhook', 'Legacy', 1, '["completed"]', '{}', 500, 'https://hooks.example.test', '[]', '2026-10-01', '2026-10-01')`;
+      yield* runMigrations();
+      assert.deepEqual(yield* sql`SELECT endpoint_origin, endpoint_url FROM outgoing_webhooks`, [
+        { endpoint_origin: "https://hooks.example.test", endpoint_url: null },
+      ]);
+    }).pipe(Effect.provide(NodeSqliteClient.layer({ filename: ":memory:" }))),
+);
