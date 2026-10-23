@@ -117,6 +117,7 @@ import {
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
+import { OutgoingWebhooksSettings } from "./OutgoingWebhooksSettings";
 import { searchableSetting } from "./settingsSearch";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
@@ -1642,6 +1643,7 @@ export function IntegrationsSettingsPanel() {
         <PullRequestLinksOpenInAppSetting />
       </SettingsSection>
       <DeviceIntegrationSettings />
+      <OutgoingWebhooksSettings />
     </SettingsPageContainer>
   );
 }
