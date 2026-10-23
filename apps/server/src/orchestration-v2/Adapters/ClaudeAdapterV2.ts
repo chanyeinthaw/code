@@ -1500,6 +1500,7 @@ export const CLAUDE_READ_ONLY_SORA_MCP_ALLOWED_TOOLS: ReadonlyArray<string> = [
   "mcp__sora__s3_thread_search",
   "mcp__sora__s3_preview_list",
   "mcp__sora__s3_environment_read",
+  "mcp__sora__s3_outgoing_webhooks_list",
   "mcp__sora__s3_queue_list",
   "mcp__sora__s3_queue_read",
   "mcp__sora__html_preview",

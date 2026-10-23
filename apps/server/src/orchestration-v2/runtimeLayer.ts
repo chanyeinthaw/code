@@ -59,6 +59,9 @@ import * as ThreadLifecycleService from "./ThreadLifecycleService.ts";
 import * as ThreadForkService from "./ThreadForkService.ts";
 import * as TurnItemPositionStore from "./TurnItemPositionStore.ts";
 import * as ScheduledTaskService from "../scheduledTasks/ScheduledTaskService.ts";
+import * as OutgoingWebhookDelivery from "../outgoingWebhooks/OutgoingWebhookDelivery.ts";
+import * as OutgoingWebhookRepository from "../outgoingWebhooks/OutgoingWebhookRepository.ts";
+import * as OutgoingWebhookService from "../outgoingWebhooks/OutgoingWebhookService.ts";
 import * as SecretRequests from "../secrets/SecretRequests.ts";
 
 export const layerEventInfrastructure = Layer.mergeAll(
@@ -325,6 +328,18 @@ const layerScheduledTaskProvided = ScheduledTaskService.layer.pipe(
     ),
   ),
 );
+const layerOutgoingWebhookDeliveryProvided = OutgoingWebhookDelivery.layer.pipe(
+  Layer.provide(OutgoingWebhookRepository.layer),
+);
+const layerOutgoingWebhookServiceProvided = OutgoingWebhookService.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      OutgoingWebhookRepository.layer,
+      layerOutgoingWebhookDeliveryProvided,
+      layerSecretRequestsProvided,
+    ),
+  ),
+);
 const layerProviderContinuationWorkerProvided = ProviderContinuationService.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -401,6 +416,12 @@ export const layerProduction = Layer.mergeAll(
   layerThreadLifecycleProvided,
   layerScheduledTaskProvided,
   layerSecretRequestsProvided,
+  layerOutgoingWebhookServiceProvided,
+  OutgoingWebhookDelivery.layerWorker.pipe(
+    Layer.provide(
+      Layer.merge(OutgoingWebhookRepository.layer, layerOutgoingWebhookDeliveryProvided),
+    ),
+  ),
   UsageLimitRecoveryWorker.layer.pipe(
     Layer.provide(
       Layer.mergeAll(

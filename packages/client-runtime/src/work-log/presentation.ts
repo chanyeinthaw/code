@@ -620,6 +620,8 @@ function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction)
     case "schedule-update":
     case "schedule-delete":
     case "schedule-run":
+    case "webhook-upsert":
+    case "webhook-delete":
     case "thread-configure":
     case "thread-fork":
     case "thread-merge":

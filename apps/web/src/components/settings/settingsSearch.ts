@@ -727,6 +727,14 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["allow simulator emulator ios android drive tools sessions"],
   },
   {
+    id: "outgoing-webhooks",
+    title: "Outgoing webhooks",
+    to: "/settings/integrations",
+    searchTerms: [
+      "webhook http post json notification notify hark endpoint headers template events completed failed approval input",
+    ],
+  },
+  {
     id: "device-hub",
     title: "Device hub",
     to: "/settings/integrations",

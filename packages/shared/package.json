@@ -51,6 +51,10 @@
       "types": "./src/advertisedEndpoint.ts",
       "import": "./src/advertisedEndpoint.ts"
     },
+    "./outgoingWebhook": {
+      "types": "./src/outgoingWebhook.ts",
+      "import": "./src/outgoingWebhook.ts"
+    },
     "./agentAwareness": {
       "types": "./src/agentAwareness.ts",
       "import": "./src/agentAwareness.ts"
