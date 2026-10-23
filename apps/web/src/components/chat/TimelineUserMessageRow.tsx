@@ -303,7 +303,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
       ? { environmentId: ctx.activeThreadEnvironmentId, threadId: senderThreadId }
       : null,
   );
-  const resolvedContext = resolveUserMessageContext(row.message);
+  const resolvedContext = resolveUserMessageContext(
+    userMessage.sourceLabel ? { ...row.message, text: userMessage.text } : row.message,
+  );
   const previewImages = userImages.filter((image) => image.name.startsWith("preview-annotation-"));
   const revertTurnCount = row.revertTurnCount;
   const chippedAttachmentIds = new Set(
@@ -440,7 +442,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
         {folded ? (
           <FoldedMessageHeader
             icon={MessagesSquareIcon}
-            label={senderShell?.title.trim() || "Agent"}
+            label={userMessage.sourceLabel ?? (senderShell?.title.trim() || "Agent")}
             summary={foldSummary}
             expanded={expanded}
             onToggle={() => setExpanded((value) => !value)}
@@ -456,7 +458,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
               folded && !ctx.findActive && "max-h-96 overflow-auto",
             )}
           >
-            <MessageAuthorHeading>{folded ? "Another agent" : "You"}</MessageAuthorHeading>
+            <MessageAuthorHeading>
+              {userMessage.sourceLabel ?? (folded ? "Another agent" : "You")}
+            </MessageAuthorHeading>
             {(regularImages.length > 0 || userVideos.length > 0) && (
               <div className="mb-2 grid max-w-[210px] grid-cols-2 gap-2">
                 {regularImages.map((image) => (
