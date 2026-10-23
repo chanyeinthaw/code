@@ -26,8 +26,3 @@ export const makeEnsureWorkspace = Effect.gen(function* () {
     return workspace;
   });
 });
-
-export const ensureWorkspace = Effect.fn("BotWorkspace.ensureWithServices")(function* (id: BotId) {
-  const ensure = yield* makeEnsureWorkspace;
-  return yield* ensure(id);
-});

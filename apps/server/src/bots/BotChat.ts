@@ -713,21 +713,34 @@ const make = Effect.gen(function* () {
           )
             return yield* new BotChatError({ operation: "transfer", reason: "not-owner" });
           yield* ensureIdle(bot.threadId);
+          if (Option.isNone(settings))
+            return yield* new BotChatError({ operation: "transfer", reason: "not-ready" });
           if (bot.status === "active") yield* synchronize(bot);
           yield* FiberMap.remove(fibers, id);
           const core = yield* ownership.prepare(id, destination);
           const history = yield* events
             .readAgentEvents({ threadId: bot.threadId })
             .pipe(Stream.runCollect);
+          const root = yield* projections.getThread(bot.threadId);
+          const project = yield* projects.get(root.projectId);
+          if (Option.isNone(project))
+            return yield* new BotChatError({ operation: "transfer", reason: "not-found" });
+          const sourceSettings = yield* settings.value.getSettings;
+          const overrides = sourceSettings.projectSettingsOverrides[root.projectId] ?? {};
           const transfer: BotTransfer = {
             ...core,
-            events: history.map((stored) => stored.event),
-            workspace: yield* transferFiles.exportWorkspace(id),
-            attachments: yield* transferFiles.exportAttachments(
-              history.flatMap((stored) =>
-                stored.event.type === "message.updated" ? stored.event.payload.attachments : [],
-              ),
-            ),
+            events: yield* transferFiles.portableHistory(history.map((stored) => stored.event)),
+            project: {
+              defaultModelSelection: project.value.defaultModelSelection,
+              defaultThreadEnvMode: project.value.defaultThreadEnvMode,
+              autoPull: project.value.autoPull,
+              projectIcon: project.value.projectIcon,
+              scripts: project.value.scripts,
+              settingsOverrides: {
+                ...overrides,
+                botLoadResources: overrides.botLoadResources ?? sourceSettings.botLoadResources,
+              },
+            },
           };
           yield* ownership.savePackage(transfer);
           return yield* ownership.describe(id, transfer.transferId);
@@ -746,14 +759,9 @@ const make = Effect.gen(function* () {
     length: number,
   ) {
     const transfer = yield* ownership.readIncoming(transferId, length);
-    const projectId = yield* ensureProject(transfer.identity.id, transfer.identity.name).pipe(
-      botError("transfer-project"),
-    );
     const id = transfer.identity.id;
     return yield* withOperation(id)(
       Effect.gen(function* () {
-        if (Option.isNone(yield* projects.get(projectId)))
-          return yield* new BotChatError({ operation: "transfer", reason: "not-found" });
         if (transfer.events.some((event) => event.threadId !== transfer.identity.threadId))
           return yield* new BotChatError({ operation: "transfer", reason: "invalid-transfer" });
         const created = transfer.events.find((event) => event.type === "thread.created");
@@ -763,27 +771,47 @@ const make = Effect.gen(function* () {
         if (shell && shell.botId !== id)
           return yield* new BotChatError({ operation: "transfer", reason: "invalid-transfer" });
         yield* ensureIdle(transfer.identity.threadId);
+        if (Option.isNone(settings))
+          return yield* new BotChatError({ operation: "transfer", reason: "not-ready" });
         const staged = yield* ownership.stage(transfer, ownerEnvironmentId);
-        // An acknowledged activation may have lost its reply; never overwrite its workspace on retry.
+        // A lost activation reply must not let a retry overwrite the active bot’s settings.
         if (staged.status === "active") return staged;
-        const workspace = yield* transferFiles.importWorkspace(transfer);
-        yield* transferFiles.importAttachments(transfer);
+        const projectId = yield* ensureProject(id, transfer.identity.name);
+        const workspace = yield* ensureWorkspace(id);
+        yield* commitProject({
+          type: "project.meta.update",
+          commandId: CommandId.make(`bot-transfer-project:${transfer.transferId}`),
+          projectId,
+          defaultModelSelection: transfer.project.defaultModelSelection,
+          defaultThreadEnvMode: transfer.project.defaultThreadEnvMode,
+          autoPull: transfer.project.autoPull,
+          projectIcon: transfer.project.projectIcon,
+          scripts: transfer.project.scripts,
+          title: transfer.identity.name,
+          faviconPath: null,
+        });
+        yield* settings.value.updateSettings({
+          projectSettingsOverrides: {
+            [projectId]: {
+              ...transfer.project.settingsOverrides,
+              providerInstances: transfer.project.settingsOverrides.providerInstances ?? {},
+            },
+          },
+        });
         const localHistory = yield* events
           .readAgentEvents({ threadId: transfer.identity.threadId })
           .pipe(Stream.runCollect);
         const seen = new Set(localHistory.map((stored) => stored.event.id));
         const imported = yield* Effect.forEach(
-          transfer.events.filter((event) => !seen.has(event.id)),
+          (yield* transferFiles.portableHistory(transfer.events)).filter(
+            (event) => !seen.has(event.id),
+          ),
           (event) =>
             decodeDomainEvent({
               ...event,
               payload: isAppThread(event.payload)
                 ? { ...event.payload, projectId, worktreePath: workspace, botId: id }
-                : event.type === "checkpoint-scope.created" ||
-                    event.type === "provider-session.attached" ||
-                    event.type === "provider-session.updated"
-                  ? { ...event.payload, cwd: workspace }
-                  : event.payload,
+                : event.payload,
             }),
         );
         // Replay persisted facts only. Historical outbox effects must never run on the destination.
@@ -796,7 +824,14 @@ const make = Effect.gen(function* () {
               type: "thread.metadata-updated",
               threadId: thread.id,
               occurredAt: yield* DateTime.now,
-              payload: { ...thread, projectId, worktreePath: workspace, botId: id },
+              payload: {
+                ...thread,
+                projectId,
+                title: transfer.identity.name,
+                activeProviderThreadId: null,
+                worktreePath: workspace,
+                botId: id,
+              },
             },
           ],
         });

@@ -1,3 +1,6 @@
+import { botSettingsSearchDestination } from "./bots/botSettings.logic";
+import { useSelectedSettingsBot } from "./bots/useSelectedSettingsBot";
+import { validateSettingsScopeSearch } from "./settings/settingsScope";
 import { useBotThreadContext, useBots } from "../state/bots";
 
 import { threadPullRequestLinkMode } from "@satslab/client-runtime/thread-pull-request-compatibility";
@@ -47,7 +50,7 @@ import {
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   resolveEnvironmentMachineKind,
 } from "@satslab/contracts";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,
   ChartNoAxesColumnIcon,
@@ -472,7 +475,8 @@ function OpenCommandPaletteDialog(props: {
   readonly clearOpenIntent: () => void;
 }) {
   const navigate = useNavigate();
-  const pathname = useLocation({ select: (location) => location.pathname });
+  const location = useLocation();
+  const pathname = location.pathname;
   const { clearOpenIntent, openIntent, openChildSearch, setOpen } = props;
   const initialSearch = props.initialContext ?? {
     query: openIntent?.kind === "search" ? openIntent.query : "",
@@ -528,10 +532,16 @@ function OpenCommandPaletteDialog(props: {
   const paletteRouteTarget = useThreadRouteTarget();
   const projects = useProjects();
   const bots = useBots();
-  const isBotThread =
-    useBotThreadContext(
-      activeThread ? scopeThreadRef(activeThread.environmentId, activeThread.id) : null,
-    ) !== null;
+  const botContext = useBotThreadContext(
+    activeThread ? scopeThreadRef(activeThread.environmentId, activeThread.id) : null,
+  );
+  const isBotThread = botContext !== null;
+  const routeParams = useParams({ strict: false });
+  const settingsBot = useSelectedSettingsBot(
+    pathname.startsWith("/settings/") ? validateSettingsScopeSearch(location.search) : {},
+  );
+  const selectedBot =
+    bots.find((bot) => bot.id === (routeParams.botId ?? botContext?.botId)) ?? settingsBot;
   const referenceThreadRef =
     pathname === "/pull-requests"
       ? environments.some(
@@ -1566,7 +1576,25 @@ function OpenCommandPaletteDialog(props: {
       : null) ??
     projectGroups[0] ??
     null;
-  if (contextualProjectGroup) {
+  if (selectedBot) {
+    actionItems.push({
+      kind: "action",
+      value: "action:bot-settings",
+      title: "Bot settings",
+      description: selectedBot.name,
+      searchTerms: ["bot", "settings", "name", "icon", "model", "instructions", "reset"],
+      icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        await navigate({
+          to: "/bots/settings/$environmentId/$botId",
+          params: { environmentId: selectedBot.ownerEnvironmentId, botId: selectedBot.id },
+          state: pathname.startsWith("/bots/settings/")
+            ? true
+            : { botSettingsReturnHref: location.href },
+        });
+      },
+    });
+  } else if (!isBotThread && routeParams.botId === undefined && contextualProjectGroup) {
     actionItems.push({
       kind: "action",
       value: "action:project-settings",
@@ -1640,6 +1668,15 @@ function OpenCommandPaletteDialog(props: {
     ...(item.secondary ? { secondary: true } : {}),
     icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
     run: async () => {
+      if (item.id === "bot-load-resources") {
+        await navigate({
+          ...botSettingsSearchDestination(selectedBot),
+          state: pathname.startsWith("/bots/settings/")
+            ? true
+            : { botSettingsReturnHref: location.href },
+        });
+        return;
+      }
       await navigate({
         to: item.to,
         hash: item.targetId ?? item.id,

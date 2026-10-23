@@ -1,3 +1,5 @@
+import { botSettingsSearchDestination } from "../bots/botSettings.logic";
+import { useSelectedSettingsBot } from "../bots/useSelectedSettingsBot";
 import {
   lazy,
   Suspense,
@@ -114,6 +116,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const currentHash = useLocation({ select: (location) => location.hash });
   const currentSearch = useLocation({ select: (location) => location.search });
   const scopeSearch = validateSettingsScopeSearch(currentSearch);
+  const selectedBot = useSelectedSettingsBot(scopeSearch);
   const navItems = SETTINGS_NAV_ITEMS.filter(
     (item) => item.to !== "/settings/projects" || isSettingsOverviewVisible(scopeSearch),
   );
@@ -200,6 +203,14 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
     clearSearch();
     if (isMobile) {
       setOpenMobile(false);
+    }
+    if (item.id === "bot-load-resources") {
+      void navigate({
+        ...botSettingsSearchDestination(selectedBot),
+        replace: true,
+        hashScrollIntoView: false,
+      });
+      return;
     }
     const targetId = item.targetId ?? item.id;
     if (pathname === item.to && currentHash.replace(/^#/, "") === targetId) {

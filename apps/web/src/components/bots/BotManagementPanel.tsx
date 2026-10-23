@@ -10,16 +10,8 @@ import {
 } from "lucide-react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { resolveEnvironmentMachineKind, type BotIdentity } from "@satslab/contracts";
-import { useClientSettings } from "../../hooks/useSettings";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  derivePhysicalProjectKey,
-  selectProjectGroupingSettings,
-} from "../../logicalProject";
-import { buildPhysicalToLogicalProjectKeyMap } from "../../sidebarProjectGrouping";
 import { useBots } from "../../state/bots";
-import { useProjects, useQuietThreadShell } from "../../state/entities";
-import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
+import { useEnvironments } from "../../state/environments";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { useSettingsScope } from "../settings/SettingsScopeContext";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "../settings/settingsLayout";
@@ -105,37 +97,18 @@ function BotManagementRows() {
   );
 }
 
-/**
- * The row's actions menu: the lifecycle actions, plus Bot settings, which opens the project backing
- * the bot (same routing as the thread menu's Bot settings item).
- */
 function BotRowMenu({ bot }: { bot: BotIdentity }) {
   const router = useRouter();
   const actions = useBotActions();
   const unavailable = useBotMenuDisabled(bot);
   const disabled = unavailable || actions.busy !== null;
   const paused = actions.paused(bot);
-  const projects = useProjects({ includeBot: true });
-  const primaryEnvironmentId = usePrimaryEnvironmentId();
-  const groupingSettings = useClientSettings(selectProjectGroupingSettings);
-  const thread = useQuietThreadShell({
-    environmentId: bot.ownerEnvironmentId,
-    threadId: bot.threadId,
-  });
-  const project = projects.find(
-    (candidate) =>
-      candidate.environmentId === bot.ownerEnvironmentId && candidate.id === thread?.projectId,
-  );
   const openSettings = () => {
-    if (!project) return;
-    const projectKey =
-      buildPhysicalToLogicalProjectKeyMap({
-        projects,
-        settings: groupingSettings,
-        primaryEnvironmentId,
-      }).get(derivePhysicalProjectKey(project)) ??
-      deriveLogicalProjectKeyFromSettings(project, groupingSettings);
-    void router.navigate({ to: "/projects/$projectKey", params: { projectKey } });
+    void router.navigate({
+      to: "/bots/settings/$environmentId/$botId",
+      params: { environmentId: bot.ownerEnvironmentId, botId: bot.id },
+      state: { botSettingsReturnHref: router.state.location.href },
+    });
   };
   return (
     <Menu>
@@ -145,7 +118,7 @@ function BotRowMenu({ bot }: { bot: BotIdentity }) {
         <MoreHorizontalIcon />
       </MenuTrigger>
       <MenuPopup align="end">
-        <MenuItem disabled={!project} onClick={openSettings}>
+        <MenuItem onClick={openSettings}>
           <SettingsIcon />
           Bot settings
         </MenuItem>

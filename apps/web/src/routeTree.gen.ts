@@ -38,6 +38,7 @@ import { Route as ChatNewRouteImport } from './routes/_chat.new'
 import { Route as ChatBotsRouteImport } from './routes/_chat.bots'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
+import { Route as BotsSettingsEnvironmentIdBotIdRouteImport } from './routes/bots.settings.$environmentId.$botId'
 import { Route as ChatBotsEnvironmentIdThreadIdRouteImport } from './routes/_chat.bots.$environmentId.$threadId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -186,6 +187,12 @@ const ChatEnvironmentIdThreadIdRoute =
     path: '/$environmentId/$threadId',
     getParentRoute: () => ChatRoute,
   } as any)
+const BotsSettingsEnvironmentIdBotIdRoute =
+  BotsSettingsEnvironmentIdBotIdRouteImport.update({
+    id: '/bots/settings/$environmentId/$botId',
+    path: '/bots/settings/$environmentId/$botId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ChatBotsEnvironmentIdThreadIdRoute =
   ChatBotsEnvironmentIdThreadIdRouteImport.update({
     id: '/$environmentId/$threadId',
@@ -223,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
   '/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
@@ -254,6 +262,7 @@ export interface FileRoutesByTo {
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
   '/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -287,6 +296,7 @@ export interface FileRoutesById {
   '/_chat/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/_chat/draft/$draftId': typeof ChatDraftDraftIdRoute
   '/_chat/bots/$environmentId/$threadId': typeof ChatBotsEnvironmentIdThreadIdRoute
+  '/bots/settings/$environmentId/$botId': typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
     | '/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connect'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
     | '/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   id:
     | '__root__'
     | '/_chat'
@@ -383,6 +395,7 @@ export interface FileRouteTypes {
     | '/_chat/$environmentId/$threadId'
     | '/_chat/draft/$draftId'
     | '/_chat/bots/$environmentId/$threadId'
+    | '/bots/settings/$environmentId/$botId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -394,6 +407,7 @@ export interface RootRouteChildren {
   UsageRoute: typeof UsageRoute
   WelcomeRoute: typeof WelcomeRoute
   ProjectsProjectKeyRoute: typeof ProjectsProjectKeyRoute
+  BotsSettingsEnvironmentIdBotIdRoute: typeof BotsSettingsEnvironmentIdBotIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -601,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatEnvironmentIdThreadIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/bots/settings/$environmentId/$botId': {
+      id: '/bots/settings/$environmentId/$botId'
+      path: '/bots/settings/$environmentId/$botId'
+      fullPath: '/bots/settings/$environmentId/$botId'
+      preLoaderRoute: typeof BotsSettingsEnvironmentIdBotIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_chat/bots/$environmentId/$threadId': {
       id: '/_chat/bots/$environmentId/$threadId'
       path: '/$environmentId/$threadId'
@@ -692,6 +713,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsageRoute: UsageRoute,
   WelcomeRoute: WelcomeRoute,
   ProjectsProjectKeyRoute: ProjectsProjectKeyRoute,
+  BotsSettingsEnvironmentIdBotIdRoute: BotsSettingsEnvironmentIdBotIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

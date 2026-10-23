@@ -1,3 +1,4 @@
+import { useBotThreadContext } from "../state/bots";
 import { scopeProjectRef } from "@satslab/client-runtime/environment";
 import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
 import {
@@ -67,6 +68,7 @@ export function useThreadActionMenu(input: {
 }) {
   const { threadRef, projectCwd, onStartRename, actions, projectSettingsLabel } = input;
   const router = useRouter();
+  const botContext = useBotThreadContext(threadRef);
   const projects = useProjects({ includeBot: true });
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const projectGroupingSettings = useClientSettings(selectProjectGroupingSettings);
@@ -211,6 +213,14 @@ export function useThreadActionMenu(input: {
       };
       switch (action) {
         case "project-settings": {
+          if (botContext) {
+            void router.navigate({
+              to: "/bots/settings/$environmentId/$botId",
+              params: { environmentId: thread.environmentId, botId: botContext.botId },
+              state: { botSettingsReturnHref: router.state.location.href },
+            });
+            return;
+          }
           const project = projects.find(
             (candidate) =>
               candidate.environmentId === thread.environmentId && candidate.id === thread.projectId,

@@ -1,5 +1,8 @@
 import { OrchestrationV2DomainEvent } from "./orchestrationV2.ts";
-import { ChatAttachment } from "./chatAttachment.ts";
+import { ApplicationProjectCreatedPayload } from "./applicationEvent.ts";
+import { ThreadEnvMode } from "./environment.ts";
+import { StoredProjectIcon } from "./project.ts";
+import { ProjectSettingsOverrides } from "./settings.ts";
 import * as Schema from "effect/Schema";
 import { EnvironmentId, ThreadId, RunId, BotId } from "./baseSchemas.ts";
 
@@ -113,10 +116,14 @@ export const BotTransfer = Schema.Struct({
   jobs: Schema.Array(MemoryJob),
   snapshots: Schema.Array(MemorySnapshot),
   events: Schema.Array(OrchestrationV2DomainEvent),
-  workspace: Schema.Array(
-    Schema.Struct({ path: Schema.String, data: Schema.NullOr(Schema.String) }),
-  ),
-  attachments: Schema.Array(Schema.Struct({ attachment: ChatAttachment, data: Schema.String })),
+  project: Schema.Struct({
+    defaultModelSelection: ApplicationProjectCreatedPayload.fields.defaultModelSelection,
+    defaultThreadEnvMode: Schema.NullOr(ThreadEnvMode),
+    autoPull: Schema.Boolean,
+    projectIcon: Schema.NullOr(StoredProjectIcon),
+    scripts: ApplicationProjectCreatedPayload.fields.scripts,
+    settingsOverrides: ProjectSettingsOverrides,
+  }),
 });
 export type BotTransfer = typeof BotTransfer.Type;
 

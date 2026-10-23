@@ -60,9 +60,14 @@ subsequent requests; requests already running finish normally.
 
 ## Move a bot to another environment
 
-Connect both environments, finish or cancel pending turns, then open **Manage bots**, select a destination, and choose **Move**.
-The move carries the conversation, original messages, summaries, workspace, and attachments.
-The destination uses its own providers, compaction setting, and instruction-loading setting. Select an available provider there if the previous one is unavailable.
+Connect both environments, finish or cancel pending turns, then open the bot’s settings, select a destination, and choose **Move**.
+The move keeps the bot's name, identity, root conversation, and memory, including frozen memory views.
+It also carries project model defaults and options, icon, actions, explicit project settings, and the current instruction-loading choice.
+Other settings that inherit environment defaults use the destination's defaults.
+
+Workspace files, attachments, provider credentials, live sessions, and separate subagent or launched-thread histories stay behind.
+The destination creates its own workspace; attachment names remain in the conversation as unavailable.
+It uses its own providers and compaction setting. Select an available provider there if the previous one is unavailable.
 
 The source stops accepting bot turns before the destination takes ownership.
 If the connection breaks, reconnect both environments and choose **Resume transfer**.

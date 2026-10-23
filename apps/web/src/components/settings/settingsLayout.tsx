@@ -555,10 +555,12 @@ export function SettingsPageContainer({
   children,
   className,
   width = "readable",
+  showScopeSentence = true,
 }: {
   children: ReactNode;
   className?: string;
   width?: WorkspacePageWidth;
+  showScopeSentence?: boolean;
 }) {
   const navigate = useNavigate();
   const hash = useLocation({ select: (location) => location.hash });
@@ -587,7 +589,7 @@ export function SettingsPageContainer({
         data-settings-page-scroll
       >
         <WorkspacePageContainer width={width} className={cn("gap-8", className)}>
-          <SettingsScopeSentence />
+          {showScopeSentence ? <SettingsScopeSentence /> : null}
           {children}
         </WorkspacePageContainer>
       </div>

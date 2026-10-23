@@ -549,8 +549,7 @@ export const SETTINGS_SEARCH_ITEMS = [
   {
     id: "bot-load-resources",
     title: "Bot instructions and skills",
-    to: "/settings/projects",
-    scope: "project",
+    to: "/settings/bots",
     searchTerms: ["bot AGENTS.md CLAUDE.md skills instruction files resources load memory"],
   },
   {

@@ -3,7 +3,7 @@ import { createContext, useContext, useId, useState, type ReactNode } from "reac
 import { useNavigate } from "@tanstack/react-router";
 import { AtomRegistry } from "effect/reactivity";
 import * as Effect from "effect/Effect";
-import type { EnvironmentId, BotIdentity } from "@satslab/contracts";
+import type { EnvironmentId, BotIdentity, BotId } from "@satslab/contracts";
 import { waitForThreadShell } from "../../state/entities";
 import { useEnvironments } from "../../state/environments";
 import {
@@ -55,7 +55,13 @@ export function useBotActions() {
   return context;
 }
 
-export function BotActionsProvider({ children }: { children: ReactNode }) {
+export function BotActionsProvider({
+  children,
+  settingsBotId,
+}: {
+  children: ReactNode;
+  settingsBotId?: BotId;
+}) {
   const { environments } = useEnvironments();
   const registry = useContext(RegistryContext);
   const records = useBotRecords();
@@ -218,7 +224,12 @@ export function BotActionsProvider({ children }: { children: ReactNode }) {
         AtomRegistry.getResult(registry, query, { suspendOnWaiting: true }),
       ).catch(() => undefined);
       setConfirmation(null);
-      if (wasCurrent) {
+      if (settingsBotId === bot.id) {
+        if (action === "delete") {
+          setLastBotId(null);
+          await navigate({ to: "/settings/bots", replace: true });
+        }
+      } else if (wasCurrent) {
         if (result.value) {
           await waitForThreadShell({
             environmentId: result.value.ownerEnvironmentId,

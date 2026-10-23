@@ -1,9 +1,6 @@
-import { useBotThreadShells } from "../../state/bots";
-import { BotProjectActions } from "../bots/BotProjectActions";
-import { BotResourceSettings } from "../bots/BotResourceSettings";
-import { useComposerMenuState } from "../chat/useComposerMenuState";
+import { ProjectIdentitySettings } from "./ProjectIdentitySettings";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { AuthOrchestrationOperateScope } from "@satslab/contracts";
+import { AuthOrchestrationOperateScope, type EnvironmentId } from "@satslab/contracts";
 import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
@@ -15,12 +12,10 @@ import {
 import { scopeProjectRef, scopeThreadRef } from "@satslab/client-runtime/environment";
 import { planProjectRemoval } from "@satslab/client-runtime/state/projects";
 import { AsyncResult } from "effect/reactivity";
-import { type EnvironmentId, type ProjectIconOverride } from "@satslab/contracts";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as Cause from "effect/Cause";
 import { InfoIcon, Trash2Icon } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-
+import { useEffect, useRef, type ReactNode } from "react";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { releaseProjectDraftUploads } from "../../lib/composerDraftUploads";
 import { readLocalApi } from "../../localApi";
@@ -28,36 +23,18 @@ import {
   type SidebarProjectGroupMember,
   type SidebarProjectSnapshot,
 } from "../../sidebarProjectGrouping";
-import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
+import { useEnvironments } from "../../state/environments";
 import { useThreadShells, waitForProjectRemoval } from "../../state/entities";
 import { projectEnvironment } from "../../state/projects";
-import { ProjectFavicon } from "../ProjectFavicon";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import {
-  SettingResetButton,
-  SettingsPageContainer,
-  SettingsRow,
-  SettingsSection,
-} from "./settingsLayout";
-import {
-  canPickExternalProjectFavicon,
-  ProjectFaviconPickerDialog,
-} from "./ProjectFaviconPickerDialog";
+import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
 import { ProjectActionsSettings } from "./ProjectActionsSettings";
 import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
-import { projectGroupTitleNeedsUpdate } from "./ProjectSettingsPanel.logic";
 import { useSettingsProjectGroups } from "./useSettingsProjectGroups";
 import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
-
-const ProjectIconPickerDialog = lazy(() =>
-  import("./ProjectIconPickerDialog").then((module) => ({
-    default: module.ProjectIconPickerDialog,
-  })),
-);
 
 export type ProjectSettingsCategory = "general" | "source-control" | "project";
 
@@ -145,6 +122,15 @@ export function ProjectSettingsPanel({
         This checkout is no longer available in the selected project and environment.
       </p>
     );
+  if (selected.memberProjects.some((member) => member.isBot)) {
+    return (
+      unavailable ?? (
+        <p className="p-8 text-sm text-muted-foreground">
+          Bot settings are unavailable. Connect the owning environment and wait for the bot to load.
+        </p>
+      )
+    );
+  }
   const scopedGroup = {
     ...selected,
     memberProjects: members,
@@ -168,42 +154,18 @@ function ProjectDetail({
   hasOtherMembers: boolean;
 }) {
   const navigate = useNavigate({ from: "/settings" });
-  const primaryEnvironmentId = usePrimaryEnvironmentId();
-  const { environments } = useEnvironments();
-  const environmentById = new Map(
-    environments.map((environment) => [environment.environmentId, environment]),
-  );
   const editableIds = useEnvironmentsWithScope(group.memberProjects, AuthOrchestrationOperateScope);
   const canEditGroup = group.memberProjects.every((member) =>
     editableIds.has(member.environmentId),
   );
-  const representative =
-    group.memberProjects.find(
-      (member) => environmentById.get(member.environmentId)?.serverConfig != null,
-    ) ?? group.memberProjects[0]!;
-  const ordinaryThreads = useThreadShells();
-  const botThreads = useBotThreadShells();
-  const threads = [...ordinaryThreads, ...botThreads];
-  const updateProject = useOrchestrationCommand(projectEnvironment.update, {
-    reportFailure: false,
-  });
+  const { environments } = useEnvironments();
+  const environmentById = new Map(
+    environments.map((environment) => [environment.environmentId, environment]),
+  );
+  const threads = useThreadShells();
   const deleteProject = useOrchestrationCommand(projectEnvironment.delete, {
     reportFailure: false,
   });
-  const projectNameEditedRef = useRef(false);
-
-  const faviconPath = representative.faviconPath ?? null;
-  const projectIcon = representative.projectIcon ?? null;
-  const pickProjectFavicon =
-    typeof window !== "undefined" &&
-    group.memberProjects.every(
-      (member) =>
-        member.environmentId === primaryEnvironmentId &&
-        canPickExternalProjectFavicon(member.workspaceRoot, navigator.platform),
-    )
-      ? window.desktopBridge?.pickProjectFavicon
-      : undefined;
-
   const reportFailure = (title: string, result: AtomCommandResult<void, unknown>) => {
     if (result._tag !== "Failure" || isAtomCommandInterrupted(result)) return;
     const error = squashAtomCommandFailure(result);
@@ -235,88 +197,7 @@ function ProjectDetail({
     return result;
   };
 
-  const updateAllMembers = async (
-    input: Partial<{
-      title: string;
-      faviconPath: string | null;
-      projectIcon: ProjectIconOverride | null;
-    }>,
-    failureTitle: string,
-  ): Promise<AtomCommandResult<void, unknown>> => {
-    const denied = checkProjectAccess(group.memberProjects, failureTitle);
-    if (denied) return denied;
-    const unavailable = group.memberProjects.find((member) => {
-      const environment = environmentById.get(member.environmentId);
-      return environment?.connection.phase !== "connected" || !environment.serverConfig;
-    });
-    if (unavailable) {
-      const error = new Error(
-        `Connect ${unavailable.environmentLabel ?? "the selected environment"} and try again.`,
-      );
-      const result: AtomCommandResult<void, unknown> = AsyncResult.failure(Cause.fail(error));
-      reportFailure(failureTitle, result);
-      return result;
-    }
-    for (const member of group.memberProjects) {
-      const revoked = checkProjectAccess([member], failureTitle);
-      if (revoked) return revoked;
-      const result = mapAtomCommandResult(
-        await updateProject({
-          environmentId: member.environmentId,
-          input: { projectId: member.id, ...input },
-        }),
-        () => undefined,
-      );
-      if (result._tag === "Failure") {
-        reportFailure(
-          group.memberProjects.length > 1
-            ? `${failureTitle} on ${member.environmentLabel ?? "the current environment"}`
-            : failureTitle,
-          result,
-        );
-        return result;
-      }
-    }
-    return AsyncResult.success(undefined);
-  };
-
-  const renameGroup = async (nextTitle: string, wasEdited: boolean) => {
-    const title = nextTitle.trim();
-    if (!title) {
-      toastManager.add({ type: "warning", title: "Project title cannot be empty" });
-      return;
-    }
-    if (
-      !projectGroupTitleNeedsUpdate(
-        group.memberProjects.map((member) => member.title),
-        title,
-        wasEdited,
-      )
-    ) {
-      return;
-    }
-    await updateAllMembers({ title }, "Failed to rename project");
-  };
-
-  const [faviconPickerOpen, setFaviconPickerOpen] = useComposerMenuState(!canEditGroup);
-  const [iconPickerOpen, setIconPickerOpen] = useComposerMenuState(!canEditGroup);
-  const [isSavingFavicon, setIsSavingFavicon] = useState(false);
-  const savingFaviconRef = useRef(false);
-  const setProjectIcon = async (input: {
-    faviconPath: string | null;
-    projectIcon: ProjectIconOverride | null;
-  }) => {
-    if (savingFaviconRef.current) return;
-    savingFaviconRef.current = true;
-    setIsSavingFavicon(true);
-    await updateAllMembers(input, "Failed to update project icon");
-    savingFaviconRef.current = false;
-    setIsSavingFavicon(false);
-  };
-
   const hasMultipleCheckouts = group.memberProjects.length > 1;
-  const botMember = group.memberProjects.find((member) => member.isBot);
-  const isBotProject = botMember !== undefined;
 
   const removeMembers = async (members: ReadonlyArray<SidebarProjectGroupMember>) => {
     if (checkProjectAccess(members, "Failed to remove project")) return;
@@ -472,114 +353,25 @@ function ProjectDetail({
             Can't find a setting? Keep this project picked above and hop to any other settings page.
           </AlertDescription>
         </Alert>
-        <SettingsSection id="project-overview" title="Project" hideTitle>
-          {!canEditGroup ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground sm:px-4">
-              {group.memberProjects.length > 1
-                ? "Shared settings require permission to change every checkout in this group."
-                : "This connection cannot change this project."}
-            </p>
-          ) : null}
-          <SettingsRow
-            title="Name"
-            description="The shared name for this project group in the sidebar and thread lists."
-            control={
-              <Input
-                key={`${group.projectKey}:${group.displayName}`}
-                size="sm"
-                className="w-full sm:w-64"
-                aria-label="Project name"
-                disabled={!canEditGroup}
-                defaultValue={group.displayName}
-                onChange={() => {
-                  projectNameEditedRef.current = true;
-                }}
-                onBlur={(event) => {
-                  const wasEdited = projectNameEditedRef.current;
-                  projectNameEditedRef.current = false;
-                  void renameGroup(event.currentTarget.value, wasEdited);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.currentTarget.blur();
-                }}
-              />
-            }
-          />
-          <SettingsRow
-            title="Project icon"
-            description={
-              projectIcon?.kind === "lucide"
-                ? `${projectIcon.name} · ${projectIcon.color}`
-                : projectIcon?.kind === "monogram"
-                  ? `${projectIcon.text} · ${projectIcon.color}`
-                  : projectIcon?.kind === "emoji"
-                    ? projectIcon.emoji
-                    : (faviconPath ?? "Automatic")
-            }
-            resetAction={
-              group.memberProjects.some(
-                (member) => member.faviconPath != null || member.projectIcon != null,
-              ) ? (
-                <SettingResetButton
-                  label="project icon"
-                  disabled={isSavingFavicon || !canEditGroup}
-                  onClick={() => void setProjectIcon({ faviconPath: null, projectIcon: null })}
-                />
-              ) : null
-            }
-            control={
-              <div className="flex items-center gap-2">
-                <ProjectFavicon project={representative} className="size-6" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  type="button"
-                  aria-label="Choose a project icon"
-                  disabled={isSavingFavicon || !canEditGroup}
-                  onClick={() => setIconPickerOpen(true)}
-                >
-                  Choose icon
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  type="button"
-                  aria-label="Choose a project icon file"
-                  disabled={isSavingFavicon || !canEditGroup}
-                  onClick={() => setFaviconPickerOpen(true)}
-                >
-                  Choose file
-                </Button>
-              </div>
-            }
-          />
-        </SettingsSection>
+        <ProjectIdentitySettings group={group} />
         <ProjectDefaultsSettings category="project" />
-        {isBotProject ? <BotResourceSettings /> : null}
         <ProjectActionsSettings />
         {hasMultipleCheckouts ? checkoutChoices : null}
         <SettingsSection title="Danger">
-          {botMember ? (
-            <BotProjectActions environmentId={botMember.environmentId} projectId={botMember.id} />
-          ) : null}
           <SettingsRow
             title={
-              isBotProject
-                ? "Delete bot"
-                : hasOtherMembers
-                  ? "Remove checkout"
-                  : group.memberProjects.length > 1
-                    ? "Remove this project everywhere"
-                    : "Remove project"
+              hasOtherMembers
+                ? "Remove checkout"
+                : group.memberProjects.length > 1
+                  ? "Remove this project everywhere"
+                  : "Remove project"
             }
             description={
-              isBotProject
-                ? "Deletes the bot, its memory, conversations, and project entry. Files on disk are not touched."
-                : hasOtherMembers
-                  ? "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched."
-                  : group.memberProjects.length > 1
-                    ? `Deletes all ${group.memberProjects.length} checkout entries and their threads on every machine. Files on disk are not touched.`
-                    : "Deletes the project entry and its threads. Files on disk are not touched."
+              hasOtherMembers
+                ? "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched."
+                : group.memberProjects.length > 1
+                  ? `Deletes all ${group.memberProjects.length} checkout entries and their threads on every machine. Files on disk are not touched.`
+                  : "Deletes the project entry and its threads. Files on disk are not touched."
             }
             control={
               <Button
@@ -589,42 +381,16 @@ function ProjectDetail({
                 onClick={() => void removeMembers(group.memberProjects)}
               >
                 <Trash2Icon />
-                {isBotProject
-                  ? "Delete bot"
-                  : hasOtherMembers
-                    ? "Remove checkout"
-                    : group.memberProjects.length > 1
-                      ? "Remove all entries"
-                      : "Remove project"}
+                {hasOtherMembers
+                  ? "Remove checkout"
+                  : group.memberProjects.length > 1
+                    ? "Remove all entries"
+                    : "Remove project"}
               </Button>
             }
           />
         </SettingsSection>
       </SettingsPageContainer>
-
-      <ProjectFaviconPickerDialog
-        key={`${representative.environmentId}:${representative.workspaceRoot}:${faviconPickerOpen}`}
-        cwd={representative.workspaceRoot}
-        environmentId={representative.environmentId}
-        onOpenChange={setFaviconPickerOpen}
-        {...(pickProjectFavicon
-          ? { onPickExternal: () => pickProjectFavicon(representative.workspaceRoot) }
-          : {})}
-        onSelect={(path) => void setProjectIcon({ faviconPath: path, projectIcon: null })}
-        open={faviconPickerOpen && canEditGroup}
-        projectName={group.displayName}
-      />
-      {iconPickerOpen && canEditGroup ? (
-        <Suspense fallback={null}>
-          <ProjectIconPickerDialog
-            current={projectIcon}
-            projectName={representative.title}
-            open
-            onOpenChange={setIconPickerOpen}
-            onSelect={(icon) => void setProjectIcon({ faviconPath: null, projectIcon: icon })}
-          />
-        </Suspense>
-      ) : null}
     </>
   );
 }

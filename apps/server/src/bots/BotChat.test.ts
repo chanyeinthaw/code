@@ -6,6 +6,7 @@ import { assert, it } from "@effect/vitest";
 import {
   DEFAULT_SERVER_SETTINGS,
   CommandId,
+  ChatAttachmentId,
   CheckpointId,
   CheckpointScopeId,
   TurnItemId,
@@ -35,6 +36,7 @@ import * as Fiber from "effect/Fiber";
 import * as Queue from "effect/Queue";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
+import * as SqlClient from "effect/sql/SqlClient";
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as EventSink from "../orchestration-v2/EventSink.ts";
@@ -54,6 +56,8 @@ import * as MemoryCompaction from "./MemoryCompaction.ts";
 import * as BotOwnership from "./BotOwnership.ts";
 import * as BotStorage from "./BotStorage.ts";
 import * as BotTransferFiles from "./BotTransferFiles.ts";
+import { planProjectCommand } from "../orchestration-v2/ProjectCommands.ts";
+import * as Result from "effect/Result";
 import { turnInstructions } from "./MemoryWorker.ts";
 
 const owner = EnvironmentId.make("owner");
@@ -369,9 +373,34 @@ const transferLayer = (environmentId: EnvironmentId) =>
     Stream.empty,
     environmentId,
     true,
-  );
+  ).pipe(Layer.provideMerge(ServerSettings.layerTest()));
 
-it.effect("moves a bot whose conversation is still empty into the destination environment", () =>
+it.effect(
+  "pins inherited instruction loading while other absent overrides inherit the destination",
+  () =>
+    Effect.gen(function* () {
+      const sourceContext = yield* Layer.build(transferLayer(owner));
+      const source = Context.get(sourceContext, BotChat.BotChat);
+      const sourceSettings = Context.get(sourceContext, ServerSettings.ServerSettingsService);
+      yield* sourceSettings.updateSettings({
+        botLoadResources: false,
+        enableAgentBrowserAccess: false,
+      });
+      const created = yield* source.create({
+        threadId,
+        modelSelection: thread.modelSelection,
+        runtimeMode: thread.runtimeMode,
+      });
+      yield* source.beginTransfer(created.id, destinationEnvironment);
+      const transfer = yield* Context.get(sourceContext, BotOwnership.BotOwnership).packageFor(
+        created.id,
+      );
+      assert.deepEqual(transfer?.project.settingsOverrides, { botLoadResources: false });
+      assert.isNull(transfer?.project.defaultModelSelection);
+    }).pipe(Effect.scoped),
+);
+
+it.effect("moves root history and project settings without workspace files or attachments", () =>
   Effect.gen(function* () {
     const sourceContext = yield* Layer.build(transferLayer(owner));
     const destinationContext = yield* Layer.build(transferLayer(destinationEnvironment));
@@ -382,14 +411,232 @@ it.effect("moves a bot whose conversation is still empty into the destination en
       modelSelection: thread.modelSelection,
       runtimeMode: thread.runtimeMode,
     });
+    const sourceProjects = Context.get(sourceContext, ProjectStore.ProjectStoreV2);
+    const sourceThread = yield* Context.get(
+      sourceContext,
+      ProjectionStore.ProjectionStoreV2,
+    ).getThread(threadId);
+    const sourceSettings = Context.get(sourceContext, ServerSettings.ServerSettingsService);
+    const destinationSettings = Context.get(
+      destinationContext,
+      ServerSettings.ServerSettingsService,
+    );
+    const unrelatedId = ProjectId.make("unrelated");
+    yield* destinationSettings.updateSettings({
+      botLoadResources: true,
+      projectSettingsOverrides: {
+        [unrelatedId]: { botLoadResources: true, defaultAutoPull: true },
+      },
+    });
+    const scripts = [
+      {
+        id: "test",
+        name: "Test",
+        command: "vp test",
+        icon: "test" as const,
+        runOnWorktreeCreate: false,
+      },
+    ];
+    const defaults = { ...thread.modelSelection, options: [{ id: "effort", value: "max" }] };
+    const row = yield* sourceProjects.get(sourceThread.projectId);
+    assert.isTrue(Option.isSome(row));
+    const command = {
+      type: "project.meta.update" as const,
+      commandId: CommandId.make("configure-transfer"),
+      projectId: sourceThread.projectId,
+      defaultModelSelection: defaults,
+      defaultThreadEnvMode: "local" as const,
+      autoPull: true,
+      projectIcon: { kind: "emoji" as const, emoji: "🪻" },
+      scripts,
+    };
+    const planned = planProjectCommand({
+      command,
+      state: { project: Option.getOrUndefined(row), workspaceOwner: undefined },
+      eventId: EventId.make("configure-transfer"),
+      now,
+    });
+    if (Result.isFailure(planned)) return yield* planned.failure;
+    yield* Context.get(sourceContext, EventSink.EventSinkV2).commitProjectCommand({
+      commandId: command.commandId,
+      projectId: command.projectId,
+      commandType: command.type,
+      acceptedAt: now,
+      event: planned.success,
+    });
+    const sourceFs = Context.get(sourceContext, FileSystem.FileSystem);
+    const targetFs = Context.get(destinationContext, FileSystem.FileSystem);
+    const sourcePath = sourceThread.worktreePath;
+    assert.isNotNull(sourcePath);
+    if (!sourcePath) return yield* Effect.die("Bot has no workspace");
+    yield* sourceFs.writeFileString(`${sourcePath}/private.txt`, "workspace bytes excluded");
+    yield* sourceFs.symlink("/missing-transfer-workspace-target", `${sourcePath}/unreadable-link`);
+    const attachment = {
+      type: "file" as const,
+      id: ChatAttachmentId.make("missing-attachment"),
+      name: "private.txt",
+      mimeType: "text/plain",
+      sizeBytes: 12,
+    };
+    const rootMessage = {
+      ...message("root-history", "user", "Keep this text"),
+      runId: null,
+      attachments: [attachment],
+    };
+    yield* Context.get(sourceContext, EventSink.EventSinkV2).write({
+      events: [
+        {
+          id: EventId.make("root-history"),
+          threadId,
+          occurredAt: now,
+          type: "message.updated",
+          payload: rootMessage,
+        },
+        {
+          id: EventId.make("separate-thread"),
+          threadId: ThreadId.make("separate-thread"),
+          occurredAt: now,
+          type: "thread.created",
+          payload: {
+            ...sourceThread,
+            id: ThreadId.make("separate-thread"),
+            lineage: {
+              parentThreadId: threadId,
+              rootThreadId: threadId,
+              relationshipToParent: "subagent",
+            },
+          },
+        },
+      ],
+    });
+    const sourceStorage = Context.get(sourceContext, BotStorage.BotStorage);
+    yield* sourceStorage.append(created.id, [
+      { key: "memory", kind: "talk", text: "Retained memory", date: DateTime.formatIso(now) },
+    ]);
+    yield* sourceStorage.completeMemoryJob(created.id, {
+      id: 0,
+      count: 1,
+      text: "Compacted memory",
+    });
+    const compacted = yield* sourceStorage.memory(created.id);
+    yield* sourceStorage.saveMemory(created.id, {
+      ...compacted,
+      compactParts: [{ id: 0, count: 1 }],
+      compactRevision: compacted.revision,
+      compactPending: false,
+    });
+    yield* sourceStorage.append(created.id, [
+      {
+        key: "pending-memory",
+        kind: "talk",
+        text: "Pending compaction",
+        date: DateTime.formatIso(now),
+      },
+    ]);
+    yield* sourceStorage.freeze({
+      botId: created.id,
+      runId: RunId.make("frozen-transfer"),
+      total: 1,
+      view: "Frozen memory",
+    });
+    yield* sourceSettings.updateSettings({
+      projectSettingsOverrides: {
+        [sourceThread.projectId]: {
+          botLoadResources: false,
+          defaultModelSelection: null,
+          enableAgentBrowserAccess: false,
+          defaultProjectScripts: scripts,
+        },
+      },
+    });
     const descriptor = yield* source.beginTransfer(created.id, destinationEnvironment);
     for (let offset = 0; offset < descriptor.length;) {
       const chunk = yield* source.readTransferChunk(created.id, descriptor.transferId, offset);
       yield* destination.writeTransferChunk(descriptor.transferId, offset, chunk.data);
       offset = chunk.nextOffset;
     }
+    const packageBefore = yield* Context.get(sourceContext, BotOwnership.BotOwnership).packageFor(
+      created.id,
+    );
+    assert.isDefined(packageBefore);
+    assert.isFalse(JSON.stringify(packageBefore).includes("workspace bytes excluded"));
+    assert.isFalse(Object.hasOwn(packageBefore ?? {}, "workspace"));
+    assert.isFalse(Object.hasOwn(packageBefore ?? {}, "attachments"));
+    assert.isTrue(packageBefore?.events.every((event) => event.threadId === threadId));
+    assert.deepEqual(yield* source.beginTransfer(created.id, destinationEnvironment), descriptor);
     const staged = yield* destination.stageTransfer(descriptor.transferId, descriptor.length);
+    const stagedThread = yield* Context.get(
+      destinationContext,
+      ProjectionStore.ProjectionStoreV2,
+    ).getThread(threadId);
+    yield* destinationSettings.updateSettings({
+      projectSettingsOverrides: {
+        [stagedThread.projectId]: {
+          defaultAutoPull: true,
+          providerInstances: { [instanceId]: { enabled: false } },
+        },
+      },
+    });
+    yield* destination.stageTransfer(descriptor.transferId, descriptor.length);
     assert.equal(staged.status, "staged");
+    const targetThread = yield* Context.get(
+      destinationContext,
+      ProjectionStore.ProjectionStoreV2,
+    ).getThread(threadId);
+    const targetSettings = yield* Context.get(
+      destinationContext,
+      ServerSettings.ServerSettingsService,
+    ).getSettings;
+    assert.deepEqual(targetSettings.projectSettingsOverrides[targetThread.projectId], {
+      botLoadResources: false,
+      defaultModelSelection: null,
+      enableAgentBrowserAccess: false,
+      providerInstances: {},
+      defaultProjectScripts: scripts,
+    });
+    assert.deepEqual(targetSettings.projectSettingsOverrides[unrelatedId], {
+      botLoadResources: true,
+      defaultAutoPull: true,
+    });
+    const targetProject = yield* Context.get(destinationContext, ProjectStore.ProjectStoreV2).get(
+      targetThread.projectId,
+    );
+    assert.isTrue(Option.isSome(targetProject));
+    if (Option.isNone(targetProject)) return yield* Effect.die("Missing imported project");
+    assert.deepEqual(targetProject.value.defaultModelSelection, defaults);
+    assert.equal(targetProject.value.defaultThreadEnvMode, "local");
+    assert.isTrue(targetProject.value.autoPull);
+    assert.deepEqual(targetProject.value.projectIcon, command.projectIcon);
+    assert.deepEqual(targetProject.value.scripts, scripts);
+    assert.equal(targetProject.value.title, created.name);
+    assert.notEqual(targetProject.value.workspaceRoot, sourcePath);
+    assert.isFalse(yield* targetFs.exists(`${targetProject.value.workspaceRoot}/private.txt`));
+    const targetHistory = yield* Context.get(
+      destinationContext,
+      ProjectionStore.ProjectionStoreV2,
+    ).getThreadRecords(threadId, ["messages"]);
+    assert.equal(
+      targetHistory.messages[0]?.text,
+      "Keep this text\n[Attachments unavailable after transfer: private.txt]",
+    );
+    assert.deepEqual(targetHistory.messages[0]?.attachments, []);
+    assert.isNull(targetThread.activeProviderThreadId);
+    const targetStorage = Context.get(destinationContext, BotStorage.BotStorage);
+    assert.equal((yield* targetStorage.message(created.id, 0))?.text, "Retained memory");
+    assert.equal(
+      (yield* targetStorage.snapshot(created.id, RunId.make("frozen-transfer")))?.view,
+      "Frozen memory",
+    );
+    const targetSql = Context.get(destinationContext, SqlClient.SqlClient);
+    assert.deepEqual(
+      yield* targetSql`SELECT id,count,source FROM sats_bot_memory_jobs WHERE bot_id=${created.id}`,
+      packageBefore?.jobs,
+    );
+    assert.deepEqual(yield* targetStorage.memory(created.id), packageBefore?.state);
+    assert.deepEqual(yield* targetStorage.memoryNodes(created.id, [{ id: 0, count: 1 }]), [
+      { id: 0, count: 1, text: "Compacted memory" },
+    ]);
+    assert.deepEqual((yield* targetStorage.memory(created.id)).compactParts, [{ id: 0, count: 1 }]);
     const released = yield* source.releaseTransfer(created.id, descriptor.transferId);
     const active = yield* destination.activateTransfer(
       created.id,
@@ -397,7 +644,29 @@ it.effect("moves a bot whose conversation is still empty into the destination en
       released.secret,
     );
     assert.equal(active.status, "active");
+    assert.equal(active.id, created.id);
+    assert.equal(active.threadId, threadId);
     assert.equal(active.ownerEnvironmentId, destinationEnvironment);
+    yield* destinationSettings.updateSettings({
+      projectSettingsOverrides: { [targetThread.projectId]: { botLoadResources: true } },
+    });
+    yield* targetFs.writeFileString(
+      `${targetProject.value.workspaceRoot}/target-only.txt`,
+      "keep me",
+    );
+    assert.deepEqual(
+      yield* destination.stageTransfer(descriptor.transferId, descriptor.length),
+      active,
+    );
+    assert.equal(
+      (yield* destinationSettings.getSettings).projectSettingsOverrides[targetThread.projectId]
+        ?.botLoadResources,
+      true,
+    );
+    assert.equal(
+      yield* targetFs.readFileString(`${targetProject.value.workspaceRoot}/target-only.txt`),
+      "keep me",
+    );
     const projected = yield* Context.get(
       destinationContext,
       ProjectionStore.ProjectionStoreV2,

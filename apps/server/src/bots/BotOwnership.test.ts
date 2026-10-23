@@ -90,8 +90,14 @@ it.effect("transfers durable history with no simultaneous owners and resumes los
           },
         },
       ],
-      workspace: [],
-      attachments: [],
+      project: {
+        defaultModelSelection: null,
+        defaultThreadEnvMode: null,
+        autoPull: false,
+        projectIcon: null,
+        scripts: [],
+        settingsOverrides: {},
+      },
     };
     yield* source.savePackage(transfer);
     assert.equal((yield* sourceStorage.get(identity.id)).status, "transferring");
@@ -157,8 +163,14 @@ it.effect("transfers durable history with no simultaneous owners and resumes los
     const returned: BotTransfer = {
       ...returnedCore,
       events: [],
-      workspace: [],
-      attachments: [],
+      project: {
+        defaultModelSelection: null,
+        defaultThreadEnvMode: null,
+        autoPull: false,
+        projectIcon: null,
+        scripts: [],
+        settingsOverrides: {},
+      },
     };
     yield* target.savePackage(returned);
     assert.equal((yield* Effect.result(target.stage(returned, owner)))._tag, "Failure");
@@ -191,8 +203,14 @@ it.effect("allows cancellation before release and rejects broken tree coverage",
       ...core,
       state: { ...core.state, parts: [] },
       events: [],
-      workspace: [],
-      attachments: [],
+      project: {
+        defaultModelSelection: null,
+        defaultThreadEnvMode: null,
+        autoPull: false,
+        projectIcon: null,
+        scripts: [],
+        settingsOverrides: {},
+      },
     };
     assert.equal((yield* Effect.result(source.stage(broken, destination)))._tag, "Failure");
     const restored = yield* source.cancel(identity.id, core.transferId, owner);
@@ -217,8 +235,14 @@ it.effect(
       const first: BotTransfer = {
         ...(yield* source.prepare(identity.id, destination)),
         events: [],
-        workspace: [],
-        attachments: [],
+        project: {
+          defaultModelSelection: null,
+          defaultThreadEnvMode: null,
+          autoPull: false,
+          projectIcon: null,
+          scripts: [],
+          settingsOverrides: {},
+        },
       };
       yield* source.savePackage(first);
       yield* target.stage(first, destination);
@@ -235,8 +259,14 @@ it.effect(
       const second: BotTransfer = {
         ...(yield* source.prepare(identity.id, destination)),
         events: [],
-        workspace: [],
-        attachments: [],
+        project: {
+          defaultModelSelection: null,
+          defaultThreadEnvMode: null,
+          autoPull: false,
+          projectIcon: null,
+          scripts: [],
+          settingsOverrides: {},
+        },
       };
       yield* source.savePackage(second);
       yield* target.stage(second, destination);
