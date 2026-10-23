@@ -21,6 +21,29 @@ import * as DesktopUpdates from "./DesktopUpdates.ts";
 import { flushCallbacks, makeHarness } from "./updatesTestHarness.ts";
 
 describe("DesktopUpdates", () => {
+  it.effect("keeps unsigned Sora installs out of every self-update path", () => {
+    const harness = makeHarness({
+      env: { SORA_DESKTOP_MOCK_UPDATES: "false", SORA_DISABLE_AUTO_UPDATE: "false" },
+      updateFeed: "provider: github\nowner: satslab\nrepo: sora\n",
+    });
+    return Effect.gen(function* () {
+      const updates = yield* DesktopUpdates.DesktopUpdates;
+      yield* updates.configure;
+      const state = yield* updates.getState;
+      assert.equal(state.status, "disabled");
+      assert.isFalse(state.enabled);
+      assert.isFalse((yield* updates.check("manual")).checked);
+      assert.isFalse((yield* updates.download).accepted);
+      assert.isFalse((yield* updates.install).accepted);
+      assert.isFalse((yield* updates.installPrepared("0.0.3")).accepted);
+      assert.equal((yield* updates.setChannel("nightly")).status, "disabled");
+      assert.equal(harness.checkCount(), 0);
+      assert.equal(harness.downloadCount(), 0);
+      assert.equal(harness.quitAndInstalls(), 0);
+      assert.equal(harness.listenerCount(), 0);
+    }).pipe(Effect.provide(harness.layer));
+  });
+
   it.effect("updates Linux .deb installs and leaves other non-AppImage installs off", () =>
     Effect.gen(function* () {
       const linuxState = (packageType: string | undefined) =>

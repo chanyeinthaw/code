@@ -198,13 +198,6 @@ export const make = Effect.gen(function* () {
     launcherManaged: launcher.managed,
   });
   const serverInstallation = serverSelfUpdate === null ? yield* resolveServerInstallation : null;
-  // Static is correct: the control fd is known at bootstrap, and the desktop
-  // app and its bundled server ship in one artifact, so a present fd means the
-  // app speaks the requestDesktopUpdate protocol.
-
-  const desktopAppUpdate =
-    serverSelfUpdate === "desktop-managed" && serverConfig.desktopTelemetryControlFd !== undefined;
-
   const descriptor: ExecutionEnvironmentDescriptor = {
     environmentId,
     label,
@@ -261,10 +254,7 @@ export const make = Effect.gen(function* () {
       ignoredFileListing: true,
       ...(serverSelfUpdate === null ? {} : { serverSelfUpdate }),
       ...(serverInstallation === null ? {} : { serverInstallation }),
-      ...(serverSelfUpdate === "boot-service" || desktopAppUpdate
-        ? { serverSelfUpdateProgress: true }
-        : {}),
-      ...(desktopAppUpdate ? { desktopAppUpdate: true } : {}),
+      ...(serverSelfUpdate === "boot-service" ? { serverSelfUpdateProgress: true } : {}),
       serverBrowser: true,
     },
   };
