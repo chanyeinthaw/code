@@ -13,6 +13,8 @@ import { WS_METHODS } from "./rpc.ts";
 
 /** Incremental client enforcement; the server still authorizes every request. */
 export const CLIENT_GUARDED_RPC_SCOPES = {
+  [WS_METHODS.botsDiscordConfigure]: AuthSettingsWriteScope,
+  [WS_METHODS.botsDiscordSetCredential]: AuthSettingsWriteScope,
   [WS_METHODS.botsCreate]: AuthOrchestrationOperateScope,
   [WS_METHODS.botsRename]: AuthOrchestrationOperateScope,
   [WS_METHODS.botsReset]: AuthOrchestrationOperateScope,

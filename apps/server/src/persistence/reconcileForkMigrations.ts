@@ -9,6 +9,7 @@ const shippedForkMigrations = new Map([
   [69, "BotProjects"],
   [70, "OutgoingWebhooks"],
   [71, "OutgoingWebhookEndpointUrl"],
+  [72, "BotIntegrations"],
 ]);
 
 // Shipped Sora builds used upstream's new id 68 for BotChat. Move only the
