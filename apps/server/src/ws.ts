@@ -1,4 +1,4 @@
-import { WsBotRpcGroup } from "@satslab/contracts";
+import { WsBotRpcGroup, WsOutgoingWebhookRpcGroup } from "@satslab/contracts";
 import * as BotChat from "./bots/BotChat.ts";
 import { OrchestrationDispatchCommandError } from "@satslab/contracts";
 import * as Crypto from "effect/Crypto";
@@ -119,6 +119,7 @@ import * as ProviderSessionManager from "./orchestration-v2/ProviderSessionManag
 import * as ThreadLaunchService from "./orchestration-v2/ThreadLaunchService.ts";
 import * as ThreadMessageIntake from "./orchestration-v2/ThreadMessageIntake.ts";
 import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
+import * as OutgoingWebhooks from "./outgoingWebhooks/OutgoingWebhookService.ts";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
 import * as SecretRequests from "./secrets/SecretRequests.ts";
 import {
@@ -550,6 +551,7 @@ const PROVIDER_STATUS_DEBOUNCE_MS = 200;
 // Middleware added later wraps middleware added earlier, so instrumentation wraps authorization.
 const ServerWsRpcGroup = WsRpcGroup.middleware(RpcInstrumentation);
 const ServerBotRpcGroup = WsBotRpcGroup.middleware(RpcInstrumentation);
+const ServerOutgoingWebhookRpcGroup = WsOutgoingWebhookRpcGroup.middleware(RpcInstrumentation);
 const ServerMainRpcGroup = ServerWsRpcGroup.omit(
   WS_METHODS.botsList,
   WS_METHODS.botsCreate,
@@ -563,6 +565,26 @@ const ServerMainRpcGroup = ServerWsRpcGroup.omit(
   WS_METHODS.botsTransferRelease,
   WS_METHODS.botsTransferActivate,
   WS_METHODS.botsTransferCancel,
+  WS_METHODS.outgoingWebhooksList,
+  WS_METHODS.outgoingWebhooksSubscribe,
+  WS_METHODS.outgoingWebhooksUpsert,
+  WS_METHODS.outgoingWebhooksDelete,
+  WS_METHODS.outgoingWebhooksTest,
+  WS_METHODS.outgoingWebhooksListDeliveries,
+);
+const layerOutgoingWebhookRpc = ServerOutgoingWebhookRpcGroup.toLayer(
+  Effect.gen(function* () {
+    const outgoingWebhooks = yield* OutgoingWebhooks.OutgoingWebhookService;
+    return ServerOutgoingWebhookRpcGroup.of({
+      [WS_METHODS.outgoingWebhooksList]: (_input) => outgoingWebhooks.list(),
+      [WS_METHODS.outgoingWebhooksSubscribe]: (_input) => outgoingWebhooks.subscribeList(),
+      [WS_METHODS.outgoingWebhooksUpsert]: (input) => outgoingWebhooks.upsert(input),
+      [WS_METHODS.outgoingWebhooksDelete]: (input) => outgoingWebhooks.delete(input),
+      [WS_METHODS.outgoingWebhooksTest]: (input) => outgoingWebhooks.test(input),
+      [WS_METHODS.outgoingWebhooksListDeliveries]: (input) =>
+        outgoingWebhooks.listDeliveries(input),
+    });
+  }),
 );
 const layerBotRpc = ServerBotRpcGroup.toLayer(
   Effect.gen(function* () {
@@ -3190,7 +3212,7 @@ export const layerWsRpc = (
       });
       return handlers;
     }),
-  ).pipe(Layer.merge(layerBotRpc));
+  ).pipe(Layer.merge(layerBotRpc), Layer.merge(layerOutgoingWebhookRpc));
 
 // RpcServer's default sends a socket-level Defect frame instead, and the client
 // ends every pending request on the socket with it.
