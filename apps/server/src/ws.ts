@@ -1,4 +1,5 @@
 import { WsBotRpcGroup, WsOutgoingWebhookRpcGroup } from "@satslab/contracts";
+import * as DiscordIntegration from "@satslab/bot-discord/DiscordIntegration";
 import * as BotChat from "./bots/BotChat.ts";
 import { OrchestrationDispatchCommandError } from "@satslab/contracts";
 import * as Crypto from "effect/Crypto";
@@ -554,6 +555,9 @@ const ServerBotRpcGroup = WsBotRpcGroup.middleware(RpcInstrumentation);
 const ServerOutgoingWebhookRpcGroup = WsOutgoingWebhookRpcGroup.middleware(RpcInstrumentation);
 const ServerMainRpcGroup = ServerWsRpcGroup.omit(
   WS_METHODS.botsList,
+  WS_METHODS.botsDiscordGet,
+  WS_METHODS.botsDiscordConfigure,
+  WS_METHODS.botsDiscordSetCredential,
   WS_METHODS.botsCreate,
   WS_METHODS.botsRename,
   WS_METHODS.botsReset,
@@ -589,8 +593,13 @@ const layerOutgoingWebhookRpc = ServerOutgoingWebhookRpcGroup.toLayer(
 const layerBotRpc = ServerBotRpcGroup.toLayer(
   Effect.gen(function* () {
     const bots = yield* BotChat.BotChat;
+    const discord = yield* DiscordIntegration.DiscordIntegration;
     return ServerBotRpcGroup.of({
       [WS_METHODS.botsList]: () => bots.list(),
+      [WS_METHODS.botsDiscordGet]: (input) => discord.read(input.botId),
+      [WS_METHODS.botsDiscordConfigure]: (input) => discord.configure(input.botId, input.settings),
+      [WS_METHODS.botsDiscordSetCredential]: (input) =>
+        discord.setCredential(input.botId, input.token),
       [WS_METHODS.botsCreate]: (input) => bots.create(input),
       [WS_METHODS.botsRename]: (input) => bots.rename(input.botId, input.name),
       [WS_METHODS.botsReset]: (input) => bots.reset(input.botId),

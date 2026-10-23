@@ -1,4 +1,5 @@
 import * as MemoryHandlers from "./toolkits/bots/handlers.ts";
+import * as DiscordHandlers from "./toolkits/bots/discordHandlers.ts";
 import { BotDiscoveryToolkit, MemoryToolkit } from "./toolkits/bots/tools.ts";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
@@ -1090,6 +1091,7 @@ const layerBotDiscoveryToolkit = toolkitRegistration(
 );
 
 const layerTools = Layer.mergeAll(
+  toolkitRegistration(DiscordHandlers.toolkit, DiscordHandlers.layer),
   layerBotDiscoveryToolkit,
   layerPreviewToolkit,
   layerOrchestratorToolkit,

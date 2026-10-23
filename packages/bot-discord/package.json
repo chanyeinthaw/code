@@ -1,0 +1,29 @@
+{
+  "name": "@satslab/bot-discord",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./DiscordIntegration": "./src/DiscordIntegration.ts",
+    "./DiscordClient": "./src/DiscordClient.ts",
+    "./DiscordPrompt": "./src/DiscordPrompt.ts",
+    "./DiscordTools": "./src/DiscordTools.ts",
+    "./BotHost": "./src/BotHost.ts",
+    "./migration": "./src/migration.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run --config ../../vite.config.ts --dir ."
+  },
+  "dependencies": {
+    "@satslab/contracts": "workspace:*",
+    "discord.js": "14.27.0",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@satslab/shared": "workspace:*",
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

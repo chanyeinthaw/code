@@ -75,6 +75,7 @@ import Migration0068 from "./Migrations/068_BotChat.ts";
 import Migration0069 from "./Migrations/069_BotProjects.ts";
 import Migration0070 from "./Migrations/070_OutgoingWebhooks.ts";
 import Migration0071 from "./Migrations/071_OutgoingWebhookEndpointUrl.ts";
+import Migration0072 from "./Migrations/072_BotIntegrations.ts";
 
 const migrationEntries = [
   [1, "OrchestrationEvents", Migration0001],
@@ -149,6 +150,7 @@ const migrationEntries = [
   [69, "BotProjects", Migration0069],
   [70, "OutgoingWebhooks", Migration0070],
   [71, "OutgoingWebhookEndpointUrl", Migration0071],
+  [72, "BotIntegrations", Migration0072],
 ] as const;
 
 export const migrationManifest = migrationEntries.map(([id, name]) => [id, name] as const);

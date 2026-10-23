@@ -27,6 +27,7 @@ import { ProjectIdentitySettings } from "../settings/ProjectIdentitySettings";
 import { ProjectDefaultsSettings } from "../settings/ProjectDefaultsSettings";
 import { ProjectActionsSettings } from "../settings/ProjectActionsSettings";
 import { BotResourceSettings } from "./BotResourceSettings";
+import { BotDiscordSettings } from "./BotDiscordSettings";
 import { BotActionsProvider, useBotActions } from "./BotActions";
 import { BotSettingsActions } from "./BotSettingsActions";
 import {
@@ -162,6 +163,7 @@ function BotSettingsPanel({
         <ProjectIdentitySettings group={group} disabled={disabled} />
         <ProjectDefaultsSettings category="project" />
         <BotResourceSettings />
+        <BotDiscordSettings bot={bot} disabled={disabled} />
         <ProjectActionsSettings />
       </fieldset>
       <SettingsSection title="Danger">
