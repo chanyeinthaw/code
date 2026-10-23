@@ -51,6 +51,7 @@ describe("V2 preview upgrade", () => {
         [69, "BotProjects"],
         [70, "OutgoingWebhooks"],
         [71, "OutgoingWebhookEndpointUrl"],
+        [72, "BotIntegrations"],
       ]);
       assert.deepStrictEqual(yield* runMigrations(), []);
       assert.deepStrictEqual(yield* sql`SELECT * FROM orchestration_v2_legacy_imports`, imports);
@@ -145,6 +146,7 @@ describe("V2 preview upgrade", () => {
         [69, "BotProjects"],
         [70, "OutgoingWebhooks"],
         [71, "OutgoingWebhookEndpointUrl"],
+        [72, "BotIntegrations"],
       ]);
     }).pipe(Effect.provide(NodeSqliteClient.layer({ filename: ":memory:" }))),
   );
