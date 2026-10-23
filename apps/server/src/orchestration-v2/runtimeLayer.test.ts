@@ -42,12 +42,14 @@ import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
+import { HttpClient } from "effect/http";
 import * as SqlClient from "effect/sql/SqlClient";
 
 import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
 import * as GitWorkflow from "../git/GitWorkflowService.ts";
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import * as ServerConfig from "../config.ts";
+import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as OrchestrationEventStore from "../persistence/OrchestrationEventStore.ts";
 import * as ProjectEnrichmentService from "../project/ProjectEnrichmentService.ts";
@@ -360,6 +362,15 @@ it.effect("production bot and normal sessions retain project agent capabilities"
     }).pipe(
       Effect.provide(
         RuntimeLayer.layerProduction.pipe(
+          Layer.provide(
+            Layer.mergeAll(
+              Layer.mock(ServerEnvironment.ServerEnvironment)({}),
+              Layer.succeed(
+                HttpClient.HttpClient,
+                HttpClient.make(() => Effect.die("Unexpected HTTP request in agent access test")),
+              ),
+            ),
+          ),
           Layer.provideMerge(ProjectStore.layer),
           Layer.provide(WorktreeSetupTracker.layer),
           Layer.provide(ProjectCloneTracker.layer),
