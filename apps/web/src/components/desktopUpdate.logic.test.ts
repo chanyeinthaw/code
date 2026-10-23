@@ -6,6 +6,7 @@ import {
   getDesktopUpdateButtonTooltip,
   getDesktopUpdateReleaseHistoryUrl,
   getDesktopUpdateReleaseUrl,
+  getManualDesktopUpdateVersion,
   resolveDesktopUpdateButtonAction,
 } from "./desktopUpdate.logic";
 
@@ -91,5 +92,24 @@ describe("canCheckForUpdate", () => {
         downloadedVersion: "1.1.0",
       }),
     ).toBe(true);
+  });
+});
+
+describe("getManualDesktopUpdateVersion", () => {
+  const manual = (currentVersion: string, latestVersion: string | null, updaterEnabled = false) =>
+    getManualDesktopUpdateVersion({ updaterEnabled, currentVersion, latestVersion });
+
+  it("offers a newer release when the updater is disabled", () => {
+    expect(manual("1.0.0", "1.0.1")).toBe("1.0.1");
+    expect(manual("1.0.0-nightly.20260101.1", "1.0.0-nightly.20260102.1")).toBe(
+      "1.0.0-nightly.20260102.1",
+    );
+  });
+
+  it("stays hidden when current, ahead, unknown, or handled by the updater", () => {
+    expect(manual("1.0.1", "1.0.1")).toBeNull();
+    expect(manual("1.0.2", "1.0.1")).toBeNull();
+    expect(manual("1.0.0", null)).toBeNull();
+    expect(manual("1.0.0", "1.0.1", true)).toBeNull();
   });
 });

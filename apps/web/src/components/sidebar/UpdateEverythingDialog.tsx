@@ -12,6 +12,8 @@ import {
   AlertDialogPopup,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { getDesktopUpdateReleaseUrl } from "../desktopUpdate.logic";
+import { openDesktopUpdateReleaseNotes } from "../desktopUpdate.toast";
 import { Button } from "../ui/button";
 import type { RestartingMachine, SkippedMachine } from "./updateEverything.logic";
 
@@ -41,6 +43,7 @@ interface UpdateEverythingDialogProps {
   readonly lines: ReadonlyArray<string>;
   readonly restarts: ReadonlyArray<RestartingMachine>;
   readonly skipped: ReadonlyArray<SkippedMachine>;
+  readonly desktopVersion: string | null;
   readonly onConfirm: () => void;
 }
 
@@ -64,6 +67,7 @@ function UpdateEverythingDialogContent({
   lines,
   restarts,
   skipped,
+  desktopVersion,
   onConfirm,
 }: Omit<UpdateEverythingDialogProps, "open" | "onOpenChange">) {
   const stopped = useAtomValue(
@@ -106,11 +110,30 @@ function UpdateEverythingDialogContent({
             {skipped.map((machine) => `Skips ${machine.label}: ${machine.reason}`).join("\n")}
           </p>
         ) : null}
+        {desktopVersion !== null ? <DesktopDownloadNotice version={desktopVersion} /> : null}
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
         <Button onClick={onConfirm}>Update</Button>
       </AlertDialogFooter>
     </>
+  );
+}
+
+// Self-updates are disabled, so a newer desktop app is a manual download from its release page.
+function DesktopDownloadNotice({ version }: { readonly version: string }) {
+  const releaseUrl = getDesktopUpdateReleaseUrl(version);
+  if (releaseUrl === null) return null;
+  return (
+    <p className="flex items-center gap-2 pt-2 text-sm">
+      Sora desktop {version}
+      <Button
+        size="xs"
+        variant="outline"
+        onClick={() => void openDesktopUpdateReleaseNotes(window.desktopBridge, releaseUrl)}
+      >
+        Download
+      </Button>
+    </p>
   );
 }
