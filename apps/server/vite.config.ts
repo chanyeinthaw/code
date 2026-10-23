@@ -78,6 +78,18 @@ export default mergeConfig(
       },
     },
     pack: {
+      plugins: [
+        {
+          name: "discord-optional-compression",
+          resolveId(id) {
+            if (id === "zlib-sync") return "\0sora:discord-optional-compression";
+          },
+          load(id) {
+            // Discord falls back to Node zlib when its optional native addon is absent.
+            if (id === "\0sora:discord-optional-compression") return "export default null;";
+          },
+        },
+      ],
       // The executable embeds one entry; the history worker becomes a hidden
       // subcommand there instead of a sibling script.
       entry: packExecutable ? ["src/bin.ts"] : ["src/bin.ts", "src/claude-history-worker.ts"],
