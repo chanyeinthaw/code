@@ -1,4 +1,5 @@
 import type { DesktopUpdateActionResult, DesktopUpdateState } from "@satslab/contracts";
+import { compareSemverVersions } from "@satslab/shared/semver";
 
 export type DesktopUpdateButtonAction = "download" | "install" | "none";
 
@@ -37,6 +38,23 @@ export function getDesktopUpdateReleaseUrl(
   const normalizedVersion = version?.trim();
   if (!normalizedVersion) return null;
   return `${desktopReleaseRepositoryUrl(repository)}/tag/v${encodeURIComponent(normalizedVersion)}`;
+}
+
+/**
+ * With the in-app updater disabled, a newer published release can only be installed by hand.
+ * Returns that version, or null when the app is current or the updater handles it.
+ */
+export function getManualDesktopUpdateVersion({
+  updaterEnabled,
+  currentVersion,
+  latestVersion,
+}: {
+  readonly updaterEnabled: boolean;
+  readonly currentVersion: string;
+  readonly latestVersion: string | null | undefined;
+}): string | null {
+  if (updaterEnabled || !latestVersion) return null;
+  return compareSemverVersions(latestVersion, currentVersion) > 0 ? latestVersion : null;
 }
 
 export function getDesktopUpdateReleaseHistoryUrl(
