@@ -1109,6 +1109,14 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:server:scheduled-task:webhook-delivery",
       tag: WS_METHODS.scheduledTasksGetWebhookDelivery,
     }),
+    outgoingWebhooksLive: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:server:outgoing-webhooks:live",
+      tag: WS_METHODS.outgoingWebhooksSubscribe,
+    }),
+    outgoingWebhookDeliveries: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:outgoing-webhooks:deliveries",
+      tag: WS_METHODS.outgoingWebhooksListDeliveries,
+    }),
     scheduledTasksLive: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
       label: "environment-data:server:scheduled-tasks:live",
       tag: WS_METHODS.scheduledTasksSubscribe,
@@ -1304,6 +1312,23 @@ export function createServerEnvironmentAtoms<R, E>(
     signalProcess: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:signal-process",
       tag: WS_METHODS.serverSignalProcess,
+    }),
+    upsertOutgoingWebhook: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:outgoing-webhook:upsert",
+      tag: WS_METHODS.outgoingWebhooksUpsert,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    deleteOutgoingWebhook: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:outgoing-webhook:delete",
+      tag: WS_METHODS.outgoingWebhooksDelete,
+      scheduler: configScheduler,
+      concurrency: configConcurrency,
+    }),
+    // Off the config lane: a test waits on the destination, which must not stall settings edits.
+    testOutgoingWebhook: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:outgoing-webhook:test",
+      tag: WS_METHODS.outgoingWebhooksTest,
     }),
     upsertScheduledTask: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:scheduled-task:upsert",

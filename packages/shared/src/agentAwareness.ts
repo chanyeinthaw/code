@@ -30,9 +30,10 @@ export interface AgentAwarenessState {
   readonly deepLink: string;
 }
 
-function buildAgentAwarenessDeepLink(input: {
-  readonly environmentId: EnvironmentId;
-  readonly threadId: ThreadId;
+/** The app route of a thread, which `sora://` and `t3code://` carry after the scheme. */
+export function buildAgentAwarenessDeepLink(input: {
+  readonly environmentId: string;
+  readonly threadId: string;
 }): string {
   return `/threads/${encodeURIComponent(input.environmentId)}/${encodeURIComponent(input.threadId)}`;
 }
@@ -56,10 +57,14 @@ export interface ProjectThreadAwarenessV2Input {
   >;
 }
 
-export function projectThreadAwarenessV2(
-  input: ProjectThreadAwarenessV2Input,
-): AgentAwarenessState | null {
-  const { environmentId, project, thread } = input;
+/**
+ * The phase a thread should alert for, or null when it is suppressed:
+ * subagents, user-stopped completions, and settled results with no pending
+ * background work.
+ */
+export function resolveThreadAwarenessAlertPhaseV2(
+  thread: ProjectThreadAwarenessV2Input["thread"],
+): AgentAwarenessPhase | null {
   if (thread.lineage.relationshipToParent === "subagent") return null;
   const phase = resolveThreadAwarenessPhaseV2(thread);
   if (phase === null) {
@@ -72,6 +77,17 @@ export function projectThreadAwarenessV2(
     (phase === "completed" || phase === "failed") &&
     !backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])
   ) {
+    return null;
+  }
+  return phase;
+}
+
+export function projectThreadAwarenessV2(
+  input: ProjectThreadAwarenessV2Input,
+): AgentAwarenessState | null {
+  const { environmentId, project, thread } = input;
+  const phase = resolveThreadAwarenessAlertPhaseV2(thread);
+  if (phase === null) {
     return null;
   }
   const detail =

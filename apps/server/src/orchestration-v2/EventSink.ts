@@ -27,6 +27,7 @@ import { replayAndBufferProjectedLiveEvents } from "./LiveStreamBudget.ts";
 import type { UnsequencedProjectEvent } from "../persistence/OrchestrationEventStore.ts";
 import { projectDomainEventForWire } from "./WireProjection.ts";
 import { makeRunOutcomeRecorder, type RunOutcome } from "./RunMetrics.ts";
+import { makeOutgoingWebhookTriggers } from "../outgoingWebhooks/OutgoingWebhookTriggers.ts";
 
 import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as EffectOutbox from "./EffectOutbox.ts";
@@ -244,6 +245,9 @@ const layerBase: Layer.Layer<
           );
         }
       });
+    // Jobs are written in the event's transaction: a storage fault rolls the event back with its
+    // job, and the writer's retry redoes both. There is no later catch-up pass.
+    const outgoingWebhookTriggers = makeOutgoingWebhookTriggers({ sql, projectionStore });
     const runOutcomes = makeRunOutcomeRecorder((threadId) =>
       // One payload row; unlike the shell, it still resolves a deleted child thread.
       projectionStore
@@ -389,6 +393,7 @@ const layerBase: Layer.Layer<
               updated_at = excluded.updated_at
           `;
         }
+        yield* outgoingWebhookTriggers(storedEvents);
         // Read lineage here, on the connection this transaction holds; see makeRunOutcomeRecorder.
         return yield* runOutcomes.prepare(storedEvents);
       });
