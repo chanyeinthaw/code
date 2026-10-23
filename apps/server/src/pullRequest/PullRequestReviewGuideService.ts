@@ -25,6 +25,7 @@ import {
 import type { ReviewGuideStackLayer } from "@satslab/provider-core/server/textGeneration";
 import { resolveProjectSettings } from "@satslab/shared/projectSettings";
 import { sourceControlRepositorySelector } from "@satslab/shared/sourceControl";
+import { normalizeThreadPullRequestKey } from "@satslab/shared/threadPullRequests";
 
 import * as ServerConfig from "../config.ts";
 import * as PullRequestReviewGuides from "../persistence/PullRequestReviewGuides.ts";
@@ -108,19 +109,32 @@ const make = Effect.gen(function* () {
               },
               identity,
             );
-      if (
-        identity == null ||
-        own === null ||
-        own.host !== key.host ||
-        own.repository !== key.repository
-      ) {
-        return yield* new PullRequestOperationError({
-          operation: "generateReviewGuide",
-          detail:
-            "Guides are written from this project's checkout, and this pull request is in another repository. Write it from a project that is a checkout of that repository.",
-        });
+      if (identity && own?.host === key.host && own.repository === key.repository) {
+        return identity.locator;
       }
-      return identity.locator;
+      if (identity?.origin?.remoteUrl) {
+        const [host, ...repository] = identity.origin.canonicalKey.split("/");
+        const origin =
+          host && repository.length > 0
+            ? normalizeThreadPullRequestKey({
+                host,
+                repository: repository.join("/"),
+                number: key.number,
+              })
+            : null;
+        if (origin?.host === key.host && origin.repository === key.repository) {
+          return {
+            ...identity.locator,
+            remoteName: "origin",
+            remoteUrl: identity.origin.remoteUrl,
+          };
+        }
+      }
+      return yield* new PullRequestOperationError({
+        operation: "generateReviewGuide",
+        detail:
+          "Guides are written from this project's checkout, and this pull request is in another repository. Write it from a project that is a checkout of that repository.",
+      });
     },
   );
 

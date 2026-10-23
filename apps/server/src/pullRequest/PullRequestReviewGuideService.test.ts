@@ -16,6 +16,7 @@ import {
   type PullRequestDetail,
   type PullRequestStack,
   type PullRequestRef,
+  type RepositoryIdentity,
 } from "@satslab/contracts";
 
 import * as ServerConfig from "../config.ts";
@@ -157,7 +158,7 @@ const makeLayer = (input: {
   readonly stored: Deferred.Deferred<void>;
   readonly enabled?: boolean;
   readonly currentHead?: Ref.Ref<string>;
-  readonly identity?: typeof ACME_APP;
+  readonly identity?: typeof ACME_APP & { readonly origin?: RepositoryIdentity["origin"] };
 }) =>
   PullRequestReviewGuideService.layer.pipe(
     Layer.provide(
@@ -515,6 +516,50 @@ it.layer(layerBase, { excludeTestServices: true })("PullRequestReviewGuideServic
         assert.deepStrictEqual(result.guide, before.guide);
         assert.isFalse(yield* Deferred.isDone(stored));
         assert.isFalse(yield* Ref.get(generated));
+      }),
+    ),
+  );
+
+  it.effect("generates a fork PR guide using origin rather than the primary upstream remote", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const repositories = yield* makeRepositories;
+        const upstream = `${repositories.root}/upstream`;
+        yield* git(repositories.root, ["clone", "--quiet", repositories.remote, upstream]);
+        yield* git(repositories.workspace, ["remote", "add", "upstream", upstream]);
+        const stored = yield* Deferred.make<void>();
+        const changed = yield* Deferred.make<string>();
+        const driver = yield* GitVcsDriver.GitVcsDriver;
+        const context = yield* Layer.build(
+          makeLayer({
+            ...repositories,
+            remote: upstream,
+            stored,
+            identity: {
+              ...ACME_APP,
+              canonicalKey: "github.com/acme/upstream",
+              displayName: "acme/upstream",
+              name: "upstream",
+              origin: { canonicalKey: ACME_APP.canonicalKey, remoteUrl: repositories.remote },
+            },
+            generate: (input) =>
+              git(input.cwd, ["diff", "--name-only", `${input.baseCommit}...HEAD`]).pipe(
+                Effect.provideService(GitVcsDriver.GitVcsDriver, driver),
+                Effect.orDie,
+                Effect.flatMap((names) => Deferred.succeed(changed, names)),
+                Effect.as({ stops: [] }),
+              ),
+          }),
+        );
+        const service = Context.get(
+          context,
+          PullRequestReviewGuideService.PullRequestReviewGuideService,
+        );
+        yield* service.generate(reference);
+        assert.strictEqual(yield* Deferred.await(changed), "feature.txt");
+        yield* Deferred.await(stored);
+        const result = yield* service.get(reference);
+        assert.strictEqual(result.guide?.headSha, repositories.headSha);
       }),
     ),
   );
