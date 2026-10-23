@@ -40,6 +40,9 @@ export type T3McpToolSummaryAction =
   | "question-read"
   | "question-respond"
   | "secret-request"
+  | "webhook-list"
+  | "webhook-upsert"
+  | "webhook-delete"
   | "worktree-handoff"
   | "worktree-list"
   | "worktree-status"
@@ -144,6 +147,18 @@ const SORA_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
     "schedule-delete",
   ),
   request_secret: tool(["Ask for", "Asking for", "Asked for", "a secret"], "secret-request"),
+  s3_outgoing_webhooks_list: tool(
+    ["List", "Listing", "Listed", "outgoing webhooks"],
+    "webhook-list",
+  ),
+  s3_outgoing_webhooks_upsert: tool(
+    ["Save", "Saving", "Saved", "an outgoing webhook"],
+    "webhook-upsert",
+  ),
+  s3_outgoing_webhooks_delete: tool(
+    ["Delete", "Deleting", "Deleted", "an outgoing webhook"],
+    "webhook-delete",
+  ),
   create_threads: tool(["Create", "Creating", "Created", "T3 threads"], "thread-create"),
   s3_thread_start: tool(["Start", "Starting", "Started", "a T3 thread"], "thread-create"),
   s3_bot_list: tool(["List", "Listing", "Listed", "bots"], "thread-list"),

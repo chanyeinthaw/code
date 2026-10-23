@@ -7,6 +7,8 @@ import ShellStopRequestIndex from "./Migrations/068_ShellStopRequestIndex.ts";
 const shippedForkMigrations = new Map([
   [68, "BotChat"],
   [69, "BotProjects"],
+  [70, "OutgoingWebhooks"],
+  [71, "OutgoingWebhookEndpointUrl"],
 ]);
 
 // Shipped Sora builds used upstream's new id 68 for BotChat. Move only the

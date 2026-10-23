@@ -292,6 +292,28 @@ export function summarizeT3ToolCalls(
     case "secret-request":
       label = phrase("Asked for", "ask for", quantity(selected.length, "secret"));
       break;
+    case "webhook-list":
+      label = phrase("Listed", "list", `outgoing webhooks ${times}`);
+      break;
+    case "webhook-upsert":
+      label = phrase(
+        "Saved",
+        "save",
+        quantity(
+          countEntities(
+            selected.map((call) => id(asRecord(call.output?.webhook)?.id) ?? id(call.input?.id)),
+          ),
+          "outgoing webhook",
+        ),
+      );
+      break;
+    case "webhook-delete":
+      label = phrase(
+        "Deleted",
+        "delete",
+        quantity(countEntities(entityIds("id")), "outgoing webhook"),
+      );
+      break;
     case "worktree-handoff":
       label = phrase(
         "Handed off to",

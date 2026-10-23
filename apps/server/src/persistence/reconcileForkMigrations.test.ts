@@ -7,8 +7,10 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { migrationManifest, runMigrations } from "./Migrations.ts";
 import BotChat from "./Migrations/069_BotChat.ts";
 import BotProjects from "./Migrations/070_BotProjects.ts";
+import OutgoingWebhooks from "./Migrations/071_OutgoingWebhooks.ts";
+import OutgoingWebhookEndpointUrl from "./Migrations/072_OutgoingWebhookEndpointUrl.ts";
 
-it.effect.each([68, 69])("upgrades shipped Sora migration history through %s", (lastId) =>
+it.effect.each([68, 69, 70, 71])("upgrades shipped Sora migration history through %s", (lastId) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
     yield* runMigrations({ toMigrationInclusive: 67 });
@@ -16,6 +18,8 @@ it.effect.each([68, 69])("upgrades shipped Sora migration history through %s", (
       loader: Migrator.fromRecord({
         "68_BotChat": BotChat,
         ...(lastId >= 69 ? { "69_BotProjects": BotProjects } : {}),
+        ...(lastId >= 70 ? { "70_OutgoingWebhooks": OutgoingWebhooks } : {}),
+        ...(lastId >= 71 ? { "71_OutgoingWebhookEndpointUrl": OutgoingWebhookEndpointUrl } : {}),
       }),
     });
     yield* sql`INSERT INTO sats_bots (id, name, owner_environment_id, thread_id, state_json)
