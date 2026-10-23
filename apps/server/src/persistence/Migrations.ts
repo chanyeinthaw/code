@@ -75,6 +75,8 @@ import Migration0068 from "./Migrations/068_ShellStopRequestIndex.ts";
 
 import Migration0069 from "./Migrations/069_BotChat.ts";
 import Migration0070 from "./Migrations/070_BotProjects.ts";
+import Migration0071 from "./Migrations/071_OutgoingWebhooks.ts";
+import Migration0072 from "./Migrations/072_OutgoingWebhookEndpointUrl.ts";
 
 const migrationEntries = [
   [1, "OrchestrationEvents", Migration0001],
@@ -148,6 +150,8 @@ const migrationEntries = [
   [68, "ShellStopRequestIndex", Migration0068],
   [69, "BotChat", Migration0069],
   [70, "BotProjects", Migration0070],
+  [71, "OutgoingWebhooks", Migration0071],
+  [72, "OutgoingWebhookEndpointUrl", Migration0072],
 ] as const;
 
 export const migrationManifest = migrationEntries.map(([id, name]) => [id, name] as const);

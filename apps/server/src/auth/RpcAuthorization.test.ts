@@ -14,6 +14,7 @@ import {
   AuthTerminalOperateScope,
   WS_METHODS,
   WsRpcGroup,
+  clientRpcRequiredScopes,
 } from "@satslab/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
@@ -40,6 +41,21 @@ describe("RPC authorization scopes", () => {
       WS_METHODS.scheduledTasksRotateWebhookToken,
     ]) {
       expect(requiredScopeForRpcMethod(method)).toBe(AuthOrchestrationOperateScope);
+    }
+  });
+
+  it("lets read access list outgoing webhooks but needs settings:write to change or test one", () => {
+    for (const method of [WS_METHODS.outgoingWebhooksList, WS_METHODS.outgoingWebhooksSubscribe]) {
+      expect(requiredScopeForRpcMethod(method)).toBe(AuthOrchestrationReadScope);
+    }
+    for (const method of [
+      WS_METHODS.outgoingWebhooksUpsert,
+      WS_METHODS.outgoingWebhooksDelete,
+      WS_METHODS.outgoingWebhooksTest,
+    ]) {
+      expect(requiredScopeForRpcMethod(method)).toBe(AuthSettingsWriteScope);
+      // The client hides the control on the same grant the server enforces.
+      expect(clientRpcRequiredScopes(method, undefined)).toEqual([AuthSettingsWriteScope]);
     }
   });
 
