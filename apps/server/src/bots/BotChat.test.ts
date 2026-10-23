@@ -52,6 +52,7 @@ import * as ThreadCommands from "../orchestration-v2/ThreadCommandExecutor.ts";
 import * as LegacyImporter from "../orchestration-v2/legacy/LegacyV1ThreadImporter.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as BotChat from "./BotChat.ts";
+import * as BotIntegrationLifecycle from "./BotIntegrationLifecycle.ts";
 import * as MemoryCompaction from "./MemoryCompaction.ts";
 import * as BotOwnership from "./BotOwnership.ts";
 import * as BotStorage from "./BotStorage.ts";
@@ -1326,6 +1327,54 @@ it.effect(
       assert.include(nextView.view, "worker:42");
       assert.include(nextView.view, "Found the missing configuration");
     }).pipe(Effect.provide(layer)),
+);
+
+it.effect(
+  "pauses external input outside the thread lock and clears routes on reset and delete",
+  () => {
+    const calls: Array<string> = [];
+    const lifecycle = Layer.effect(
+      BotIntegrationLifecycle.BotIntegrationLifecycle,
+      Effect.gen(function* () {
+        const locks = yield* ThreadCommands.ThreadCommandExecutor;
+        return {
+          suspend: () =>
+            Effect.gen(function* () {
+              assert.deepEqual(yield* locks.activeKeys, []);
+              calls.push("suspend");
+            }),
+          refresh: () =>
+            Effect.gen(function* () {
+              assert.deepEqual(yield* locks.activeKeys, []);
+              calls.push("refresh");
+            }),
+          clearHistory: () =>
+            Effect.sync(() => {
+              calls.push("clear-history");
+            }),
+          forget: () =>
+            Effect.sync(() => {
+              calls.push("forget");
+            }),
+        };
+      }),
+    ).pipe(Layer.provide(ThreadCommands.layer));
+    return Effect.gen(function* () {
+      yield* setup;
+      const chat = yield* BotChat.BotChat;
+      yield* chat.reset(botId);
+      assert.deepEqual(calls, ["suspend", "clear-history", "refresh"]);
+      yield* chat.remove(botId);
+      assert.deepEqual(calls, [
+        "suspend",
+        "clear-history",
+        "refresh",
+        "suspend",
+        "forget",
+        "refresh",
+      ]);
+    }).pipe(Effect.provide(layer.pipe(Layer.provide(lifecycle))));
+  },
 );
 
 it.effect(
