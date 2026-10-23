@@ -416,6 +416,8 @@ export const make = Effect.gen(function* () {
   );
 
   const resolveDisabledReason = Effect.gen(function* () {
+    // Ad hoc signed Sora builds must be replaced manually; mock feeds are test-only.
+    if (!config.mockUpdates) return Option.some("Sora desktop updates must be installed manually.");
     const hasFeedConfig = yield* hasUpdateFeedConfig;
     return Option.fromNullishOr(
       getAutoUpdateDisabledReason({

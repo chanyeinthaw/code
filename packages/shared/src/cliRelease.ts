@@ -42,6 +42,11 @@ export function cliReleaseDownloadBaseUrl(
   return `${(baseUrl?.trim() || CLI_RELEASE_DEFAULT_BASE_URL).replace(/\/+$/, "")}/v${version}`;
 }
 
+/** GitHub API endpoint for one published release; drafts are 404 to unauthenticated callers. */
+export function cliReleaseTagUrl(version: string): string {
+  return `https://api.github.com/repos/${CLI_RELEASE_REPOSITORY}/releases/tags/v${encodeURIComponent(version)}`;
+}
+
 export function parseChecksums(text: string): ReadonlyMap<string, string> {
   const checksums = new Map<string, string>();
   for (const line of text.split(/\r?\n/)) {
