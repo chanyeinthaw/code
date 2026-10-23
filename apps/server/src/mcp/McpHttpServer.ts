@@ -43,7 +43,9 @@ import * as OrchestratorMcpService from "./OrchestratorMcpService.ts";
 import { PreviewControlsToolkit } from "./toolkits/previewControls/tools.ts";
 import * as PreviewControlsHandlers from "./toolkits/previewControls/handlers.ts";
 import { EnvironmentToolkit } from "./toolkits/environment/tools.ts";
+import { OutgoingWebhooksToolkit } from "./toolkits/outgoingWebhooks/tools.ts";
 import * as EnvironmentHandlers from "./toolkits/environment/handlers.ts";
+import * as OutgoingWebhooksHandlers from "./toolkits/outgoingWebhooks/handlers.ts";
 import { ProjectToolkit } from "./toolkits/project/tools.ts";
 import * as ProjectHandlers from "./toolkits/project/handlers.ts";
 import { AttachmentToolkit } from "./toolkits/attachment/tools.ts";
@@ -1042,6 +1044,11 @@ const layerEnvironmentToolkit = toolkitRegistration(
   EnvironmentHandlers.layer,
 ).pipe(Layer.provide(ThreadCommandExecutor.layer));
 
+const layerOutgoingWebhooksRegistration = toolkitRegistration(
+  OutgoingWebhooksToolkit,
+  OutgoingWebhooksHandlers.layer,
+);
+
 const layerProjectRegistration = toolkitRegistration(ProjectToolkit, ProjectHandlers.layer);
 
 export const layerAttachmentToolkit = toolkitRegistration(
@@ -1090,6 +1097,7 @@ const layerTools = Layer.mergeAll(
   layerAttachmentToolkit,
   layerProjectRegistration,
   layerEnvironmentToolkit,
+  layerOutgoingWebhooksRegistration,
   layerPreviewControlsRegistration,
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,

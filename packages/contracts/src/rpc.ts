@@ -343,6 +343,19 @@ import {
   ServerSettingsPatch,
 } from "./settings.ts";
 import {
+  OutgoingWebhookDeleteInput,
+  OutgoingWebhookDeleteResult,
+  OutgoingWebhookError,
+  OutgoingWebhookListDeliveriesInput,
+  OutgoingWebhookListDeliveriesResult,
+  OutgoingWebhookListInput,
+  OutgoingWebhookListResult,
+  OutgoingWebhookMutationResult,
+  OutgoingWebhookTestInput,
+  OutgoingWebhookTestResult,
+  OutgoingWebhookUpsertInput,
+} from "./outgoingWebhook.ts";
+import {
   ScheduledTaskDeleteInput,
   ScheduledTaskDeleteResult,
   ScheduledTaskError,
@@ -526,6 +539,12 @@ export const WS_METHODS = {
   serverGetUsageSummary: "server.getUsageSummary",
   serverRefreshUsageRates: "server.refreshUsageRates",
 
+  outgoingWebhooksList: "outgoingWebhooks.list",
+  outgoingWebhooksSubscribe: "outgoingWebhooks.subscribe",
+  outgoingWebhooksUpsert: "outgoingWebhooks.upsert",
+  outgoingWebhooksDelete: "outgoingWebhooks.delete",
+  outgoingWebhooksTest: "outgoingWebhooks.test",
+  outgoingWebhooksListDeliveries: "outgoingWebhooks.listDeliveries",
   scheduledTasksList: "scheduledTasks.list",
   scheduledTasksSubscribe: "scheduledTasks.subscribe",
   scheduledTasksUpsert: "scheduledTasks.upsert",
@@ -1885,6 +1904,45 @@ const WsBotsTransferCancelRpc = Rpc.make(WS_METHODS.botsTransferCancel, {
   error: botRpcError,
 });
 
+const OutgoingWebhookRpcError = Schema.Union([OutgoingWebhookError, EnvironmentAuthorizationError]);
+
+const WsOutgoingWebhooksListRpc = Rpc.make(WS_METHODS.outgoingWebhooksList, {
+  payload: OutgoingWebhookListInput,
+  success: OutgoingWebhookListResult,
+  error: OutgoingWebhookRpcError,
+});
+
+const WsOutgoingWebhooksSubscribeRpc = Rpc.make(WS_METHODS.outgoingWebhooksSubscribe, {
+  payload: OutgoingWebhookListInput,
+  success: OutgoingWebhookListResult,
+  error: OutgoingWebhookRpcError,
+  stream: true,
+});
+
+const WsOutgoingWebhooksUpsertRpc = Rpc.make(WS_METHODS.outgoingWebhooksUpsert, {
+  payload: OutgoingWebhookUpsertInput,
+  success: OutgoingWebhookMutationResult,
+  error: OutgoingWebhookRpcError,
+});
+
+const WsOutgoingWebhooksDeleteRpc = Rpc.make(WS_METHODS.outgoingWebhooksDelete, {
+  payload: OutgoingWebhookDeleteInput,
+  success: OutgoingWebhookDeleteResult,
+  error: OutgoingWebhookRpcError,
+});
+
+const WsOutgoingWebhooksTestRpc = Rpc.make(WS_METHODS.outgoingWebhooksTest, {
+  payload: OutgoingWebhookTestInput,
+  success: OutgoingWebhookTestResult,
+  error: OutgoingWebhookRpcError,
+});
+
+const WsOutgoingWebhooksListDeliveriesRpc = Rpc.make(WS_METHODS.outgoingWebhooksListDeliveries, {
+  payload: OutgoingWebhookListDeliveriesInput,
+  success: OutgoingWebhookListDeliveriesResult,
+  error: OutgoingWebhookRpcError,
+});
+
 const WsScheduledTasksListRpc = Rpc.make(WS_METHODS.scheduledTasksList, {
   payload: ScheduledTaskListInput,
   success: ScheduledTaskListResult,
@@ -1993,6 +2051,15 @@ export const WsBotRpcGroup = RpcGroup.make(
   WsBotsTransferReleaseRpc,
   WsBotsTransferActivateRpc,
   WsBotsTransferCancelRpc,
+).middleware(RpcScopeAuthorization);
+
+export const WsOutgoingWebhookRpcGroup = RpcGroup.make(
+  WsOutgoingWebhooksListRpc,
+  WsOutgoingWebhooksSubscribeRpc,
+  WsOutgoingWebhooksUpsertRpc,
+  WsOutgoingWebhooksDeleteRpc,
+  WsOutgoingWebhooksTestRpc,
+  WsOutgoingWebhooksListDeliveriesRpc,
 ).middleware(RpcScopeAuthorization);
 
 export const WsRpcGroup = RpcGroup.make(
@@ -2196,4 +2263,5 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeCommandOutputRpc,
 )
   .middleware(RpcScopeAuthorization)
-  .merge(WsBotRpcGroup);
+  .merge(WsBotRpcGroup)
+  .merge(WsOutgoingWebhookRpcGroup);
