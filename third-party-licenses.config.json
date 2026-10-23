@@ -207,6 +207,24 @@
   ],
   "packageOverrides": [
     {
+      "name": "@sapphire/async-queue",
+      "version": "1.5.5",
+      "sourceUrl": "https://github.com/sapphiredev/utilities/blob/main/LICENSE.md",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright © 2020 The Sapphire Community and its contributors"]
+      }
+    },
+    {
+      "name": "@sapphire/snowflake",
+      "version": "3.5.5",
+      "sourceUrl": "https://github.com/sapphiredev/utilities/blob/main/LICENSE.md",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright © 2020 The Sapphire Community and its contributors"]
+      }
+    },
+    {
       "name": "remark-math",
       "version": "6.0.0",
       "sourceUrl": "https://github.com/remarkjs/remark-math/blob/main/license",

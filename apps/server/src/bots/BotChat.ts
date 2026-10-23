@@ -47,6 +47,7 @@ import * as EventStore from "../persistence/OrchestrationEventStore.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import * as IdAllocator from "@satslab/provider-core/server/IdAllocator";
 import * as BotStorage from "./BotStorage.ts";
+import * as BotIntegrationLifecycle from "./BotIntegrationLifecycle.ts";
 import * as MemoryCompaction from "./MemoryCompaction.ts";
 import { makeMemory } from "./MemoryWorker.ts";
 import { memoryTurnItem } from "./MemoryTurnItem.ts";
@@ -109,6 +110,22 @@ const make = Effect.gen(function* () {
   const settings = yield* Effect.serviceOption(ServerSettings.ServerSettingsService);
   const transferFiles = yield* TransferFiles.BotTransferFiles;
   const storage = yield* BotStorage.BotStorage;
+  const integrations = yield* Effect.serviceOption(BotIntegrationLifecycle.BotIntegrationLifecycle);
+  const withIntegrationPaused = <A, E, R>(id: BotId, effect: Effect.Effect<A, E, R>) =>
+    Option.isNone(integrations)
+      ? effect
+      : Effect.acquireUseRelease(
+          integrations.value.suspend(id),
+          () => effect,
+          () =>
+            integrations.value
+              .refresh(id)
+              .pipe(
+                Effect.catch(() =>
+                  Effect.logWarning("Bot integration could not resume", { botId: id }),
+                ),
+              ),
+        );
   const threadCommands = yield* ThreadCommandExecutor.ThreadCommandExecutor;
   const ownership = yield* BotOwnership.BotOwnership;
   const projects = yield* ProjectStore.ProjectStoreV2;
@@ -658,22 +675,29 @@ const make = Effect.gen(function* () {
             }),
           );
           yield* Cache.invalidate(workers, id);
+          if (Option.isSome(integrations)) {
+            if (operation === "reset") yield* integrations.value.clearHistory(id);
+            else yield* integrations.value.forget(id);
+          }
           return result;
         }),
       );
     },
     (effect, id) =>
-      Effect.gen(function* () {
-        const bot = yield* assertOwner(id);
-        return yield* threadCommands.withLock(
-          bot.threadId,
-          Effect.gen(function* () {
-            if ((yield* assertOwner(id)).threadId !== bot.threadId)
-              return yield* new BotChatError({ operation: "change-history", reason: "busy" });
-            return yield* effect;
-          }),
-        );
-      }),
+      withIntegrationPaused(
+        id,
+        Effect.gen(function* () {
+          const bot = yield* assertOwner(id);
+          return yield* threadCommands.withLock(
+            bot.threadId,
+            Effect.gen(function* () {
+              if ((yield* assertOwner(id)).threadId !== bot.threadId)
+                return yield* new BotChatError({ operation: "change-history", reason: "busy" });
+              return yield* effect;
+            }),
+          );
+        }),
+      ),
     botError("change-history"),
   );
   const reset = Effect.fn("BotChat.reset")(function* (id: BotId) {
@@ -749,10 +773,13 @@ const make = Effect.gen(function* () {
       );
     },
     (effect, id) =>
-      Effect.gen(function* () {
-        const bot = yield* storage.get(id);
-        return yield* threadCommands.withLock(bot.threadId, effect);
-      }),
+      withIntegrationPaused(
+        id,
+        Effect.gen(function* () {
+          const bot = yield* storage.get(id);
+          return yield* threadCommands.withLock(bot.threadId, effect);
+        }),
+      ),
     botError("transfer-export"),
   );
   const stageTransfer = Effect.fn("BotChat.stageTransfer")(function* (
@@ -855,6 +882,7 @@ const make = Effect.gen(function* () {
       }),
     );
     yield* wake(id);
+    if (Option.isSome(integrations)) yield* integrations.value.refresh(id);
     return bot;
   }, botError("transfer-activate"));
   const cancelTransfer = Effect.fn("BotChat.cancelTransfer")(function* (
@@ -863,8 +891,9 @@ const make = Effect.gen(function* () {
   ) {
     const bot = yield* withOperation(id)(ownership.cancel(id, transferId, ownerEnvironmentId));
     yield* wake(id);
+    if (Option.isSome(integrations)) yield* integrations.value.refresh(id);
     return bot;
-  });
+  }, botError("transfer-cancel"));
   const latest = yield* sink.latestSequence();
   yield* sink.stream({ afterSequence: latest }).pipe(
     Stream.filter(

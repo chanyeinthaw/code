@@ -45,6 +45,26 @@ When off, replies load none of them.
 Bot messages and tool results can reflect what these files say, and those can enter memory.
 Memory compaction never loads them. A change applies from the next reply.
 
+## Connect a bot to Discord
+
+Open the bot's settings and save its Discord bot token under **Discord**.
+In the Discord Developer Portal, enable **Message Content Intent** for that bot.
+Invite it to your server with permission to view channels, read message history, send messages,
+create public threads, and send messages in threads. Then enable the integration.
+
+Choose mentions only or all messages, an allow or block list of Discord user IDs, and whether
+replies create a thread or reply directly to the message. Both user lists permit everyone when empty.
+Replies to accepted messages and the bot's responses count as follow-ups without another mention.
+Direct messages are ignored. Attachments reach the bot as download links.
+
+The bot posts replies explicitly and can send progress updates before its answer.
+Ask it to read earlier messages, inspect a linked or replied-to message, identify participants,
+or search messages by keyword across the Discord server. It can read only channels its Discord bot can access.
+Member lists may require **Server Members Intent** in the Discord Developer Portal;
+recent message authors remain available without that intent.
+Keep its owning environment online. Discord credentials stay on that environment; after moving
+the bot, configure its token and enable Discord on the destination.
+
 ## Choose the compaction model
 
 Set **Settings → Bots → Memory compaction model** on the owning environment.

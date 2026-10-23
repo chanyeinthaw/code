@@ -1,3 +1,4 @@
+import * as DiscordPrompt from "@satslab/bot-discord/DiscordPrompt";
 import * as BotStorage from "../../bots/BotStorage.ts";
 import * as BotChat from "../../bots/BotChat.ts";
 import * as OtelEnvironment from "@satslab/shared/otelEnvironment";
@@ -392,6 +393,7 @@ export function layerWithRegistry<Error>(
     ),
   );
   const layerProviderTurnStartServiceProvided = ProviderTurnStartService.layer.pipe(
+    Layer.provide(DiscordPrompt.layer.pipe(Layer.provide(layerDatabase))),
     Layer.provide(
       Layer.mock(BotChat.BotChat)({ delegatedContext: () => Effect.succeed(undefined) }),
     ),
